@@ -1,0 +1,2 @@
+# sistema_gastronomico_pascual_leyes_delahoz_clavero
+proyecto laboratorio 2
