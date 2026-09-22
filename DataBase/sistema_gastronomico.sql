@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 22-09-2026 a las 19:30:35
+-- Tiempo de generación: 22-09-2026 a las 22:57:42
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -22,6 +22,29 @@ SET time_zone = "+00:00";
 --
 CREATE DATABASE IF NOT EXISTS `sistema_gastronomico` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE `sistema_gastronomico`;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `categoria`
+--
+
+CREATE TABLE `categoria` (
+  `id_categoria` int(11) NOT NULL,
+  `nombre` varchar(100) NOT NULL,
+  `estado` tinyint(1) NOT NULL DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `categoria`
+--
+
+INSERT INTO `categoria` (`id_categoria`, `nombre`, `estado`) VALUES
+(1, 'Entrada', 1),
+(2, 'Plato Principal', 1),
+(3, 'Postre', 1),
+(4, 'Bebida', 1),
+(5, 'Otro', 1);
 
 -- --------------------------------------------------------
 
@@ -105,7 +128,7 @@ CREATE TABLE `pedido` (
 CREATE TABLE `plato` (
   `id_plato` int(11) NOT NULL,
   `nombre` varchar(120) NOT NULL,
-  `categoria` enum('Entrada','Plato Principal','Postre','Bebida','Otro') NOT NULL,
+  `id_categoria` int(11) NOT NULL,
   `precio_venta` decimal(10,2) NOT NULL,
   `activo` tinyint(1) DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -165,6 +188,12 @@ CREATE TABLE `usuario` (
 --
 
 --
+-- Indices de la tabla `categoria`
+--
+ALTER TABLE `categoria`
+  ADD PRIMARY KEY (`id_categoria`);
+
+--
 -- Indices de la tabla `detalle_pedido`
 --
 ALTER TABLE `detalle_pedido`
@@ -207,7 +236,8 @@ ALTER TABLE `pedido`
 -- Indices de la tabla `plato`
 --
 ALTER TABLE `plato`
-  ADD PRIMARY KEY (`id_plato`);
+  ADD PRIMARY KEY (`id_plato`),
+  ADD KEY `fk_plato_categoria` (`id_categoria`);
 
 --
 -- Indices de la tabla `producto`
@@ -234,6 +264,12 @@ ALTER TABLE `usuario`
 --
 -- AUTO_INCREMENT de las tablas volcadas
 --
+
+--
+-- AUTO_INCREMENT de la tabla `categoria`
+--
+ALTER TABLE `categoria`
+  MODIFY `id_categoria` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT de la tabla `detalle_pedido`
@@ -313,6 +349,12 @@ ALTER TABLE `detalle_receta`
 ALTER TABLE `pedido`
   ADD CONSTRAINT `fk_pedido_empleado` FOREIGN KEY (`id_empleado`) REFERENCES `empleado` (`id_empleado`) ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_pedido_mesa` FOREIGN KEY (`id_mesa`) REFERENCES `mesa` (`id_mesa`) ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `plato`
+--
+ALTER TABLE `plato`
+  ADD CONSTRAINT `fk_plato_categoria` FOREIGN KEY (`id_categoria`) REFERENCES `categoria` (`id_categoria`) ON UPDATE CASCADE;
 
 --
 -- Filtros para la tabla `usuario`
