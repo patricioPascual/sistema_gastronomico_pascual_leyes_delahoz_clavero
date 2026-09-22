@@ -1,0 +1,31 @@
+using System;
+using System.ComponentModel.DataAnnotations;
+
+namespace sistema_gastronomico_pascual_leyes_delahoz_clavero
+{
+
+    public class DetallePedido
+    {
+
+        [Key]
+        public int IdDetallePedido { get; set; }
+
+        public int Cantidad { get; set; }
+
+        public decimal PrecioUnitario { get; set; }
+
+        [Required]
+        public Boolean Estado { get; set; }
+
+        [Required]
+        [ForeignKey(nameof(Pedido))]
+        public int IdPedido { get; set; }
+        public Pedido? Pedido { get; set; }
+        
+
+        [Required]
+        [ForeignKey(nameof(Plato))]
+        public int IdPlato { get; set; }
+        public Plato? Plato { get; set; }
+    }
+}
