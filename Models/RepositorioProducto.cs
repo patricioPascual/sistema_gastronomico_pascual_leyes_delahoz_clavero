@@ -89,5 +89,38 @@ namespace  sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
 
     return res;
 }
+
+public IList<Producto> Buscar(string q)
+{
+    var lista = new List<Producto>();
+    using (var conn = new MySqlConnection(connectionString))
+    {
+        string query = @"SELECT id_producto, nombre, cantidad_stock, unidad_medida 
+                         FROM producto 
+                         WHERE estado = 1 AND nombre LIKE @q 
+                         LIMIT 20;";
+
+        using (var cmd = new MySqlCommand(query, conn))
+        {
+            cmd.Parameters.AddWithValue("@q", "%" + q + "%");
+            conn.Open();
+            using (var reader = cmd.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    lista.Add(new Producto
+                    {
+                        IdProducto = reader.GetInt32("id_producto"),
+                        Nombre = reader.GetString("nombre"),
+                        Cantidad_stock = reader.GetDecimal("cantidad_stock"),
+                        Unidad_medida = reader.GetString("unidad_medida")
+                    });
+                }
+            }
+        }
+    }
+    return lista;
+}
+
     }
 }

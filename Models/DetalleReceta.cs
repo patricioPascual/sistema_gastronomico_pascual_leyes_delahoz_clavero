@@ -2,7 +2,7 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace sistema_gastronomico_pascual_leyes_delahoz_clavero
+namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
 {
     public class DetalleReceta
     {

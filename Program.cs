@@ -1,7 +1,10 @@
+using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddScoped<RepositorioProducto>();
 
 var app = builder.Build();
 

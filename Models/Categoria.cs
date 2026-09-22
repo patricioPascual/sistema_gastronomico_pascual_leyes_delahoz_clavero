@@ -3,7 +3,7 @@ using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 
-namespace sistema_gastronomico_pascual_leyes_delahoz_clavero
+namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
 {
     public class Categoria
     {

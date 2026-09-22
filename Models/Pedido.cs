@@ -1,7 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace sistema_gastronomico_pascual_leyes_delahoz_clavero
+namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
 {
 
     public class Pedido
@@ -19,13 +19,13 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero
         public int Total { get; set; }
 
         [Required]
-        [ForeignKey(nameof(Mesa))]
+      //  [ForeignKey(nameof(Mesa))]
         public int IdMesa { get; set; }
-        public Mesa? Mesa { get; set; }
+      //  public Mesa? Mesa { get; set; }
         
 
         [Required]
-        [ForeignKey(nameof(Empleado))]
+    //    [ForeignKey(nameof(Empleado))]
         public int IdEmpleado { get; set; }
         public Empleado? Empleado { get; set; }
     }
