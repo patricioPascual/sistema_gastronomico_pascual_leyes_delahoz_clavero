@@ -12,76 +12,77 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
         }
 
      public int Alta(Compra compra)
+{
+    int idCompraCreada = 0;
+
+    using (var connection = new MySqlConnection(connectionString))
+    {
+        connection.Open();
+        using (var transaction = connection.BeginTransaction())
         {
-            int idCompraCreada = 0;
-
-            using (var connection = new MySqlConnection(connectionString))
+            try
             {
-                connection.Open();
-                using (var transaction = connection.BeginTransaction())
+                // 1. Insertar Cabecera de Compra
+                string queryCompra = @"INSERT INTO compra (fecha_hora, proveedor, numero_comprobante, total_compra, id_empleado, estado) 
+                                       VALUES (@fecha_hora, @proveedor, @numero_comprobante, @total_compra, @id_empleado, 1);";
+
+                using (var cmd = new MySqlCommand(queryCompra, connection, transaction))
                 {
-                    try
+                    cmd.Parameters.AddWithValue("@fecha_hora", compra.FechaHora == default ? DateTime.Now : compra.FechaHora);
+                    cmd.Parameters.AddWithValue("@proveedor", (object?)compra.Proveedor ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@numero_comprobante", (object?)compra.NumeroComprobante ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@total_compra", compra.TotalCompra);
+                    cmd.Parameters.AddWithValue("@id_empleado", compra.IdEmpleado);
+
+                    cmd.ExecuteNonQuery();
+                    
+                    // Obtener el ID generado por el AUTO_INCREMENT de MySQL
+                    idCompraCreada = Convert.ToInt32(cmd.LastInsertedId);
+                }
+
+                // 2. Insertar Detalles y Actualizar Stock en Producto
+                string queryDetalle = @"INSERT INTO detalle_compra (id_compra, id_producto, cantidad_ingresada, precio_costo_unitario) 
+                                        VALUES (@id_compra, @id_producto, @cantidad_ingresada, @precio_costo_unitario);";
+
+                string queryUpdateStock = @"UPDATE producto 
+                                            SET cantidad_stock = cantidad_stock + @cantidad_ingresada,
+                                                precio_costo = @precio_costo_unitario 
+                                            WHERE id_producto = @id_producto;";
+
+                foreach (var detalle in compra.Detalles)
+                {
+                    // Insertar renglón del detalle
+                    using (var cmdDetalle = new MySqlCommand(queryDetalle, connection, transaction))
                     {
-                        // 1. Insertar Cabecera de Compra
-                        string queryCompra = @"INSERT INTO compra (fecha_hora, proveedor, numero_comprobante, total_compra, id_empleado, estado) 
-                                               VALUES (@fecha_hora, @proveedor, @numero_comprobante, @total_compra, @id_empleado, 1);
-                                               SELECT LAST_INSERT_ID();";
-
-                        using (var cmd = new MySqlCommand(queryCompra, connection, transaction))
-                        {
-                            cmd.Parameters.AddWithValue("@fecha_hora", compra.FechaHora == default ? DateTime.Now : compra.FechaHora);
-                            cmd.Parameters.AddWithValue("@proveedor", (object?)compra.Proveedor ?? DBNull.Value);
-                            cmd.Parameters.AddWithValue("@numero_comprobante", (object?)compra.NumeroComprobante ?? DBNull.Value);
-                            cmd.Parameters.AddWithValue("@total_compra", compra.TotalCompra);
-                            cmd.Parameters.AddWithValue("@id_empleado", compra.IdEmpleado);
-
-                            idCompraCreada = Convert.ToInt32(cmd.ExecuteScalar());
-                        }
-
-                        // 2. Insertar Detalles y Actualizar Stock en Producto
-                        string queryDetalle = @"INSERT INTO detalle_compra (id_compra, id_producto, cantidad_ingresada, precio_costo_unitario) 
-                                                VALUES (@id_compra, @id_producto, @cantidad_ingresada, @precio_costo_unitario);";
-
-                        string queryUpdateStock = @"UPDATE producto 
-                                                    SET cantidad_stock = cantidad_stock + @cantidad_ingresada,
-                                                        precio_costo = @precio_costo_unitario 
-                                                    WHERE id_producto = @id_producto;";
-
-                        foreach (var detalle in compra.Detalles)
-                        {
-                            // Insertar renglón del detalle
-                            using (var cmdDetalle = new MySqlCommand(queryDetalle, connection, transaction))
-                            {
-                                cmdDetalle.Parameters.AddWithValue("@id_compra", idCompraCreada);
-                                cmdDetalle.Parameters.AddWithValue("@id_producto", detalle.IdProducto);
-                                cmdDetalle.Parameters.AddWithValue("@cantidad_ingresada", detalle.CantidadIngresada);
-                                cmdDetalle.Parameters.AddWithValue("@precio_costo_unitario", detalle.PrecioCostoUnitario);
-                                cmdDetalle.ExecuteNonQuery();
-                            }
-
-                            // Sumar al stock e informar el precio de costo más reciente
-                            using (var cmdStock = new MySqlCommand(queryUpdateStock, connection, transaction))
-                            {
-                                cmdStock.Parameters.AddWithValue("@cantidad_ingresada", detalle.CantidadIngresada);
-                                cmdStock.Parameters.AddWithValue("@precio_costo_unitario", detalle.PrecioCostoUnitario);
-                                cmdStock.Parameters.AddWithValue("@id_producto", detalle.IdProducto);
-                                cmdStock.ExecuteNonQuery();
-                            }
-                        }
-
-                        transaction.Commit();
+                        cmdDetalle.Parameters.AddWithValue("@id_compra", idCompraCreada);
+                        cmdDetalle.Parameters.AddWithValue("@id_producto", detalle.IdProducto);
+                        cmdDetalle.Parameters.AddWithValue("@cantidad_ingresada", detalle.CantidadIngresada);
+                        cmdDetalle.Parameters.AddWithValue("@precio_costo_unitario", detalle.PrecioCostoUnitario);
+                        cmdDetalle.ExecuteNonQuery();
                     }
-                    catch
+
+                    // Sumar al stock e informar el precio de costo más reciente
+                    using (var cmdStock = new MySqlCommand(queryUpdateStock, connection, transaction))
                     {
-                        transaction.Rollback();
-                        throw;
+                        cmdStock.Parameters.AddWithValue("@cantidad_ingresada", detalle.CantidadIngresada);
+                        cmdStock.Parameters.AddWithValue("@precio_costo_unitario", detalle.PrecioCostoUnitario);
+                        cmdStock.Parameters.AddWithValue("@id_producto", detalle.IdProducto);
+                        cmdStock.ExecuteNonQuery();
                     }
                 }
-            }
 
-            return idCompraCreada;
+                transaction.Commit();
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
         }
-      
+    }
+
+    return idCompraCreada;
+}
       public bool BajaLogica(int idCompra)
         {
             int filasAfectadas = 0;
