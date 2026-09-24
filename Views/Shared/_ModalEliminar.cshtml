@@ -1,0 +1,42 @@
+
+<div class="modal fade" id="modalEliminar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-exclamation-triangle me-2"></i>Confirmar Baja
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-4">
+                <p class="fs-6 mb-0">
+                    ¿Está seguro de que desea inactivar el registro <strong id="nombreModalEliminar" class="text-danger"></strong>?
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                
+                <form id="formModalEliminar" action="" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="idModalEliminar" name="id" />
+                    <button type="submit" class="btn btn-danger fw-bold">
+                        <i class="bi bi-trash me-1"></i> Confirmar Inactivación
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+   
+    function abrirModalEliminar(id, nombre, actionUrl) {
+        document.getElementById('idModalEliminar').value = id;
+        document.getElementById('nombreModalEliminar').innerText = nombre;
+        document.getElementById('formModalEliminar').action = actionUrl;
+
+        var modalElement = document.getElementById('modalEliminar');
+        var modalInstance = bootstrap.Modal.getOrCreateInstance(modalElement);
+        modalInstance.show();
+    }
+</script>
