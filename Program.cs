@@ -6,6 +6,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 builder.Services.AddScoped<RepositorioProducto>();
 builder.Services.AddScoped<RepositorioCompra>();
+builder.Services.AddScoped<RepositorioMesa>();
+builder.Services.AddScoped<RepositorioEmpleado>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
