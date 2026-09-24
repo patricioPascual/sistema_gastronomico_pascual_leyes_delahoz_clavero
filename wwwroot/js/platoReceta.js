@@ -66,4 +66,16 @@ $(document).ready(function () {
   $("#tablaReceta").on("click", ".btn-quitar-fila", function () {
     $(this).closest("tr").remove();
   });
+
+  $(window).on("keydown", function (event) {
+    if (event.key === "Enter") {
+      if (
+        event.target.tagName !== "TEXTAREA" &&
+        event.target.type !== "submit"
+      ) {
+        event.preventDefault();
+        return false;
+      }
+    }
+  });
 });
