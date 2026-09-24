@@ -1,0 +1,151 @@
+@model sistema_gastronomico_pascual_leyes_delahoz_clavero.Models.Compra
+
+@{
+    ViewData["Title"] = "Registrar Compra";
+    var productos = ViewBag.Productos as List<sistema_gastronomico_pascual_leyes_delahoz_clavero.Models.Producto> ?? new List<sistema_gastronomico_pascual_leyes_delahoz_clavero.Models.Producto>();
+}
+
+<div class="container mt-4 mb-5" id="appCompra">
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0"><i class="bi bi-cart-plus me-2"></i>Registrar Compra</h4>
+        </div>
+        <div class="card-body p-4">
+            <form asp-action="Alta" method="post">
+                @Html.AntiForgeryToken()
+
+                
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label asp-for="Proveedor" class="form-label fw-bold">Proveedor</label>
+                        <input asp-for="Proveedor" class="form-control" required placeholder="Ej: Distribuidora Central" />
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="NumeroComprobante" class="form-label fw-bold">N° Comprobante</label>
+                        <input asp-for="NumeroComprobante" class="form-control" placeholder="Ej: FC-0001-1234" />
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="FechaHora" class="form-label fw-bold">Fecha</label>
+                        <input asp-for="FechaHora" type="datetime-local" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" required />
+                    </div>
+                </div>
+
+                <input type="hidden" asp-for="IdEmpleado" value="1" />
+
+                
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="text-primary mb-0"><i class="bi bi-box-seam me-2"></i>Insumos</h5>
+                    <button type="button" class="btn btn-outline-success btn-sm" @@click="agregarRenglon">
+                        <i class="bi bi-plus-lg"></i> Agregar Insumo
+                    </button>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Producto</th>
+                                <th style="width: 20%;">Cantidad</th>
+                                <th style="width: 25%;">Precio Costo ($)</th>
+                                <th style="width: 10%;" class="text-center">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="(item, index) in detalles" :key="index">
+                                <td>
+                                    <select :name="`Detalles[${index}].IdProducto`" 
+                                            v-model="item.idProducto" 
+                                            @@change="alCambiarProducto(item)" 
+                                            class="form-select" required>
+                                        <option value="" disabled>Seleccione un producto...</option>
+                                        <option v-for="p in catalogoProductos" :key="p.id" :value="p.id">
+                                            {{ p.nombre }} ({{ p.unidad }})
+                                        </option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <input type="number" step="0.001" min="0.001" 
+                                           :name="`Detalles[${index}].CantidadIngresada`" 
+                                           v-model.number="item.cantidad" 
+                                           class="form-control" required />
+                                </td>
+                                <td>
+                                    <input type="number" step="0.01" min="0" 
+                                           :name="`Detalles[${index}].PrecioCostoUnitario`" 
+                                           v-model.number="item.precioCosto" 
+                                           class="form-control" required />
+                                </td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-outline-danger btn-sm" @@click="eliminarRenglon(index)">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="2" class="text-end fw-bold fs-5">Total:</td>
+                                <td colspan="2" class="fw-bold fs-5 text-success">
+                                    $ {{ calcularTotal.toFixed(2) }}
+                                    <input type="hidden" asp-for="TotalCompra" :value="calcularTotal.toFixed(2)" />
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                <div class="d-flex justify-content-between mt-4">
+                    <a asp-action="Index" class="btn btn-outline-secondary">Volver</a>
+                    <button type="submit" class="btn btn-primary">Guardar Compra</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    // Catálogo proveniente del ViewBag de C#
+                    catalogoProductos: [
+                        @foreach (var p in productos)
+                        {
+                            @:{ id: @p.IdProducto, nombre: "@p.Nombre", unidad: "@p.Unidad_medida", costo: @p.Precio_costo.ToString(System.Globalization.CultureInfo.InvariantCulture) },
+                        }
+                    ],
+                    // Array reactivo para los renglones
+                    detalles: []
+                };
+            },
+            computed: {
+                calcularTotal() {
+                    return this.detalles.reduce((sum, item) => {
+                        return sum + ((item.cantidad || 0) * (item.precioCosto || 0));
+                    }, 0);
+                }
+            },
+            methods: {
+                agregarRenglon() {
+                    this.detalles.push({ idProducto: '', cantidad: 1, precioCosto: 0 });
+                },
+                eliminarRenglon(index) {
+                    this.detalles.splice(index, 1);
+                },
+                alCambiarProducto(item) {
+                    const prod = this.catalogoProductos.find(p => p.id === item.idProducto);
+                    if (prod) {
+                        item.precioCosto = prod.costo;
+                    }
+                }
+            },
+            mounted() {
+                this.agregarRenglon(); // Agrega la primera fila al cargar
+            }
+        }).mount('#appCompra');
+    </script>
+}
