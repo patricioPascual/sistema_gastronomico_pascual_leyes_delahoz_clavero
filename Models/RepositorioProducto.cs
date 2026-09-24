@@ -42,22 +42,23 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
 
 
         public int Baja(int id)
+{
+    int res = -1;
+    using (var conn = new MySqlConnection(connectionString))
+    {
+        
+        string sql = "UPDATE producto SET estado = 0 WHERE id_producto = @id";
+        
+        using (var cmd = new MySqlCommand(sql, conn))
         {
-            int res = -1;
-            using (var conn = new MySqlConnection(connectionString))
-            {
-                string sql = "UPDATE Producto SET estado = @es WHERE IdProducto = @id";
-                using (var cmd = new MySqlCommand(sql, conn))
-                {
-                    cmd.Parameters.AddWithValue("@id", id);
-                    cmd.Parameters.AddWithValue("@es", false);
+            cmd.Parameters.AddWithValue("@id", id);
 
-                    conn.Open();
-                    res = cmd.ExecuteNonQuery();
-                }
-            }
-            return res;
+            conn.Open();
+            res = cmd.ExecuteNonQuery(); 
         }
+    }
+    return res;
+}
 
         public int Modificar(Producto p)
         {

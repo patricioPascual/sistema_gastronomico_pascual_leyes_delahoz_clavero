@@ -55,9 +55,13 @@
                                 <a asp-action="Modificar" asp-route-id="@item.IdProducto" class="btn btn-sm btn-outline-primary me-1" title="Editar">
                                     <i class="bi bi-pencil"></i> Modificar
                                 </a>
-                                <a asp-action="Eliminar" asp-route-id="@item.IdProducto" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                                
+                                <button type="button" 
+                                        class="btn btn-sm btn-outline-danger" 
+                                        title="Eliminar"
+                                        onclick="abrirModalEliminar(@item.IdProducto, '@item.Nombre', '@Url.Action("Eliminar", "Producto")')">
                                     <i class="bi bi-trash"></i>
-                                </a>
+                                </button>
                             </td>
                         </tr>
                     }
@@ -74,3 +78,6 @@
         </table>
     </div>
 </div>
+
+<!-- Incluimos el Modal Reutilizable al final de la página -->
+<partial name="_ModalEliminar" />

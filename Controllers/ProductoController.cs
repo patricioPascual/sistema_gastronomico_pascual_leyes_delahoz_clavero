@@ -149,5 +149,30 @@ public IActionResult Modificar(Producto producto)
     
     return View(producto);
 }
+
+   [HttpPost]
+[ValidateAntiForgeryToken]
+public IActionResult Eliminar(int id)
+{
+    try
+    {
+        bool exito = repoProducto.Baja(id) > 0;
+
+        if (exito)
+        {
+            TempData["Exito"] = "El producto se dio de baja correctamente.";
+        }
+        else
+        {
+            TempData["Error"] = "No se pudo realizar la baja del producto.";
+        }
+    }
+    catch (Exception ex)
+    {
+        TempData["Error"] = "Error al intentar eliminar el producto: " + ex.Message;
+    }
+
+    return RedirectToAction(nameof(Index));
+}
     }
 }
