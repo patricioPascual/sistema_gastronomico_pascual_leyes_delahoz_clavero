@@ -9,6 +9,8 @@ builder.Services.AddScoped<IRepositorioDetalleReceta, RepositorioDetalleReceta>(
 builder.Services.AddScoped<IRepositorioPlato, RepositorioPlato>();
 builder.Services.AddScoped<RepositorioCategoria>();
 builder.Services.AddScoped<RepositorioCompra>();
+builder.Services.AddScoped<RepositorioMesa>();
+builder.Services.AddScoped<RepositorioEmpleado>();
 
 var app = builder.Build();
 
