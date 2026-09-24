@@ -122,45 +122,43 @@ public IList<Producto> Buscar(string q)
     return lista;
 }
 
-    public IList<Producto> ObtenerLista(int pagNro =1, int tamPagina=10)
-        {   
-             IList<Producto> res = new List<Producto>();
-            int offset = (pagNro -1)* tamPagina;
-            using (var conn = new MySqlConnection(connectionString))
+   public List<Producto> ObtenerLista(int pagNro, int tamPagina)
+{
+    var lista = new List<Producto>();
+    int offset = (pagNro - 1) * tamPagina;
+
+    using (var conn = new MySqlConnection(connectionString))
+    {
+        string sql = @"SELECT id_producto, nombre, cantidad_stock, unidad_medida, precio_costo, estado 
+                       FROM producto 
+                       LIMIT @tamPagina OFFSET @offset;";
+
+        using (var cmd = new MySqlCommand(sql, conn))
+        {
+            cmd.Parameters.AddWithValue("@tamPagina", tamPagina);
+            cmd.Parameters.AddWithValue("@offset", offset);
+
+            conn.Open();
+            using (var reader = cmd.ExecuteReader())
             {
-                String sql=@" SELECT IdProducto,Nombre,  Cantidad_stock ,Unidad_medida,Precio_costo,Estado 
-                   FROM Producto 
-                   WHERE Estado=1 
-                   ORDER BY IdProducto
-                   LIMIT @tamPagina OFFSET @offset ";
-                   using (var cmd = new MySqlCommand(sql,conn))
+                while (reader.Read())
                 {
-                    cmd.Parameters.AddWithValue("@tamPagina", tamPagina);
-                    cmd.Parameters.AddWithValue("@offset", offset);
-                    conn.Open();
-
-                    using (var reader=cmd.ExecuteReader())
+                    var p = new Producto
                     {
-                        while (reader.Read())
-                        {
-                            Producto p = new Producto
-                            {   
-                        IdProducto=Convert.ToInt32(reader[nameof(Producto.IdProducto)]),
-                        Nombre=reader[nameof(Producto.Nombre)]?.ToString()??"",
-                        Cantidad_stock=reader.GetDecimal(nameof(Producto.Cantidad_stock)),
-                        Unidad_medida=reader.GetString(nameof(Producto.Unidad_medida)),
-                        Precio_costo=reader.GetDecimal(nameof(Producto.Precio_costo)),
-                        Estado=Convert.ToBoolean(reader[nameof(Producto.Estado)]),
-
-                            };
-                            res.Add(p);
-                        
-                        }
-                    }
+                        IdProducto = Convert.ToInt32(reader["id_producto"]),
+                        Nombre = reader["nombre"].ToString(),
+                        Cantidad_stock = Convert.ToDecimal(reader["cantidad_stock"]),
+                        Unidad_medida = reader["unidad_medida"].ToString(),
+                        Precio_costo = Convert.ToDecimal(reader["precio_costo"]),
+                        Estado = Convert.ToBoolean(reader["estado"])
+                    };
+                    lista.Add(p);
                 }
             }
-              return res;
         }
+    }
+    return lista;
+}
      public int ObtenerCantidad()
         {
             int total = 0;

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models;
+using MySql.Data.MySqlClient;
 
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 {
@@ -48,6 +49,38 @@ public IActionResult Buscar(string q)
     return Json(resultado);
 }
 
+
+public IActionResult Alta()
+        {
+            return View();
+        }
+
+
+     [HttpPost]
+[ValidateAntiForgeryToken]
+public IActionResult Crear(Producto producto)
+{
+    // 1. Limpieza de espacios y estandarizacion de texto
+    if (!string.IsNullOrWhiteSpace(producto.Nombre))
+    {
+        producto.Nombre = producto.Nombre.Trim();
+    }
+
+    if (!ModelState.IsValid)
+        return View(producto);
+
+    try
+    {
+        repoProducto.Alta(producto);
+        TempData["Mensaje"] = "Insumo registrado correctamente.";
+        return RedirectToAction(nameof(Index));
+    }
+    catch (MySqlException ex) when (ex.Number == 1062) 
+    {
+        ModelState.AddModelError("Nombre", "El insumo '" + producto.Nombre + "' ya existe en la base de datos.");
+        return View(producto);
+    }
+}
 
     }
 }
