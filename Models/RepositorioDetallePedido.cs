@@ -40,47 +40,56 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
 
         public bool Baja(int idDetallePedido)
         {
-            using (var conn = new MySqlConnection(connectionString))
-            {
-                string sql = @"UPDATE detalle_pedido 
-                       SET estado = 0 
-                       WHERE id_detalle_pedido = @id;";
+            using var conn = new MySqlConnection(connectionString);
+            conn.Open();
+            using var tx = conn.BeginTransaction();
 
-                using (var cmd = new MySqlCommand(sql, conn))
-                {
-                    cmd.Parameters.AddWithValue("@id", idDetallePedido);
-                    conn.Open();
-                    return cmd.ExecuteNonQuery() > 0;
-                }
+            // Se busca antes del UPDATE porque después el detalle ya no está activo
+            int idPedido = ObtenerIdPedido(idDetallePedido, conn, tx);
+
+            string sql = @"UPDATE detalle_pedido SET estado = 0
+                   WHERE id_detalle_pedido = @id;";
+            using (var cmd = new MySqlCommand(sql, conn, tx))
+            {
+                cmd.Parameters.AddWithValue("@id", idDetallePedido);
+                cmd.ExecuteNonQuery();
             }
+
+            RepositorioPedido.RecalcularTotal(idPedido, conn, tx);
+            tx.Commit();
+            return true;
         }
 
 
         public bool ModificarCantidad(int idDetallePedido, int nuevaCantidad)
         {
-            using (var conn = new MySqlConnection(connectionString))
-            {
-                string sql = @"UPDATE detalle_pedido 
-                       SET cantidad = @cantidad 
-                       WHERE id_detalle_pedido = @id;";
+            using var conn = new MySqlConnection(connectionString);
+            conn.Open();
+            using var tx = conn.BeginTransaction();
 
-                using (var cmd = new MySqlCommand(sql, conn))
-                {
-                    cmd.Parameters.AddWithValue("@cantidad", nuevaCantidad);
-                    cmd.Parameters.AddWithValue("@id", idDetallePedido);
-                    conn.Open();
-                    return cmd.ExecuteNonQuery() > 0;
-                }
+            int idPedido = ObtenerIdPedido(idDetallePedido, conn, tx);
+
+            string sql = @"UPDATE detalle_pedido SET cantidad = @cantidad
+                   WHERE id_detalle_pedido = @id;";
+            using (var cmd = new MySqlCommand(sql, conn, tx))
+            {
+                cmd.Parameters.AddWithValue("@cantidad", nuevaCantidad);
+                cmd.Parameters.AddWithValue("@id", idDetallePedido);
+                cmd.ExecuteNonQuery();
             }
+
+            RepositorioPedido.RecalcularTotal(idPedido, conn, tx);
+            tx.Commit();
+            return true;
         }
 
         // Busca a qué pedido pertenece un detalle activo
-        private int ObtenerIdPedido(int idDetallePedido, MySqlConnection conn)
+        private int ObtenerIdPedido(int idDetallePedido, MySqlConnection conn, MySqlTransaction tx)
         {
             string sql = @"SELECT id_pedido FROM detalle_pedido
                            WHERE id_detalle_pedido = @id AND estado = 1;";
 
-            using var cmd = new MySqlCommand(sql, conn);
+            using var cmd = new MySqlCommand(sql, conn, tx);
             cmd.Parameters.AddWithValue("@id", idDetallePedido);
 
             var resultado = cmd.ExecuteScalar();

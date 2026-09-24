@@ -47,7 +47,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
                     throw new InvalidOperationException($"El plato {d.IdPlato} no existe o está dado de baja");
             }
 
-            RecalcularTotal(p.IdPedido, conn);
+            RecalcularTotal(p.IdPedido, conn, tx);
 
             tx.Commit();
             return p.IdPedido;
@@ -90,7 +90,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
                 }
             }
         }
-        public static void RecalcularTotal(int idPedido, MySqlConnection conn)
+        public static void RecalcularTotal(int idPedido, MySqlConnection conn,MySqlTransaction tx)
         {
             string sql = @"UPDATE pedido
                    SET total = (SELECT COALESCE(SUM(cantidad * precio_unitario), 0)
@@ -98,7 +98,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
                                 WHERE id_pedido = @id AND estado = 1)
                    WHERE id_pedido = @id;";
 
-            using var cmd = new MySqlCommand(sql, conn);
+            using var cmd = new MySqlCommand(sql, conn, tx);
             cmd.Parameters.AddWithValue("@id", idPedido);
             cmd.ExecuteNonQuery();
         }
