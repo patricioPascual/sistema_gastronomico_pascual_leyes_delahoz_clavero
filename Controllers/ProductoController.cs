@@ -101,5 +101,53 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             return Json(productos);
         }
 
+    [HttpGet]
+public IActionResult Modificar (int id)
+{
+    var producto = repoProducto.ObtenerPorId(id);
+
+    if (producto == null)
+    {
+        TempData["Error"] = "El producto que intenta modificar no existe.";
+        return RedirectToAction(nameof(Index));
+    }
+
+    return View(producto);
+}
+
+   [HttpPost]
+[ValidateAntiForgeryToken]
+public IActionResult Modificar(Producto producto)
+{
+    try
+    {
+        if (ModelState.IsValid)
+        {
+        
+            bool exito = repoProducto.Modificar(producto) >0 ;
+
+            if (exito)
+            {
+                TempData["Exito"] = "El producto se modificó correctamente.";
+                return RedirectToAction(nameof(Index));
+            }
+            else
+            {
+                TempData["Error"] = "No se pudo modificar el producto (es posible que no haya habido cambios).";
+            }
+        }
+        else
+        {
+            TempData["Error"] = "Verifique los datos ingresados. Hay campos inválidos.";
+        }
+    }
+    catch (Exception ex)
+    {
+        TempData["Error"] = "Error en base de datos: " + ex.Message;
+    }
+
+    
+    return View(producto);
+}
     }
 }
