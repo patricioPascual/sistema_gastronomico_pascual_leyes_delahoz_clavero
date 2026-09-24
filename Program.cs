@@ -11,6 +11,8 @@ builder.Services.AddScoped<RepositorioCategoria>();
 builder.Services.AddScoped<RepositorioCompra>();
 builder.Services.AddScoped<RepositorioMesa>();
 builder.Services.AddScoped<RepositorioEmpleado>();
+builder.Services.AddScoped<RepositorioPedido>();
+builder.Services.AddScoped<RepositorioDetallePedido>();
 
 var app = builder.Build();
 
