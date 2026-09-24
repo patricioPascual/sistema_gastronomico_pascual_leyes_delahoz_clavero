@@ -37,10 +37,10 @@
         <hr class="my-4" />
 
         <h4>Receta</h4>
-        <p class="text-muted">Insumos y cantidades que componen el plato.</p>
+        <p class="text-muted">Insumos y cantidades que componen el plato. Escribí al menos 2 letras para buscar un
+            insumo.</p>
 
-        <div id="recetaApp">
-            <table class="table table-sm align-middle">
+            <table class="table table-sm align-middle" id="tablaReceta">
                 <thead>
                     <tr>
                         <th>Insumo</th>
@@ -49,67 +49,20 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="(linea, index) in receta" :key="index">
-                        <td>
-                            <select class="form-select" v-model.number="linea.idProducto" :name="`Receta[${index}].IdProducto`">
-                                <option value="0" disabled>Seleccionar insumo...</option>
-                                <option v-for="p in productos" :key="p.id" :value="p.id">
-                                    {{ p.nombre }} ({{ p.unidad }})
-                                </option>
-                            </select>
-                        </td>
-                        <td>
-                            <input type="number" step="0.01" min="0.01" class="form-control"
-                                   v-model.number="linea.cantidadRequerida"
-                                   :name="`Receta[${index}].CantidadRequerida`">
-                        </td>
-                        <td>
-                            <button type="button" class="btn btn-sm btn-outline-danger" @@click="quitarLinea(index)">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
+                    <!-- plato-receta.js arma las filas acá -->
                 </tbody>
             </table>
-            <button type="button" class="btn btn-sm btn-outline-secondary" @@click="agregarLinea">
+            <button type="button" id="btnAgregarInsumo" class="btn btn-sm btn-outline-secondary">
                 <i class="bi bi-plus-lg"></i> Agregar insumo
             </button>
-        </div>
 
-        <div class="mt-4">
-            <button type="submit" class="btn btn-success">
-                <i class="bi bi-check-lg"></i> Guardar
-            </button>
-            <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
-        </div>
-    </form>
-</div>
+            <div class="mt-4">
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-check-lg"></i> Guardar
+                </button>
+                <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
 
-@section Scripts {
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <script>
-        const recetaInicial = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
-            Model.Receta.Select(r => new { idProducto = r.IdProducto, cantidadRequerida = r.CantidadRequerida })
-        ));
-        const productosDisponibles = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
-            Model.ProductosDisponibles.Select(p => new { id = p.IdProducto, nombre = p.Nombre, unidad = p.Unidad_medida })
-        ));
 
-        Vue.createApp({
-            data() {
-                return {
-                    receta: recetaInicial.length > 0 ? recetaInicial : [{ idProducto: 0, cantidadRequerida: 0 }],
-                    productos: productosDisponibles
-                };
-            },
-            methods: {
-                agregarLinea() {
-                    this.receta.push({ idProducto: 0, cantidadRequerida: 0 });
-                },
-                quitarLinea(index) {
-                    this.receta.splice(index, 1);
-                }
-            }
-        }).mount('#recetaApp');
-    </script>
-}

@@ -1,8 +1,5 @@
-using System.Collections.Generic;
 using System.Linq;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models;
 
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
@@ -11,18 +8,15 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
     {
         private readonly IRepositorioPlato repositorioPlato;
         private readonly IRepositorioDetalleReceta repositorioDetalleReceta;
-        private readonly RepositorioProducto repositorioProducto;
         private readonly RepositorioCategoria repositorioCategoria;
 
         public PlatoController(
             IRepositorioPlato repositorioPlato,
             IRepositorioDetalleReceta repositorioDetalleReceta,
-            RepositorioProducto repositorioProducto,
             RepositorioCategoria repositorioCategoria)
         {
             this.repositorioPlato = repositorioPlato;
             this.repositorioDetalleReceta = repositorioDetalleReceta;
-            this.repositorioProducto = repositorioProducto;
             this.repositorioCategoria = repositorioCategoria;
         }
 
@@ -36,7 +30,6 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
         {
             var vm = new PlatoFormViewModel
             {
-                ProductosDisponibles = repositorioProducto.Buscar("").ToList(),
                 Categorias = repositorioCategoria.ObtenerTodos().ToList()
             };
             return View(vm);
@@ -48,7 +41,6 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
         {
             if (!ModelState.IsValid)
             {
-                vm.ProductosDisponibles = repositorioProducto.Buscar("").ToList();
                 vm.Categorias = repositorioCategoria.ObtenerTodos().ToList();
                 return View(vm);
             }
@@ -88,9 +80,10 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
                 {
                     IdDetalleReceta = d.IdDetalleReceta,
                     IdProducto = d.IdProducto,
-                    CantidadRequerida = d.CantidadRequerida
+                    CantidadRequerida = d.CantidadRequerida,
+                    NombreProducto = d.Producto?.Nombre,
+                    UnidadMedida = d.Producto?.Unidad_medida // <-- Agregas esto
                 }).ToList(),
-                ProductosDisponibles = repositorioProducto.Buscar("").ToList(),
                 Categorias = repositorioCategoria.ObtenerTodos().ToList()
             };
 
@@ -103,7 +96,6 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
         {
             if (!ModelState.IsValid)
             {
-                vm.ProductosDisponibles = repositorioProducto.Buscar("").ToList();
                 vm.Categorias = repositorioCategoria.ObtenerTodos().ToList();
                 return View(vm);
             }
@@ -136,7 +128,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             return View(plato);
         }
 
-        [HttpPost]
+        [HttpPost, ActionName("Eliminar")]
         [ValidateAntiForgeryToken]
         public IActionResult EliminarConfirmado(int id)
         {
