@@ -18,11 +18,15 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             this.repoProducto = repoProducto;
         }
 
-        public IActionResult Index()
+        public IActionResult Index(int pagina=1)
         {
-          
-            var listaProductos = new List<Producto>(); 
-            return View(listaProductos);
+            int tamPagina = 10; 
+            var Productos = repoProducto.ObtenerLista(pagNro: pagina, tamPagina: tamPagina);
+            int totalRegistros= repoProducto.ObtenerCantidad();
+
+              ViewBag.PaginaActual = pagina;
+            ViewBag.TotalPaginas = (int)Math.Ceiling((double)totalRegistros / tamPagina);
+            return View(Productos);
         }
 
         [HttpGet]
@@ -43,5 +47,7 @@ public IActionResult Buscar(string q)
 
     return Json(resultado);
 }
+
+
     }
 }
