@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
 {
@@ -29,6 +30,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
         [Column("id_empleado")]
         public int IdEmpleado { get; set; }
 
+        public int idEmpleado{get;set;}
         [ForeignKey(nameof(IdEmpleado))]
         public Empleado? Empleado { get; set; }
 

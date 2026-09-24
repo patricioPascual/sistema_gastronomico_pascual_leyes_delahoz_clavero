@@ -11,7 +11,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
     public int IdPlato{get;set;}
 
     [Required(ErrorMessage ="El Nombre del es Obligatorio")]
-    public int Nombre {get;set;}
+    public string Nombre {get;set;}
     public decimal PrecioVenta {get;set;}
     public bool Estado {get;set;}
     public int IdCategoria { get; set;}
