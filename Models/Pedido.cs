@@ -12,8 +12,11 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
 
     public DateTime FechaHora { get; set; }
 
-    [Required]
-    public bool Estado { get; set; }
+    public enum Estado
+    {
+      Abierto, Pagado, Cancelado
+    }
+    public Estado estado { get; set; }
 
     public decimal Total { get; set; }
 

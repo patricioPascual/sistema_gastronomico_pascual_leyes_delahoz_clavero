@@ -15,18 +15,24 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
 
         public decimal PrecioUnitario { get; set; }
 
-        [Required]
-        public Boolean Estado { get; set; }
+        public enum Estado
+        {
+            EnMarcha,
+            Despachado
+        }
+        public Estado estado { get; set; }
 
         [Required]
         [ForeignKey(nameof(Pedido))]
         public int IdPedido { get; set; }
         public Pedido? Pedido { get; set; }
-        
+
 
         [Required]
-       [ForeignKey(nameof(Plato))]
+        [ForeignKey(nameof(Plato))]
         public int IdPlato { get; set; }
         public Plato? Plato { get; set; }
+
+        public decimal Subtotal => Cantidad * PrecioUnitario;
     }
 }
