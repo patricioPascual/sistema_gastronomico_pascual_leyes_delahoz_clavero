@@ -1,0 +1,50 @@
+@model sistema_gastronomico_pascual_leyes_delahoz_clavero.Models.Pedido
+@using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
+
+@{
+    ViewData["Title"] = "Modificar Pedido #" + Model.IdPedido;
+    var mesas = ViewBag.Mesas as IEnumerable<Mesa> ?? new List<Mesa>();
+    var empleados = ViewBag.Empleados as IEnumerable<Empleado> ?? new List<Empleado>();
+}
+
+<div class="container mt-4 mb-5">
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0"><i class="bi bi-pencil me-2"></i>Modificar Pedido #@Model.IdPedido</h4>
+        </div>
+        <div class="card-body p-4">
+            <form asp-action="Modificar" method="post">
+                <div asp-validation-summary="All" class="text-danger mb-3"></div>
+                <input type="hidden" asp-for="IdPedido" />
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label asp-for="IdMesa" class="form-label fw-bold">Mesa</label>
+                        <select asp-for="IdMesa" class="form-select" required>
+                            @foreach (var m in mesas)
+                            {
+                                <option value="@m.IdMesa">Mesa @m.Numero (@m.Capacidad personas)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="IdEmpleado" class="form-label fw-bold">Empleado</label>
+                        <select asp-for="IdEmpleado" class="form-select" required>
+                            @foreach (var e in empleados)
+                            {
+                                <option value="@e.IdEmpleado">@e.Apellido, @e.Nombre</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+
+                <p class="text-muted small">Los platos del pedido se modifican desde la pantalla de detalle.</p>
+
+                <div class="d-flex justify-content-between mt-4">
+                    <a asp-action="Detalle" asp-route-id="@Model.IdPedido" class="btn btn-outline-secondary">Volver</a>
+                    <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

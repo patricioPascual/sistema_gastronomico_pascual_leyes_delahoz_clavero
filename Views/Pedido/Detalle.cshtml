@@ -1,0 +1,155 @@
+@model sistema_gastronomico_pascual_leyes_delahoz_clavero.Models.Pedido
+@using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
+
+@{
+    ViewData["Title"] = "Pedido #" + Model.IdPedido;
+    var platos = (ViewBag.Platos as IEnumerable<Plato> ?? new List<Plato>()).Where(p => p.Estado);
+    bool abierto = Model.estado == Pedido.Estado.Abierto;
+}
+
+<div class="container mt-4 mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-receipt"></i> Pedido #@Model.IdPedido <partial name="_EstadoBadge" model="Model.estado" /></h2>
+        <div>
+            @if (abierto)
+            {
+                <a asp-action="Editar" asp-route-id="@Model.IdPedido" class="btn btn-outline-primary me-2">
+                    <i class="bi bi-pencil"></i> Modificar
+                </a>
+                <form asp-action="Baja" asp-route-id="@Model.IdPedido" method="post" class="d-inline"
+                      onsubmit="return confirm('¿Cancelar el pedido #@Model.IdPedido?');">
+                    <button type="submit" class="btn btn-outline-danger">
+                        <i class="bi bi-x-circle"></i> Cancelar Pedido
+                    </button>
+                </form>
+            }
+        </div>
+    </div>
+
+    <partial name="_Mensajes" />
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body row">
+            <div class="col-md-4"><strong>Fecha:</strong> @Model.FechaHora.ToString("dd/MM/yyyy HH:mm")</div>
+            <div class="col-md-4"><strong>Mesa:</strong> @Model.Mesa?.Numero</div>
+            <div class="col-md-4"><strong>Empleado:</strong> @Model.Empleado?.Apellido, @Model.Empleado?.Nombre</div>
+        </div>
+    </div>
+
+    <div class="table-responsive shadow-sm rounded">
+        <table class="table table-striped align-middle mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>Plato</th>
+                    <th style="width: 20%;">Cantidad</th>
+                    <th>Precio Unitario</th>
+                    <th>Subtotal</th>
+                    <th>Estado</th>
+                    @if (abierto)
+                    {
+                        <th class="text-center">Acción</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Detalles.Any())
+                {
+                    @foreach (var d in Model.Detalles)
+                    {
+                        <tr>
+                            <td>@d.Plato?.Nombre</td>
+                            <td>
+                                @if (abierto)
+                                {
+                                    <form asp-action="ModificarCantidad" method="post" class="d-flex gap-1">
+                                        <input type="hidden" name="idDetallePedido" value="@d.IdDetallePedido" />
+                                        <input type="hidden" name="idPedido" value="@Model.IdPedido" />
+                                        <input type="number" name="cantidad" value="@d.Cantidad" min="1" class="form-control form-control-sm" required />
+                                        <button type="submit" class="btn btn-sm btn-outline-primary" title="Guardar cantidad">
+                                            <i class="bi bi-check-lg"></i>
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    @d.Cantidad
+                                }
+                            </td>
+                            <td>$@d.PrecioUnitario.ToString("N2")</td>
+                            <td>$@d.Subtotal.ToString("N2")</td>
+                            <td>
+                                <span class="badge @(d.estado == DetallePedido.Estado.Despachado ? "bg-success" : "bg-warning text-dark")">
+                                    @(d.estado == DetallePedido.Estado.EnMarcha ? "En Marcha" : "Despachado")
+                                </span>
+                            </td>
+                            @if (abierto)
+                            {
+                                <td class="text-center">
+                                    <form asp-action="BajaDetalle" method="post" class="d-inline"
+                                          onsubmit="return confirm('¿Quitar este plato del pedido?');">
+                                        <input type="hidden" name="idDetallePedido" value="@d.IdDetallePedido" />
+                                        <input type="hidden" name="idPedido" value="@Model.IdPedido" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Quitar">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            }
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">
+                            <em>El pedido no tiene platos.</em>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="3" class="text-end fw-bold fs-5">Total:</td>
+                    <td colspan="3" class="fw-bold fs-5 text-success">$@Model.Total.ToString("N2")</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    @if (abierto)
+    {
+        <div class="card shadow-sm border-0 mt-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-plus-circle me-2"></i>Agregar plato</h5>
+            </div>
+            <div class="card-body">
+                <form asp-action="AgregarDetalle" method="post" class="row g-2 align-items-end">
+                    <input type="hidden" name="IdPedido" value="@Model.IdPedido" />
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Plato</label>
+                        <select name="IdPlato" class="form-select" required>
+                            <option value="">Seleccione un plato...</option>
+                            @foreach (var p in platos)
+                            {
+                                <option value="@p.IdPlato">@p.Nombre ($@p.PrecioVenta.ToString("N2"))</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Cantidad</label>
+                        <input type="number" name="Cantidad" value="1" min="1" class="form-control" required />
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="bi bi-plus-lg"></i> Agregar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    }
+
+    <div class="mt-4">
+        <a asp-action="Index" class="btn btn-outline-secondary">Volver</a>
+    </div>
+</div>

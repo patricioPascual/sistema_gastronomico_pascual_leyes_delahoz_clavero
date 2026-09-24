@@ -1,0 +1,145 @@
+@model sistema_gastronomico_pascual_leyes_delahoz_clavero.Models.Pedido
+@using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
+
+@{
+    ViewData["Title"] = "Nuevo Pedido";
+    var mesas = ViewBag.Mesas as IEnumerable<Mesa> ?? new List<Mesa>();
+    var empleados = ViewBag.Empleados as IEnumerable<Empleado> ?? new List<Empleado>();
+    var platos = (ViewBag.Platos as IEnumerable<Plato> ?? new List<Plato>()).Where(p => p.Estado);
+
+    // Datos para Vue: catálogo de platos y renglones ya cargados (si el POST volvió con errores)
+    var catalogoJson = System.Text.Json.JsonSerializer.Serialize(
+        platos.Select(p => new { id = p.IdPlato, nombre = p.Nombre, precio = p.PrecioVenta }));
+    var detallesJson = System.Text.Json.JsonSerializer.Serialize(
+        Model.Detalles.Select(d => new { idPlato = d.IdPlato, cantidad = d.Cantidad }));
+}
+
+<div class="container mt-4 mb-5" id="appPedido">
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0"><i class="bi bi-receipt me-2"></i>Nuevo Pedido</h4>
+        </div>
+        <div class="card-body p-4">
+            <partial name="_Mensajes" />
+
+            <form asp-action="Alta" method="post">
+                <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label asp-for="IdMesa" class="form-label fw-bold">Mesa</label>
+                        <select asp-for="IdMesa" class="form-select" required>
+                            <option value="">Seleccione una mesa...</option>
+                            @foreach (var m in mesas)
+                            {
+                                <option value="@m.IdMesa">Mesa @m.Numero (@m.Capacidad personas)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="IdEmpleado" class="form-label fw-bold">Empleado</label>
+                        <select asp-for="IdEmpleado" class="form-select" required>
+                            <option value="">Seleccione un empleado...</option>
+                            @foreach (var e in empleados)
+                            {
+                                <option value="@e.IdEmpleado">@e.Apellido, @e.Nombre</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="text-primary mb-0"><i class="bi bi-egg-fried me-2"></i>Platos</h5>
+                    <button type="button" class="btn btn-outline-success btn-sm" @@click="agregarRenglon">
+                        <i class="bi bi-plus-lg"></i> Agregar Plato
+                    </button>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Plato</th>
+                                <th style="width: 15%;">Cantidad</th>
+                                <th style="width: 20%;">Precio ($)</th>
+                                <th style="width: 20%;">Subtotal ($)</th>
+                                <th style="width: 10%;" class="text-center">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="(item, index) in detalles" :key="index">
+                                <td>
+                                    <select :name="`Detalles[${index}].IdPlato`" v-model.number="item.idPlato" class="form-select" required>
+                                        <option value="" disabled>Seleccione un plato...</option>
+                                        <option v-for="p in catalogoPlatos" :key="p.id" :value="p.id">{{ p.nombre }}</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <input type="number" min="1" :name="`Detalles[${index}].Cantidad`"
+                                           v-model.number="item.cantidad" class="form-control" required />
+                                </td>
+                                <!-- El precio es solo informativo: el servidor lo toma del plato -->
+                                <td>{{ precioDe(item).toFixed(2) }}</td>
+                                <td>{{ (precioDe(item) * (item.cantidad || 0)).toFixed(2) }}</td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-outline-danger btn-sm" @@click="eliminarRenglon(index)">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="3" class="text-end fw-bold fs-5">Total:</td>
+                                <td colspan="2" class="fw-bold fs-5 text-success">$ {{ total.toFixed(2) }}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <div class="d-flex justify-content-between mt-4">
+                    <a asp-action="Index" class="btn btn-outline-secondary">Volver</a>
+                    <button type="submit" class="btn btn-primary">Guardar Pedido</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    catalogoPlatos: @Html.Raw(catalogoJson),
+                    detalles: @Html.Raw(detallesJson)
+                };
+            },
+            computed: {
+                total() {
+                    return this.detalles.reduce((sum, item) => sum + this.precioDe(item) * (item.cantidad || 0), 0);
+                }
+            },
+            methods: {
+                precioDe(item) {
+                    const plato = this.catalogoPlatos.find(p => p.id === item.idPlato);
+                    return plato ? plato.precio : 0;
+                },
+                agregarRenglon() {
+                    this.detalles.push({ idPlato: '', cantidad: 1 });
+                },
+                eliminarRenglon(index) {
+                    this.detalles.splice(index, 1);
+                }
+            },
+            mounted() {
+                if (this.detalles.length === 0)
+                    this.agregarRenglon();
+            }
+        }).mount('#appPedido');
+    </script>
+}

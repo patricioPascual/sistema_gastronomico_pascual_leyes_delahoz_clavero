@@ -1,0 +1,11 @@
+@model sistema_gastronomico_pascual_leyes_delahoz_clavero.Models.Pedido.Estado
+
+@{
+    var clase = Model switch
+    {
+        sistema_gastronomico_pascual_leyes_delahoz_clavero.Models.Pedido.Estado.Abierto => "bg-primary",
+        sistema_gastronomico_pascual_leyes_delahoz_clavero.Models.Pedido.Estado.Pagado => "bg-success",
+        _ => "bg-secondary"
+    };
+}
+<span class="badge @clase">@Model</span>
