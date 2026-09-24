@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 24-09-2026 a las 21:27:53
+-- Tiempo de generación: 24-09-2026 a las 22:50:50
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -58,8 +58,18 @@ CREATE TABLE `compra` (
   `proveedor` varchar(100) DEFAULT NULL,
   `numero_comprobante` varchar(50) DEFAULT NULL,
   `total_compra` decimal(10,2) NOT NULL DEFAULT 0.00,
-  `id_empleado` int(11) NOT NULL
+  `id_empleado` int(11) NOT NULL,
+  `estado` tinyint(1) NOT NULL DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `compra`
+--
+
+INSERT INTO `compra` (`id_compra`, `fecha_hora`, `proveedor`, `numero_comprobante`, `total_compra`, `id_empleado`, `estado`) VALUES
+(1, '2026-09-24 17:39:00', 'Verduleria', 'FC 123123123', 360000.00, 1, 1),
+(2, '2026-09-24 17:43:00', 'Verduleria', 'FC 123123123', 360000.00, 1, 1),
+(3, '2026-09-24 17:43:00', 'Ditribuidora', '12312222', 500000.00, 1, 1);
 
 -- --------------------------------------------------------
 
@@ -75,6 +85,15 @@ CREATE TABLE `detalle_compra` (
   `precio_costo_unitario` decimal(10,2) NOT NULL,
   `subtotal` decimal(10,2) GENERATED ALWAYS AS (`cantidad_ingresada` * `precio_costo_unitario`) STORED
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `detalle_compra`
+--
+
+INSERT INTO `detalle_compra` (`id_detalle_compra`, `id_compra`, `id_producto`, `cantidad_ingresada`, `precio_costo_unitario`) VALUES
+(1, 1, 2, 1.000, 3600.00),
+(2, 2, 2, 1.000, 3600.00),
+(3, 3, 1, 5.000, 1000.00);
 
 -- --------------------------------------------------------
 
@@ -120,6 +139,13 @@ CREATE TABLE `empleado` (
   `fecha_ingreso` date NOT NULL,
   `activo` tinyint(1) DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `empleado`
+--
+
+INSERT INTO `empleado` (`id_empleado`, `legajo`, `nombre`, `apellido`, `dni`, `telefono`, `fecha_ingreso`, `activo`) VALUES
+(1, '1231231', 'Patricio ', 'Pascual', '32763964', '2663222111', '2026-09-24', 1);
 
 -- --------------------------------------------------------
 
@@ -183,8 +209,8 @@ CREATE TABLE `producto` (
 --
 
 INSERT INTO `producto` (`id_producto`, `nombre`, `cantidad_stock`, `unidad_medida`, `precio_costo`, `estado`) VALUES
-(1, 'Harina', 25.000, 'kg', 1000.00, 1),
-(2, 'Tomate', 10.000, 'kg', 3500.00, 1);
+(1, 'Harina', 30.000, 'kg', 1000.00, 1),
+(2, 'Tomate', 12.000, 'kg', 3600.00, 1);
 
 -- --------------------------------------------------------
 
@@ -329,13 +355,13 @@ ALTER TABLE `categoria`
 -- AUTO_INCREMENT de la tabla `compra`
 --
 ALTER TABLE `compra`
-  MODIFY `id_compra` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_compra` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT de la tabla `detalle_compra`
 --
 ALTER TABLE `detalle_compra`
-  MODIFY `id_detalle_compra` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_detalle_compra` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT de la tabla `detalle_pedido`
@@ -353,7 +379,7 @@ ALTER TABLE `detalle_receta`
 -- AUTO_INCREMENT de la tabla `empleado`
 --
 ALTER TABLE `empleado`
-  MODIFY `id_empleado` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_empleado` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT de la tabla `mesa`
