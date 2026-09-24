@@ -4,29 +4,29 @@ using System.ComponentModel.DataAnnotations;
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
 {
 
-    public class Pedido
-    {
+  public class Pedido
+  {
 
-        [Key]
-        public int IdPedido { get; set; }
+    [Key]
+    public int IdPedido { get; set; }
 
-        [Required(ErrorMessage = "La Fecha y Hora son Obligatorias")]
-        public DateTime FechaHora { get; set; }
+    public DateTime FechaHora { get; set; }
 
-        [Required]
-        public Boolean Estado { get; set; }
+    [Required]
+    public bool Estado { get; set; }
 
-        public int Total { get; set; }
+    public decimal Total { get; set; }
 
-        [Required]
-      //  [ForeignKey(nameof(Mesa))]
-        public int IdMesa { get; set; }
-      //  public Mesa? Mesa { get; set; }
-        
+    [Required]
+    //  [ForeignKey(nameof(Mesa))]
+    public int IdMesa { get; set; }
+    public Mesa? Mesa { get; set; }
 
-        [Required]
+
+    [Required]
     //    [ForeignKey(nameof(Empleado))]
-        public int IdEmpleado { get; set; }
-        public Empleado? Empleado { get; set; }
-    }
+    public int IdEmpleado { get; set; }
+    public Empleado? Empleado { get; set; }
+    public List<DetallePedido> Detalles { get; set; } = new();
+  }
 }

@@ -122,5 +122,59 @@ public IList<Producto> Buscar(string q)
     return lista;
 }
 
+    public IList<Producto> ObtenerLista(int pagNro =1, int tamPagina=10)
+        {   
+             IList<Producto> res = new List<Producto>();
+            int offset = (pagNro -1)* tamPagina;
+            using (var conn = new MySqlConnection(connectionString))
+            {
+                String sql=@" SELECT IdProducto,Nombre,  Cantidad_stock ,Unidad_medida,Precio_costo,Estado 
+                   FROM Producto 
+                   WHERE Estado=1 
+                   ORDER BY IdProducto
+                   LIMIT @tamPagina OFFSET @offset ";
+                   using (var cmd = new MySqlCommand(sql,conn))
+                {
+                    cmd.Parameters.AddWithValue("@tamPagina", tamPagina);
+                    cmd.Parameters.AddWithValue("@offset", offset);
+                    conn.Open();
+
+                    using (var reader=cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            Producto p = new Producto
+                            {   
+                        IdProducto=Convert.ToInt32(reader[nameof(Producto.IdProducto)]),
+                        Nombre=reader[nameof(Producto.Nombre)]?.ToString()??"",
+                        Cantidad_stock=reader.GetDecimal(nameof(Producto.Cantidad_stock)),
+                        Unidad_medida=reader.GetString(nameof(Producto.Unidad_medida)),
+                        Precio_costo=reader.GetDecimal(nameof(Producto.Precio_costo)),
+                        Estado=Convert.ToBoolean(reader[nameof(Producto.Estado)]),
+
+                            };
+                            res.Add(p);
+                        
+                        }
+                    }
+                }
+            }
+              return res;
+        }
+     public int ObtenerCantidad()
+        {
+            int total = 0;
+            using (var conn = new MySqlConnection(connectionString))
+            {
+                string sql = "SELECT COUNT(*) FROM Producto WHERE estado = 1;";
+                using (var cmd = new MySqlCommand(sql, conn))
+                {
+                    conn.Open();
+                    total = Convert.ToInt32(cmd.ExecuteScalar());
+                }
+            }
+            return total;
+        }
+
     }
 }
