@@ -1,0 +1,69 @@
+@model IEnumerable<sistema_gastronomico_pascual_leyes_delahoz_clavero.Models.Plato>
+
+@{
+    ViewData["Title"] = "Gestión de Platos";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-egg-fried"></i> Carta / Platos</h2>
+        <a asp-action="Crear" class="btn btn-success">
+            <i class="bi bi-plus-lg"></i> Agregar Nuevo Plato
+        </a>
+    </div>
+
+    <div class="table-responsive shadow-sm rounded">
+        <table class="table table-hover table-striped align-middle mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>#ID</th>
+                    <th>Nombre</th>
+                    <th>Categoría</th>
+                    <th>Precio Venta</th>
+                    <th>Estado</th>
+                    <th class="text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@item.IdPlato</td>
+                            <td><strong>@item.Nombre</strong></td>
+                            <td>@item.IdCategoria</td>
+                            <td>$@item.PrecioVenta.ToString("N2")</td>
+                            <td>
+                                @if (item.Estado)
+                                {
+                                    <span class="badge bg-success">Activo</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Inactivo</span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                <a asp-action="Editar" asp-route-id="@item.IdPlato" class="btn btn-sm btn-outline-primary me-1" title="Editar">
+                                    <i class="bi bi-pencil"></i> Modificar
+                                </a>
+                                <a asp-action="Eliminar" asp-route-id="@item.IdPlato" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">
+                            <em>No hay platos cargados en el sistema.</em>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

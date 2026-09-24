@@ -7,6 +7,7 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddScoped<RepositorioProducto>();
 builder.Services.AddScoped<IRepositorioDetalleReceta, RepositorioDetalleReceta>();
 builder.Services.AddScoped<IRepositorioPlato, RepositorioPlato>();
+builder.Services.AddScoped<RepositorioCategoria>();
 
 var app = builder.Build();
 

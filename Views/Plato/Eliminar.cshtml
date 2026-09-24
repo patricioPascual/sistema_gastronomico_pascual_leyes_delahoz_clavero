@@ -1,0 +1,25 @@
+@model sistema_gastronomico_pascual_leyes_delahoz_clavero.Models.Plato
+
+@{
+    ViewData["Title"] = "Eliminar Plato";
+}
+
+<div class="container mt-4">
+    <h2><i class="bi bi-exclamation-triangle text-danger"></i> Eliminar Plato</h2>
+    <p>¿Confirmás que querés dar de baja el siguiente plato?</p>
+
+    <dl class="row">
+        <dt class="col-sm-3">Nombre</dt>
+        <dd class="col-sm-9">@Model.Nombre</dd>
+        <dt class="col-sm-3">Precio de venta</dt>
+        <dd class="col-sm-9">$@Model.PrecioVenta.ToString("N2")</dd>
+    </dl>
+
+    <form asp-action="Eliminar" method="post">
+        <input type="hidden" asp-for="IdPlato" />
+        <button type="submit" class="btn btn-danger">
+            <i class="bi bi-trash"></i> Confirmar baja
+        </button>
+        <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>

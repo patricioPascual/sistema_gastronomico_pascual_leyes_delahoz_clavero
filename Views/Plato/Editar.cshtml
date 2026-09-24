@@ -1,0 +1,9 @@
+@model sistema_gastronomico_pascual_leyes_delahoz_clavero.Models.PlatoFormViewModel
+
+@{
+    ViewData["Title"] = "Editar Plato";
+    ViewData["Titulo"] = "Editar Plato";
+    ViewData["FormAction"] = "Editar";
+}
+
+@await Html.PartialAsync("_PlatoForm", Model)

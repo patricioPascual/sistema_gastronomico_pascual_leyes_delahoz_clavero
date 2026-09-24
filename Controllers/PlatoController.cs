@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -6,97 +7,71 @@ using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models;
 
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 {
-    public class PlatoController : ControllerBase
+    public class PlatoController : Controller
     {
         private readonly IRepositorioPlato repositorioPlato;
         private readonly IRepositorioDetalleReceta repositorioDetalleReceta;
+        private readonly RepositorioProducto repositorioProducto;
+        private readonly RepositorioCategoria repositorioCategoria;
 
-        public PlatoController(IRepositorioPlato repositorioPlato, IRepositorioDetalleReceta repositorioDetalleReceta)
+        public PlatoController(
+            IRepositorioPlato repositorioPlato,
+            IRepositorioDetalleReceta repositorioDetalleReceta,
+            RepositorioProducto repositorioProducto,
+            RepositorioCategoria repositorioCategoria)
         {
             this.repositorioPlato = repositorioPlato;
             this.repositorioDetalleReceta = repositorioDetalleReceta;
+            this.repositorioProducto = repositorioProducto;
+            this.repositorioCategoria = repositorioCategoria;
         }
 
-        [HttpGet]
-        public ActionResult<IList<Plato>> ObtenerTodos()
+        public IActionResult Index()
         {
-            return Ok(repositorioPlato.ObtenerTodos());
+            var platos = repositorioPlato.ObtenerTodos();
+            return View(platos);
         }
 
-        [HttpGet("categoria/{idCategoria}")]
-        public ActionResult<IList<Plato>> ObtenerPorCategoria(int idCategoria)
+        public IActionResult Crear()
         {
-            return Ok(repositorioPlato.ObtenerPorCategoria(idCategoria));
-        }
-
-        [HttpGet]
-        public ActionResult<IList<Plato>> Buscar([FromQuery] string q)
-        {
-            return Ok(repositorioPlato.Buscar(q ?? ""));
-        }
-
-        [HttpGet]
-        public ActionResult<Plato> ObtenerPorId(int id)
-        {
-            var plato = repositorioPlato.ObtenerPorId(id);
-            if (plato == null)
+            var vm = new PlatoFormViewModel
             {
-                return NotFound();
-            }
-
-            return Ok(plato);
-        }
-
-        [HttpGet]
-        public ActionResult<IList<DetalleReceta>> ObtenerReceta(int id)
-        {
-            var plato = repositorioPlato.ObtenerPorId(id);
-            if (plato == null)
-            {
-                return NotFound();
-            }
-
-            return Ok(repositorioDetalleReceta.ObtenerPorPlato(id));
+                ProductosDisponibles = repositorioProducto.Buscar("").ToList(),
+                Categorias = repositorioCategoria.ObtenerTodos().ToList()
+            };
+            return View(vm);
         }
 
         [HttpPost]
-        public ActionResult<Plato> Alta([FromBody] Plato plato)
+        [ValidateAntiForgeryToken]
+        public IActionResult Crear(PlatoFormViewModel vm)
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState);
+                vm.ProductosDisponibles = repositorioProducto.Buscar("").ToList();
+                vm.Categorias = repositorioCategoria.ObtenerTodos().ToList();
+                return View(vm);
             }
 
-            var id = repositorioPlato.Alta(plato);
-            if (id <= 0)
-            {
-                return StatusCode(500, "No se pudo dar de alta el plato.");
-            }
+            vm.Plato.Estado = true;
+            var idPlato = repositorioPlato.Alta(vm.Plato);
 
-            plato.IdPlato = id;
-            return CreatedAtAction(nameof(ObtenerPorId), new { id = plato.IdPlato }, plato);
+            var detalles = vm.Receta
+                .Where(r => r.IdProducto > 0 && r.CantidadRequerida > 0)
+                .Select(r => new DetalleReceta
+                {
+                    IdPlato = idPlato,
+                    IdProducto = r.IdProducto,
+                    CantidadRequerida = r.CantidadRequerida
+                })
+                .ToList();
+
+            repositorioDetalleReceta.GuardarReceta(idPlato, detalles);
+
+            return RedirectToAction(nameof(Index));
         }
 
-        [HttpPost]
-        public IActionResult Modificar(int id, [FromBody] Plato plato)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            plato.IdPlato = id;
-            var filasAfectadas = repositorioPlato.Modificar(plato);
-            if (filasAfectadas <= 0)
-            {
-                return NotFound();
-            }
-
-            return NoContent();
-        }
-
-        [HttpPost]
-        public IActionResult GuardarReceta(int id, List<DetalleReceta> detalles)
+        public IActionResult Editar(int id)
         {
             var plato = repositorioPlato.ObtenerPorId(id);
             if (plato == null)
@@ -104,25 +79,69 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
                 return NotFound();
             }
 
-            foreach (var detalle in detalles)
+            var receta = repositorioDetalleReceta.ObtenerPorPlato(id);
+
+            var vm = new PlatoFormViewModel
             {
-                detalle.IdPlato = id;
+                Plato = plato,
+                Receta = receta.Select(d => new DetalleRecetaFormItem
+                {
+                    IdDetalleReceta = d.IdDetalleReceta,
+                    IdProducto = d.IdProducto,
+                    CantidadRequerida = d.CantidadRequerida
+                }).ToList(),
+                ProductosDisponibles = repositorioProducto.Buscar("").ToList(),
+                Categorias = repositorioCategoria.ObtenerTodos().ToList()
+            };
+
+            return View(vm);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Editar(int id, PlatoFormViewModel vm)
+        {
+            if (!ModelState.IsValid)
+            {
+                vm.ProductosDisponibles = repositorioProducto.Buscar("").ToList();
+                vm.Categorias = repositorioCategoria.ObtenerTodos().ToList();
+                return View(vm);
             }
+
+            vm.Plato.IdPlato = id;
+            repositorioPlato.Modificar(vm.Plato);
+
+            var detalles = vm.Receta
+                .Where(r => r.IdProducto > 0 && r.CantidadRequerida > 0)
+                .Select(r => new DetalleReceta
+                {
+                    IdPlato = id,
+                    IdProducto = r.IdProducto,
+                    CantidadRequerida = r.CantidadRequerida
+                })
+                .ToList();
 
             repositorioDetalleReceta.GuardarReceta(id, detalles);
-            return NoContent();
+
+            return RedirectToAction(nameof(Index));
         }
 
-        [HttpPost]
-        public IActionResult Baja(int id)
+        public IActionResult Eliminar(int id)
         {
-            var filasAfectadas = repositorioPlato.Baja(id);
-            if (filasAfectadas <= 0)
+            var plato = repositorioPlato.ObtenerPorId(id);
+            if (plato == null)
             {
                 return NotFound();
             }
+            return View(plato);
+        }
 
-            return NoContent();
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult EliminarConfirmado(int id)
+        {
+            repositorioPlato.Baja(id);
+            return RedirectToAction(nameof(Index));
         }
     }
 }
