@@ -5,6 +5,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 builder.Services.AddScoped<RepositorioProducto>();
+builder.Services.AddScoped<IRepositorioDetalleReceta, RepositorioDetalleReceta>();
+builder.Services.AddScoped<IRepositorioPlato, RepositorioPlato>();
 
 var app = builder.Build();
 
