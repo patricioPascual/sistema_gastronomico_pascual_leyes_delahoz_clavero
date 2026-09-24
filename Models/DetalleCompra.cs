@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
 {
@@ -15,6 +16,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
         public int IdCompra { get; set; }
 
         [ForeignKey(nameof(IdCompra))]
+
         public Compra? Compra { get; set; }
 
         [Required]
@@ -22,6 +24,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
         public int IdProducto { get; set; }
 
         [ForeignKey(nameof(IdProducto))]
+    
         public Producto? Producto { get; set; }
 
         [Required]
