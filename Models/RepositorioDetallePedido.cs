@@ -28,7 +28,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
                     cmd.Parameters.AddWithValue("@idplato", d.IdPlato);
                     cmd.Parameters.AddWithValue("@c", d.Cantidad);
                     cmd.Parameters.AddWithValue("@precio", d.PrecioUnitario);
-                    cmd.Parameters.AddWithValue("@es", d.Estado);
+                    cmd.Parameters.AddWithValue("@es", d.estado);
 
                     conn.Open();
                     res = Convert.ToInt32(cmd.ExecuteScalar());

@@ -32,9 +32,9 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
             }
 
             string sqlDetalle = @"INSERT INTO detalle_pedido (id_pedido, id_plato, cantidad, precio_unitario, estado)
-                          SELECT @idPedido, id_plato, @cantidad, precio, 1
+                          SELECT @idPedido, id_plato, @cantidad, precio_venta, 1
                           FROM plato
-                          WHERE id_plato = @idPlato AND estado = 1;";
+                          WHERE id_plato = @idPlato AND activo = 1;";
 
             foreach (var d in p.Detalles)
             {
