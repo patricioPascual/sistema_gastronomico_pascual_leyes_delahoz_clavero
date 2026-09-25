@@ -7,11 +7,13 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
     {
         private readonly RepositorioCompra _repositorioCompra;
         private readonly RepositorioProducto _repositorioProducto;
+        private readonly RepositorioProveedor _repositorioProveedor;
 
-        public CompraController(RepositorioCompra repositorioCompra , RepositorioProducto repositorioProducto)
+        public CompraController(RepositorioCompra repositorioCompra , RepositorioProducto repositorioProducto,RepositorioProveedor repositorioProveedor)
         {
             _repositorioCompra = repositorioCompra;
             _repositorioProducto =  repositorioProducto;
+            _repositorioProveedor= repositorioProveedor;
         }
 
      
@@ -45,6 +47,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
         {
             // Se puede cargar la lista de productos disponibles para que el usuario los seleccione en el combo del formulario
             ViewBag.Productos = _repositorioProducto.ObtenerLista(1, 100); 
+            ViewBag.Proveedores = _repositorioProveedor.ObtenerTodos();
             return View();
         }
 
@@ -84,6 +87,7 @@ public IActionResult Alta(Compra compra)
         TempData["Error"] = "Ocurrió un error al procesar la compra: " + ex.Message;
     }
     ViewBag.Productos = _repositorioProducto.ObtenerLista(1, 100);
+    ViewBag.Proveedores = _repositorioProveedor.ObtenerTodos();
     return View(compra);
 }
     }

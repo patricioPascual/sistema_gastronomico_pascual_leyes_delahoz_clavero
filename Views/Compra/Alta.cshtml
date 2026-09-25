@@ -2,7 +2,8 @@
 
 @{
     ViewData["Title"] = "Registrar Compra";
-    var productos = ViewBag.Productos as List<sistema_gastronomico_pascual_leyes_delahoz_clavero.Models.Producto> ?? new List<sistema_gastronomico_pascual_leyes_delahoz_clavero.Models.Producto>();
+  var productos = ViewBag.Productos as List<sistema_gastronomico_pascual_leyes_delahoz_clavero.Models.Producto> ?? new List<sistema_gastronomico_pascual_leyes_delahoz_clavero.Models.Producto>();
+    var proveedores = ViewBag.Proveedores as List<sistema_gastronomico_pascual_leyes_delahoz_clavero.Models.Proveedor> ?? new List<sistema_gastronomico_pascual_leyes_delahoz_clavero.Models.Proveedor>(); 
 }
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" />
@@ -21,7 +22,13 @@
                 <div class="row g-3 mb-4">
                     <div class="col-md-4">
                         <label asp-for="Proveedor" class="form-label fw-bold">Proveedor</label>
-                        <input asp-for="Proveedor" class="form-control" required placeholder="Ej: Distribuidora Central" />
+                       <select asp-for="IdProveedor" class="form-select " required>
+                            <option value="" disabled selected>-- Seleccione un Proveedor --</option>
+                            @foreach (var p in proveedores)
+                            {
+                                <option value="@p.IdProveedor">@p.Nombre</option>
+                            }
+                        </select>
                     </div>
                     <div class="col-md-4">
                         <label asp-for="NumeroComprobante" class="form-label fw-bold">N° Comprobante</label>
@@ -105,10 +112,8 @@
 </div>
 
 @section Scripts {
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <!-- CDN de Vue 3 (Global Build) -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <script src="~/js/buscarTexto.js" asp-append-version="true"></script>
 
     <script>
         const { createApp } = Vue;
@@ -116,14 +121,6 @@
         const app = createApp({
             data() {
                 return {
-                    // Catálogo proveniente del ViewBag de C#
-                    catalogoProductos: [
-                        @foreach (var p in productos)
-                        {
-                            @:{ id: @p.IdProducto, nombre: "@p.Nombre", unidad: "@p.Unidad_medida", costo: @p.Precio_costo.ToString(System.Globalization.CultureInfo.InvariantCulture) },
-                        }
-                    ],
-                    // Array reactivo para los renglones
                     detalles: []
                 };
             },
@@ -140,34 +137,33 @@
                 },
                 eliminarRenglon(index) {
                     this.detalles.splice(index, 1);
-                },
-                alCambiarProducto(item) {
-                    const prod = this.catalogoProductos.find(p => p.id === item.idProducto);
-                    if (prod) {
-                        item.precioCosto = prod.costo;
-                    }
                 }
             },
             mounted() {
-                this.agregarRenglon(); // Agrega la primera fila al cargar
+                this.agregarRenglon();
             }
         });
-                 //SELECT DE PRODUCTS
+
+        // DIRECTIVA PERSONALIZADA SELECT2
         app.directive('select2', {
             mounted(el, binding) {
                 const item = binding.value;
-                const $el =$(el);
+                const $el = $(el);
 
+                // Llama a la función global definida en site.js
                 inicializarSelect2Ajax($el);
 
+                // Cuando se selecciona un producto desde la búsqueda AJAX
                 $el.on('select2:select', function (e) {
                     const data = e.params.data;
                     item.idProducto = data.id;
-                    if (data.precioCosto) {
-                        item.precioCosto = data.precioCosto;
+
+                    if (data.precioCosto !== undefined && data.precioCosto !== null) {
+                        item.precioCosto = parseFloat(data.precioCosto);
                     }
                 });
 
+                // Si se borra la selección
                 $el.on('select2:clear', function () {
                     item.idProducto = '';
                     item.precioCosto = 0;

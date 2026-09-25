@@ -18,7 +18,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
         {
             int idCreado = 0;
             string query = @"INSERT INTO proveedor (nombre, cuit, telefono, direccion, estado)
-                             VALUES (@nombre, @cuit, @telefono, @email, @direccion, 1);";
+                             VALUES (@nombre, @cuit, @telefono, @direccion, 1);";
 
             using (var conn = new MySqlConnection(connectionString))
             {

@@ -90,12 +90,13 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
                 return Json(new List<object>());
             }
 
-            var productos = repoProducto.BuscarPorTexto(q)
+            var productos = repoProducto.Buscar(q)
                 .Select(p => new
                 {
                     id = p.IdProducto,
                     texto = p.Nombre,
-                    unidad = p.Unidad_medida
+                    unidad = p.Unidad_medida,
+                    precioCosto=p.Precio_costo
                 });
 
             return Json(productos);
