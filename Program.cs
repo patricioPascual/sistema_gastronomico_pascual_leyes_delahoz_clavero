@@ -13,6 +13,7 @@ builder.Services.AddScoped<RepositorioMesa>();
 builder.Services.AddScoped<RepositorioEmpleado>();
 builder.Services.AddScoped<RepositorioPedido>();
 builder.Services.AddScoped<RepositorioDetallePedido>();
+builder.Services.AddScoped<RepositorioProveedor>();
 
 var app = builder.Build();
 

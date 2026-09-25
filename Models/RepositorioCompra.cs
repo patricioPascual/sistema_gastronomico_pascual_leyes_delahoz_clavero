@@ -11,7 +11,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
         {
         }
 
-     public int Alta(Compra compra)
+    public int Alta(Compra compra)
 {
     int idCompraCreada = 0;
 
@@ -22,25 +22,25 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
         {
             try
             {
-                // 1. Insertar Cabecera de Compra
-                string queryCompra = @"INSERT INTO compra (fecha_hora, proveedor, numero_comprobante, total_compra, id_empleado, estado) 
-                                       VALUES (@fecha_hora, @proveedor, @numero_comprobante, @total_compra, @id_empleado, 1);";
+                // se inserta en compra
+                string queryCompra = @"INSERT INTO compra (fecha_hora, id_proveedor, numero_comprobante, total_compra, id_empleado, estado) 
+                                       VALUES (@fecha_hora, @id_proveedor, @numero_comprobante, @total_compra, @id_empleado, 1);";
 
                 using (var cmd = new MySqlCommand(queryCompra, connection, transaction))
                 {
                     cmd.Parameters.AddWithValue("@fecha_hora", compra.FechaHora == default ? DateTime.Now : compra.FechaHora);
-                    cmd.Parameters.AddWithValue("@proveedor", (object?)compra.Proveedor ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@id_proveedor", compra.IdProveedor);
                     cmd.Parameters.AddWithValue("@numero_comprobante", (object?)compra.NumeroComprobante ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@total_compra", compra.TotalCompra);
                     cmd.Parameters.AddWithValue("@id_empleado", compra.IdEmpleado);
 
                     cmd.ExecuteNonQuery();
                     
-                    // Obtener el ID generado por el AUTO_INCREMENT de MySQL
+                    // Obtener el ID generado por AUTO_INCREMENT
                     idCompraCreada = Convert.ToInt32(cmd.LastInsertedId);
                 }
 
-                // 2. Insertar Detalles y Actualizar Stock en Producto
+                // se inserta en el detalle con el idCompraCreada 
                 string queryDetalle = @"INSERT INTO detalle_compra (id_compra, id_producto, cantidad_ingresada, precio_costo_unitario) 
                                         VALUES (@id_compra, @id_producto, @cantidad_ingresada, @precio_costo_unitario);";
 
@@ -51,7 +51,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
 
                 foreach (var detalle in compra.Detalles)
                 {
-                    // Insertar renglón del detalle
+                    
                     using (var cmdDetalle = new MySqlCommand(queryDetalle, connection, transaction))
                     {
                         cmdDetalle.Parameters.AddWithValue("@id_compra", idCompraCreada);
@@ -60,8 +60,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
                         cmdDetalle.Parameters.AddWithValue("@precio_costo_unitario", detalle.PrecioCostoUnitario);
                         cmdDetalle.ExecuteNonQuery();
                     }
-
-                    // Sumar al stock e informar el precio de costo más reciente
+                  //Sumo al stock y pongo precio reciente
                     using (var cmdStock = new MySqlCommand(queryUpdateStock, connection, transaction))
                     {
                         cmdStock.Parameters.AddWithValue("@cantidad_ingresada", detalle.CantidadIngresada);
@@ -82,8 +81,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
     }
 
     return idCompraCreada;
-}
-      public bool BajaLogica(int idCompra)
+}      public bool BajaLogica(int idCompra)
         {
             int filasAfectadas = 0;
             string query = @"UPDATE compra SET estado = 0 WHERE id_compra = @id_compra;";
@@ -106,7 +104,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
         {
             int filasAfectadas = 0;
             string query = @"UPDATE compra 
-                             SET proveedor = @proveedor, 
+                             SET  id_proveedor = @proveedor, 
                                  numero_comprobante = @numero_comprobante, 
                                  total_compra = @total_compra, 
                                  id_empleado = @id_empleado
@@ -117,7 +115,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
                 using (var cmd = new MySqlCommand(query, connection))
                 {
                     cmd.Parameters.AddWithValue("@id_compra", compra.IdCompra);
-                    cmd.Parameters.AddWithValue("@proveedor", (object?)compra.Proveedor ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@proveedor", compra.IdProveedor);
                     cmd.Parameters.AddWithValue("@numero_comprobante", (object?)compra.NumeroComprobante ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@total_compra", compra.TotalCompra);
                     cmd.Parameters.AddWithValue("@id_empleado", compra.IdEmpleado);
@@ -130,87 +128,93 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
             return filasAfectadas > 0;
         }
 
-        public Compra? ObtenerPorId(int idCompra)
+       public Compra? ObtenerPorId(int idCompra)
+{
+    Compra? compra = null;
+
+    string queryCabecera = @"SELECT c.id_compra, c.fecha_hora, c.id_proveedor, c.numero_comprobante, c.total_compra, c.id_empleado,
+                                    p.nombre AS nombre_proveedor,
+                                    e.nombre AS nombre_empleado, e.apellido AS apellido_empleado
+                             FROM compra c
+                             INNER JOIN proveedor p ON c.id_proveedor = p.id_proveedor
+                             INNER JOIN empleado e ON c.id_empleado = e.id_empleado
+                             WHERE c.id_compra = @id_compra AND c.estado = 1;";
+
+    string queryDetalles = @"SELECT dc.id_detalle_compra, dc.id_compra, dc.id_producto, dc.cantidad_ingresada, dc.precio_costo_unitario,
+                                    p.nombre AS nombre_producto, p.unidad_medida
+                             FROM detalle_compra dc
+                             INNER JOIN producto p ON dc.id_producto = p.id_producto
+                             WHERE dc.id_compra = @id_compra;";
+
+    using (var connection = new MySqlConnection(connectionString))
+    {
+        connection.Open();
+
+        // COMPRA
+        using (var cmd = new MySqlCommand(queryCabecera, connection))
         {
-            Compra? compra = null;
-
-            string queryCabecera = @"SELECT c.id_compra, c.fecha_hora, c.proveedor, c.numero_comprobante, c.total_compra, c.id_empleado,
-                                            e.nombre AS nombre_empleado, e.apellido AS apellido_empleado
-                                     FROM compra c
-                                     INNER JOIN empleado e ON c.id_empleado = e.id_empleado
-                                     WHERE c.id_compra = @id_compra AND c.estado = 1;";
-
-            string queryDetalles = @"SELECT dc.id_detalle_compra, dc.id_compra, dc.id_producto, dc.cantidad_ingresada, dc.precio_costo_unitario,
-                                            p.nombre AS nombre_producto, p.unidad_medida
-                                     FROM detalle_compra dc
-                                     INNER JOIN producto p ON dc.id_producto = p.id_producto
-                                     WHERE dc.id_compra = @id_compra;";
-
-            using (var connection = new MySqlConnection(connectionString))
+            cmd.Parameters.AddWithValue("@id_compra", idCompra);
+            using (var reader = cmd.ExecuteReader())
             {
-                connection.Open();
-
-                // 1. Leer Cabecera
-                using (var cmd = new MySqlCommand(queryCabecera, connection))
+                if (reader.Read())
                 {
-                    cmd.Parameters.AddWithValue("@id_compra", idCompra);
-                    using (var reader = cmd.ExecuteReader())
+                    compra = new Compra
                     {
-                        if (reader.Read())
+                        IdCompra = reader.GetInt32("id_compra"),
+                        FechaHora = reader.GetDateTime("fecha_hora"),
+                        IdProveedor = reader.GetInt32("id_proveedor"),
+                        Proveedor = new Proveedor
                         {
-                            compra = new Compra
-                            {
-                                IdCompra = reader.GetInt32("id_compra"),
-                                FechaHora = reader.GetDateTime("fecha_hora"),
-                                Proveedor = reader.IsDBNull(reader.GetOrdinal("proveedor")) ? null : reader.GetString("proveedor"),
-                                NumeroComprobante = reader.IsDBNull(reader.GetOrdinal("numero_comprobante")) ? null : reader.GetString("numero_comprobante"),
-                                TotalCompra = reader.GetDecimal("total_compra"),
-                                IdEmpleado = reader.GetInt32("id_empleado"),
-                                Empleado = new Empleado
-                                {
-                                    IdEmpleado = reader.GetInt32("id_empleado"),
-                                    Nombre = reader.GetString("nombre_empleado"),
-                                    Apellido = reader.GetString("apellido_empleado")
-                                },
-                                Detalles = new List<DetalleCompra>()
-                            };
-                        }
-                    }
+                            IdProveedor = reader.GetInt32("id_proveedor"),
+                            Nombre = reader.GetString("nombre_proveedor")
+                        },
+                        NumeroComprobante = reader.IsDBNull(reader.GetOrdinal("numero_comprobante")) ? null : reader.GetString("numero_comprobante"),
+                        TotalCompra = reader.GetDecimal("total_compra"),
+                        IdEmpleado = reader.GetInt32("id_empleado"),
+                        Empleado = new Empleado
+                        {
+                            IdEmpleado = reader.GetInt32("id_empleado"),
+                            Nombre = reader.GetString("nombre_empleado"),
+                            Apellido = reader.GetString("apellido_empleado")
+                        },
+                        Detalles = new List<DetalleCompra>()
+                    };
                 }
+            }
+        }
 
-                // 2. Leer Detalles si la compra existe
-                if (compra != null)
+        // DETALLES 
+        if (compra != null)
+        {
+            using (var cmdDet = new MySqlCommand(queryDetalles, connection))
+            {
+                cmdDet.Parameters.AddWithValue("@id_compra", idCompra);
+                using (var reader = cmdDet.ExecuteReader())
                 {
-                    using (var cmdDet = new MySqlCommand(queryDetalles, connection))
+                    while (reader.Read())
                     {
-                        cmdDet.Parameters.AddWithValue("@id_compra", idCompra);
-                        using (var reader = cmdDet.ExecuteReader())
+                        compra.Detalles.Add(new DetalleCompra
                         {
-                            while (reader.Read())
+                            IdDetalleCompra = reader.GetInt32("id_detalle_compra"),
+                            IdCompra = reader.GetInt32("id_compra"),
+                            IdProducto = reader.GetInt32("id_producto"),
+                            CantidadIngresada = reader.GetDecimal("cantidad_ingresada"),
+                            PrecioCostoUnitario = reader.GetDecimal("precio_costo_unitario"),
+                            Producto = new Producto
                             {
-                                compra.Detalles.Add(new DetalleCompra
-                                {
-                                    IdDetalleCompra = reader.GetInt32("id_detalle_compra"),
-                                    IdCompra = reader.GetInt32("id_compra"),
-                                    IdProducto = reader.GetInt32("id_producto"),
-                                    CantidadIngresada = reader.GetDecimal("cantidad_ingresada"),
-                                    PrecioCostoUnitario = reader.GetDecimal("precio_costo_unitario"),
-                                    Producto = new Producto
-                                    {
-                                        IdProducto = reader.GetInt32("id_producto"),
-                                        Nombre = reader.GetString("nombre_producto"),
-                                        Unidad_medida = reader.GetString("unidad_medida")
-                                    }
-                                });
+                                IdProducto = reader.GetInt32("id_producto"),
+                                Nombre = reader.GetString("nombre_producto"),
+                                Unidad_medida = reader.GetString("unidad_medida")
                             }
-                        }
+                        });
                     }
                 }
             }
-
-            return compra;
         }
+    }
 
+    return compra;
+}
 public List<Compra> ObtenerLista(int pagNro, int tamPagina)
 {
     var lista = new List<Compra>();
@@ -218,10 +222,12 @@ public List<Compra> ObtenerLista(int pagNro, int tamPagina)
 
     using (var conn = new MySqlConnection(connectionString))
     {
-        string sql = @"SELECT c.id_compra, c.fecha_hora, c.proveedor, c.numero_comprobante, 
+        string sql = @"SELECT c.id_compra, c.fecha_hora, c.id_proveedor, c.numero_comprobante, 
                               c.total_compra, c.id_empleado, c.estado,
+                              p.nombre AS nombre_proveedor,
                               e.nombre AS nombre_empleado, e.apellido AS apellido_empleado
                        FROM compra c
+                       INNER JOIN proveedor p ON c.id_proveedor = p.id_proveedor
                        INNER JOIN empleado e ON c.id_empleado = e.id_empleado
                        WHERE c.estado = 1
                        ORDER BY c.fecha_hora DESC
@@ -241,7 +247,12 @@ public List<Compra> ObtenerLista(int pagNro, int tamPagina)
                     {
                         IdCompra = Convert.ToInt32(reader["id_compra"]),
                         FechaHora = Convert.ToDateTime(reader["fecha_hora"]),
-                        Proveedor = reader["proveedor"] != DBNull.Value ? reader["proveedor"].ToString() : null,
+                        IdProveedor = Convert.ToInt32(reader["id_proveedor"]),
+                        Proveedor = new Proveedor
+                        {
+                            IdProveedor = Convert.ToInt32(reader["id_proveedor"]),
+                            Nombre = reader["nombre_proveedor"].ToString()!
+                        },
                         NumeroComprobante = reader["numero_comprobante"] != DBNull.Value ? reader["numero_comprobante"].ToString() : null,
                         TotalCompra = Convert.ToDecimal(reader["total_compra"]),
                         IdEmpleado = Convert.ToInt32(reader["id_empleado"]),
@@ -259,7 +270,6 @@ public List<Compra> ObtenerLista(int pagNro, int tamPagina)
     }
     return lista;
 }
-
     }
 }
     

@@ -1,0 +1,68 @@
+@model sistema_gastronomico_pascual_leyes_delahoz_clavero.Models.Proveedor
+
+@{
+    ViewData["Title"] = "Registrar Proveedor";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-7">
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-header bg-dark text-white p-3">
+                    <h4 class="mb-0 fs-5"><i class="bi bi-truck me-2"></i>Registrar Nuevo Proveedor</h4>
+                </div>
+                <div class="card-body p-4">
+
+                    <form asp-action="Alta" method="post">
+                        @Html.AntiForgeryToken()
+
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger p-2" role="alert"></div>
+
+                        
+                        <div class="mb-3">
+                            <label asp-for="Nombre" class="form-label fw-bold">Razón Social / Nombre <span class="text-danger">*</span></label>
+                            <input asp-for="Nombre" class="form-control" placeholder="Ej: Distribuidora Gastronómica Cuyo S.A." />
+                            <span asp-validation-for="Nombre" class="text-danger small"></span>
+                        </div>
+
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Cuit" class="form-label fw-bold">CUIT <span class="text-danger">*</span></label>
+                                <input asp-for="Cuit" class="form-control" placeholder="XX-XXXXXXXX-X" />
+                                <span asp-validation-for="Cuit" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Telefono" class="form-label fw-bold">Teléfono <span class="text-danger">*</span></label>
+                                <input asp-for="Telefono" class="form-control" placeholder="Ej: +54 266 4123456" />
+                                <span asp-validation-for="Telefono" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                    
+                        <div class="mb-3">
+                            <label asp-for="Direccion" class="form-label fw-bold">Dirección</label>
+                            <input asp-for="Direccion" class="form-control" placeholder="Ej: Av. del Sol 1234, Merlo" />
+                            <span asp-validation-for="Direccion" class="text-danger small"></span>
+                        </div>
+
+
+                        <div class="d-flex justify-content-between align-items-center mt-4 pt-2 border-top">
+                            <a asp-action="Index" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i> Volver al Listado
+                            </a>
+                            <button type="submit" class="btn btn-success px-4">
+                                <i class="bi bi-check-circle me-1"></i> Guardar Proveedor
+                            </button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
