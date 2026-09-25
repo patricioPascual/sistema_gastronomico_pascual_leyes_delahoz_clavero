@@ -68,7 +68,9 @@ public IActionResult Alta(Compra compra)
         }
 
         if (ModelState.IsValid)
-        {
+        {   
+            // Recalcular TotalCompra desde los detalles en C# antes de guardar
+            compra.TotalCompra = compra.Detalles?.Sum(d => d.CantidadIngresada * d.PrecioCostoUnitario) ?? 0;
             int idCreado = _repositorioCompra.Alta(compra);
 
             if (idCreado > 0)
@@ -89,6 +91,40 @@ public IActionResult Alta(Compra compra)
     ViewBag.Productos = _repositorioProducto.ObtenerLista(1, 100);
     ViewBag.Proveedores = _repositorioProveedor.ObtenerTodos();
     return View(compra);
+}
+
+
+   [HttpPost]
+[ValidateAntiForgeryToken]
+public IActionResult Eliminar(int id)
+{
+    try
+    {
+        
+        var compra = _repositorioCompra.ObtenerPorId(id);
+        if (compra == null)
+        {
+            TempData["Error"] = "La compra que intenta eliminar no existe.";
+            return RedirectToAction(nameof(Index));
+        }
+        
+        bool exito = _repositorioCompra.Baja(id);
+
+        if (exito)
+        {
+            TempData["Exito"] = $"La compra #{id} fue anulada exitosamente y se descontó el stock de los productos.";
+        }
+        else
+        {
+            TempData["Error"] = $"No se pudo anular la compra #{id}.";
+        }
+    }
+    catch (Exception ex)
+    {
+        TempData["Error"] = "Error al intentar anular la compra: " + ex.Message;
+    }
+
+    return RedirectToAction(nameof(Index));
 }
     }
 }

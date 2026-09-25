@@ -29,6 +29,8 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
         [ForeignKey(nameof(IdEmpleado))]
         public Empleado? Empleado { get; set; }
 
+        public bool Estado {get;set;}
+
         // Propiedad de navegación para acceder a los insumos comprados
         public List<DetalleCompra> Detalles { get; set; } = new();
     }

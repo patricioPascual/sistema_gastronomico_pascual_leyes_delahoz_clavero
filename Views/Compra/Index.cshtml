@@ -1,0 +1,115 @@
+@model IEnumerable<sistema_gastronomico_pascual_leyes_delahoz_clavero.Models.Compra>
+
+@{
+    ViewData["Title"] = "Compras";
+    int paginaActual = ViewBag.PagNro ?? 1;
+    int totalPaginas = ViewBag.TotalPaginas ?? 1;
+}
+
+<h1>Compras</h1>
+
+<div class="text-end mt-3">
+    <a asp-action="Alta" class="btn btn-primary">Registrar Nueva Compra</a>
+</div>
+
+<table class="table table-striped mt-3">
+    <thead>
+        <tr>
+            <th>#ID</th>
+            <th>Fecha y Hora</th>
+            <th>Proveedor</th>
+            <th>N° Comprobante</th>
+            <th>Empleado</th>
+            <th>Total</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (Model != null && Model.Any())
+        {
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item.IdCompra</td>
+                    <td>@item.FechaHora.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@(string.IsNullOrEmpty(item.Proveedor?.Nombre) ? "-" : item.Proveedor.Nombre)</td>
+                    <td>@(string.IsNullOrEmpty(item.NumeroComprobante) ? "-" : item.NumeroComprobante)</td>
+                    <td>
+                        @if (item.Empleado != null)
+                        {
+                            <span>@item.Empleado.Nombre @item.Empleado.Apellido</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">Desconocido</span>
+                        }
+                    </td>
+                    <td>$@item.TotalCompra.ToString("N2")</td>
+                    <td>
+                        <div class="btn-group" role="group">
+                            <a asp-action="Detalles" title="Detalles" asp-route-id="@item.IdCompra"
+                               class="btn btn-info btn-sm"><i class="bi bi-eye"></i></a>
+
+                            <button title="Eliminar" type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal"
+                                    data-bs-target="#modalEliminar-@item.IdCompra">
+                                <i class="bi bi-trash3"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+
+                <!-- Modal de Confirmación de Baja por fila -->
+                <div class="modal fade" id="modalEliminar-@item.IdCompra" tabindex="-1"
+                     aria-labelledby="modalLabel-@item.IdCompra" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="modalLabel-@item.IdCompra">Confirmar Baja</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                ¿Estás seguro que deseás anular la compra <strong>#@item.IdCompra</strong> por un total de <strong>$@item.TotalCompra.ToString("N2")</strong>?
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                <form asp-action="Eliminar" asp-route-id="@item.IdCompra" method="post">
+                                    <button type="submit" class="btn btn-danger">Sí, Eliminar</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <tr>
+                <td colspan="7" class="text-center text-muted py-4">
+                    <em>No hay compras registradas en el sistema.</em>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@if (totalPaginas > 1)
+{
+    <nav aria-label="Paginación de compras" class="mt-4">
+        <ul class="pagination justify-content-center">
+            <li class="page-item @(paginaActual == 1 ? "disabled" : "")">
+                <a class="page-link" asp-action="Index" asp-route-pagNro="@(paginaActual - 1)">Anterior</a>
+            </li>
+
+            @for (int i = 1; i <= totalPaginas; i++)
+            {
+                <li class="page-item @(i == paginaActual ? "active" : "")">
+                    <a class="page-link" asp-action="Index" asp-route-pagNro="@i">@i</a>
+                </li>
+            }
+
+            <li class="page-item @(paginaActual == totalPaginas ? "disabled" : "")">
+                <a class="page-link" asp-action="Index" asp-route-pagNro="@(paginaActual + 1)">Siguiente</a>
+            </li>
+        </ul>
+    </nav>
+}

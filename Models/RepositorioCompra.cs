@@ -81,24 +81,68 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
     }
 
     return idCompraCreada;
-}      public bool BajaLogica(int idCompra)
+}      public bool Baja(int idCompra)
+{
+    using (var connection = new MySqlConnection(connectionString))
+    {
+        connection.Open();
+        using (var transaction = connection.BeginTransaction())
         {
-            int filasAfectadas = 0;
-            string query = @"UPDATE compra SET estado = 0 WHERE id_compra = @id_compra;";
-
-            using (var connection = new MySqlConnection(connectionString))
+            try
             {
-                using (var cmd = new MySqlCommand(query, connection))
+                //  Obtener los insumos de esta compra para descontar el stock ingresado
+                string sqlDetalles = "SELECT id_producto, cantidad_ingresada FROM detalle_compra WHERE id_compra = @id_compra;";
+                var detalles = new List<(int IdProducto, decimal Cantidad)>();
+
+                using (var cmdDetalles = new MySqlCommand(sqlDetalles, connection, transaction))
+                {
+                    cmdDetalles.Parameters.AddWithValue("@id_compra", idCompra);
+                    using (var reader = cmdDetalles.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            detalles.Add((reader.GetInt32("id_producto"), reader.GetDecimal("cantidad_ingresada")));
+                        }
+                    }
+                }
+
+                //  Descontar el stock en la tabla producto
+                string sqlStock = "UPDATE producto SET cantidad_stock = cantidad_stock - @cantidad WHERE id_producto = @id_producto;";
+                foreach (var item in detalles)
+                {
+                    using (var cmdStock = new MySqlCommand(sqlStock, connection, transaction))
+                    {
+                        cmdStock.Parameters.AddWithValue("@cantidad", item.Cantidad);
+                        cmdStock.Parameters.AddWithValue("@id_producto", item.IdProducto);
+                        cmdStock.ExecuteNonQuery();
+                    }
+                }
+
+                //  Dar de baja lógica a la compra
+                string query = "UPDATE compra SET estado = 0 WHERE id_compra = @id_compra;";
+                using (var cmd = new MySqlCommand(query, connection, transaction))
                 {
                     cmd.Parameters.AddWithValue("@id_compra", idCompra);
-                    connection.Open();
-                    filasAfectadas = cmd.ExecuteNonQuery();
+                    int filasAfectadas = cmd.ExecuteNonQuery();
+
+                    if (filasAfectadas > 0)
+                    {
+                        transaction.Commit();
+                        return true;
+                    }
                 }
+
+                transaction.Rollback();
+                return false;
             }
-
-            return filasAfectadas > 0;
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
         }
-
+    }
+}
 
         public bool Modificar(Compra compra)
         {
@@ -132,7 +176,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
 {
     Compra? compra = null;
 
-    string queryCabecera = @"SELECT c.id_compra, c.fecha_hora, c.id_proveedor, c.numero_comprobante, c.total_compra, c.id_empleado,
+    string queryCabecera = @"SELECT c.id_compra, c.fecha_hora, c.id_proveedor, c.numero_comprobante, c.total_compra, c.id_empleado,c.estado,
                                     p.nombre AS nombre_proveedor,
                                     e.nombre AS nombre_empleado, e.apellido AS apellido_empleado
                              FROM compra c
@@ -163,6 +207,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
                         IdCompra = reader.GetInt32("id_compra"),
                         FechaHora = reader.GetDateTime("fecha_hora"),
                         IdProveedor = reader.GetInt32("id_proveedor"),
+                        Estado=reader.GetBoolean("estado"),
                         Proveedor = new Proveedor
                         {
                             IdProveedor = reader.GetInt32("id_proveedor"),
@@ -248,6 +293,7 @@ public List<Compra> ObtenerLista(int pagNro, int tamPagina)
                         IdCompra = Convert.ToInt32(reader["id_compra"]),
                         FechaHora = Convert.ToDateTime(reader["fecha_hora"]),
                         IdProveedor = Convert.ToInt32(reader["id_proveedor"]),
+                        Estado = Convert.ToBoolean(reader["estado"]),
                         Proveedor = new Proveedor
                         {
                             IdProveedor = Convert.ToInt32(reader["id_proveedor"]),

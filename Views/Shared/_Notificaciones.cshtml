@@ -1,0 +1,15 @@
+@{ var m = TempData["Mensaje"] ?? TempData["Error"]; }
+
+@if (m != null)
+{
+    var color = TempData["Mensaje"] != null ? "text-bg-success" : "text-bg-danger";
+
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1100;">
+        <div class="toast align-items-center @color border-0 fade show" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">@m</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    </div>
+}
