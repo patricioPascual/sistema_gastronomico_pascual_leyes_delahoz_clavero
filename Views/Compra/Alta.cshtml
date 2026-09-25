@@ -5,6 +5,9 @@
     var productos = ViewBag.Productos as List<sistema_gastronomico_pascual_leyes_delahoz_clavero.Models.Producto> ?? new List<sistema_gastronomico_pascual_leyes_delahoz_clavero.Models.Producto>();
 }
 
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
+
 <div class="container mt-4 mb-5" id="appCompra">
     <div class="card shadow-sm border-0">
         <div class="card-header bg-primary text-white">
@@ -54,13 +57,12 @@
                             <tr v-for="(item, index) in detalles" :key="index">
                                 <td>
                                     <select :name="`Detalles[${index}].IdProducto`" 
-                                            v-model="item.idProducto" 
-                                            @@change="alCambiarProducto(item)" 
-                                            class="form-select" required>
+                                            class="form-select select2-ajax" 
+                                            v-select2="item"
+                                            data-url="/Producto/BuscarTexto"
+                                            data-placeholder="Seleccione un producto..." 
+                                            required>
                                         <option value="" disabled>Seleccione un producto...</option>
-                                        <option v-for="p in catalogoProductos" :key="p.id" :value="p.id">
-                                            {{ p.nombre }} ({{ p.unidad }})
-                                        </option>
                                     </select>
                                 </td>
                                 <td>
@@ -103,12 +105,15 @@
 </div>
 
 @section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="~/js/buscarTexto.js" asp-append-version="true"></script>
 
     <script>
         const { createApp } = Vue;
 
-        createApp({
+        const app = createApp({
             data() {
                 return {
                     // Catálogo proveniente del ViewBag de C#
@@ -146,6 +151,33 @@
             mounted() {
                 this.agregarRenglon(); // Agrega la primera fila al cargar
             }
-        }).mount('#appCompra');
+        });
+                 //SELECT DE PRODUCTS
+        app.directive('select2', {
+            mounted(el, binding) {
+                const item = binding.value;
+                const $el =$(el);
+
+                inicializarSelect2Ajax($el);
+
+                $el.on('select2:select', function (e) {
+                    const data = e.params.data;
+                    item.idProducto = data.id;
+                    if (data.precioCosto) {
+                        item.precioCosto = data.precioCosto;
+                    }
+                });
+
+                $el.on('select2:clear', function () {
+                    item.idProducto = '';
+                    item.precioCosto = 0;
+                });
+            },
+            unmounted(el) {
+                $(el).select2('destroy');
+            }
+        });
+
+        app.mount('#appCompra');
     </script>
 }

@@ -96,7 +96,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
             var lista = new List<Producto>();
             using (var conn = new MySqlConnection(connectionString))
             {
-                string query = @"SELECT id_producto, nombre, cantidad_stock, unidad_medida 
+                string query = @"SELECT id_producto, nombre, cantidad_stock, unidad_medida,precio_costo 
                          FROM producto 
                          WHERE estado = 1 AND nombre LIKE @q 
                          LIMIT 20;";
@@ -114,7 +114,8 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
                                 IdProducto = reader.GetInt32("id_producto"),
                                 Nombre = reader.GetString("nombre"),
                                 Cantidad_stock = reader.GetDecimal("cantidad_stock"),
-                                Unidad_medida = reader.GetString("unidad_medida")
+                                Unidad_medida = reader.GetString("unidad_medida"),
+                                Precio_costo=reader.GetDecimal("precio_costo")
                             });
                         }
                     }
