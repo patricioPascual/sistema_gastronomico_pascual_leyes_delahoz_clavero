@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 24-09-2026 a las 22:50:50
+-- Tiempo de generación: 25-09-2026 a las 14:12:43
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -55,21 +55,12 @@ INSERT INTO `categoria` (`id_categoria`, `nombre`, `estado`) VALUES
 CREATE TABLE `compra` (
   `id_compra` int(11) NOT NULL,
   `fecha_hora` datetime NOT NULL DEFAULT current_timestamp(),
-  `proveedor` varchar(100) DEFAULT NULL,
   `numero_comprobante` varchar(50) DEFAULT NULL,
   `total_compra` decimal(10,2) NOT NULL DEFAULT 0.00,
   `id_empleado` int(11) NOT NULL,
-  `estado` tinyint(1) NOT NULL DEFAULT 1
+  `estado` tinyint(1) NOT NULL DEFAULT 1,
+  `id_proveedor` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Volcado de datos para la tabla `compra`
---
-
-INSERT INTO `compra` (`id_compra`, `fecha_hora`, `proveedor`, `numero_comprobante`, `total_compra`, `id_empleado`, `estado`) VALUES
-(1, '2026-09-24 17:39:00', 'Verduleria', 'FC 123123123', 360000.00, 1, 1),
-(2, '2026-09-24 17:43:00', 'Verduleria', 'FC 123123123', 360000.00, 1, 1),
-(3, '2026-09-24 17:43:00', 'Ditribuidora', '12312222', 500000.00, 1, 1);
 
 -- --------------------------------------------------------
 
@@ -85,15 +76,6 @@ CREATE TABLE `detalle_compra` (
   `precio_costo_unitario` decimal(10,2) NOT NULL,
   `subtotal` decimal(10,2) GENERATED ALWAYS AS (`cantidad_ingresada` * `precio_costo_unitario`) STORED
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Volcado de datos para la tabla `detalle_compra`
---
-
-INSERT INTO `detalle_compra` (`id_detalle_compra`, `id_compra`, `id_producto`, `cantidad_ingresada`, `precio_costo_unitario`) VALUES
-(1, 1, 2, 1.000, 3600.00),
-(2, 2, 2, 1.000, 3600.00),
-(3, 3, 1, 5.000, 1000.00);
 
 -- --------------------------------------------------------
 
@@ -122,6 +104,15 @@ CREATE TABLE `detalle_receta` (
   `id_producto` int(11) NOT NULL,
   `cantidad_requerida` decimal(10,3) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `detalle_receta`
+--
+
+INSERT INTO `detalle_receta` (`id_detalle_receta`, `id_plato`, `id_producto`, `cantidad_requerida`) VALUES
+(1, 1, 1, 150.000),
+(2, 1, 3, 8.000),
+(3, 1, 4, 5.000);
 
 -- --------------------------------------------------------
 
@@ -189,6 +180,13 @@ CREATE TABLE `plato` (
   `activo` tinyint(1) DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Volcado de datos para la tabla `plato`
+--
+
+INSERT INTO `plato` (`id_plato`, `nombre`, `id_categoria`, `precio_venta`, `activo`) VALUES
+(1, 'Empanada de Carne', 1, 8000.00, 1);
+
 -- --------------------------------------------------------
 
 --
@@ -210,7 +208,25 @@ CREATE TABLE `producto` (
 
 INSERT INTO `producto` (`id_producto`, `nombre`, `cantidad_stock`, `unidad_medida`, `precio_costo`, `estado`) VALUES
 (1, 'Harina', 30.000, 'kg', 1000.00, 1),
-(2, 'Tomate', 12.000, 'kg', 3600.00, 1);
+(2, 'Tomate', 12.000, 'kg', 3600.00, 1),
+(3, 'Carne Picada', 10.000, 'kg', 10000.00, 1),
+(4, 'Cebolla', 5.000, 'kg', 1000.00, 1),
+(5, 'Salsa de Ostras', 1.000, 'unidad', 23000.00, 0);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `proveedor`
+--
+
+CREATE TABLE `proveedor` (
+  `id_proveedor` int(11) NOT NULL,
+  `nombre` varchar(100) NOT NULL,
+  `cuit` varchar(13) DEFAULT NULL,
+  `telefono` varchar(30) DEFAULT NULL,
+  `direccion` varchar(150) DEFAULT NULL,
+  `estado` tinyint(1) DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -262,6 +278,7 @@ ALTER TABLE `categoria`
 --
 ALTER TABLE `compra`
   ADD PRIMARY KEY (`id_compra`),
+  ADD UNIQUE KEY `uk_proveedor_comprobante` (`id_proveedor`,`numero_comprobante`),
   ADD KEY `fk_compra_empleado` (`id_empleado`);
 
 --
@@ -326,6 +343,12 @@ ALTER TABLE `producto`
   ADD UNIQUE KEY `uq_producto_nombre` (`nombre`);
 
 --
+-- Indices de la tabla `proveedor`
+--
+ALTER TABLE `proveedor`
+  ADD PRIMARY KEY (`id_proveedor`);
+
+--
 -- Indices de la tabla `rol`
 --
 ALTER TABLE `rol`
@@ -373,7 +396,7 @@ ALTER TABLE `detalle_pedido`
 -- AUTO_INCREMENT de la tabla `detalle_receta`
 --
 ALTER TABLE `detalle_receta`
-  MODIFY `id_detalle_receta` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_detalle_receta` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT de la tabla `empleado`
@@ -397,13 +420,19 @@ ALTER TABLE `pedido`
 -- AUTO_INCREMENT de la tabla `plato`
 --
 ALTER TABLE `plato`
-  MODIFY `id_plato` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_plato` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT de la tabla `producto`
 --
 ALTER TABLE `producto`
-  MODIFY `id_producto` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id_producto` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT de la tabla `proveedor`
+--
+ALTER TABLE `proveedor`
+  MODIFY `id_proveedor` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT de la tabla `rol`
