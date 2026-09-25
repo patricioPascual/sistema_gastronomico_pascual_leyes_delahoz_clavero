@@ -90,7 +90,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
         {
             try
             {
-                //  Obtener los insumos de esta compra para descontar el stock ingresado
+                // OBTENER PRODUCTOS
                 string sqlDetalles = "SELECT id_producto, cantidad_ingresada FROM detalle_compra WHERE id_compra = @id_compra;";
                 var detalles = new List<(int IdProducto, decimal Cantidad)>();
 
@@ -106,7 +106,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
                     }
                 }
 
-                //  Descontar el stock en la tabla producto
+                // DESCONT STOCK
                 string sqlStock = "UPDATE producto SET cantidad_stock = cantidad_stock - @cantidad WHERE id_producto = @id_producto;";
                 foreach (var item in detalles)
                 {
@@ -118,7 +118,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
                     }
                 }
 
-                //  Dar de baja lógica a la compra
+                //  BAJA COMPRA
                 string query = "UPDATE compra SET estado = 0 WHERE id_compra = @id_compra;";
                 using (var cmd = new MySqlCommand(query, connection, transaction))
                 {
