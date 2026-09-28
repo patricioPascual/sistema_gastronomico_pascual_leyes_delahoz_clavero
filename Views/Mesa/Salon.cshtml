@@ -1,27 +1,25 @@
 @using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
 @{
     ViewData["Title"] = "Salón";
-    var mesas = ViewBag.Mesas as List<Mesa> ?? new List<Mesa>();
-    var barra = ViewBag.Barra as List<Mesa> ?? new List<Mesa>();
-    var pendientes = ViewBag.PedidosPendientes as List<Pedido> ?? new List<Pedido>();
 }
 
-<div class="container mt-4 mb-5">
+<!-- 1. Envolvemos todo en el ID que Vue va a controlar -->
+<div id="app-salon" class="container mt-4 mb-5" v-cloak>
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="mb-0"><i class="bi bi-grid-3x3-gap me-2"></i>Salón</h2>
         <div>
             <a asp-action="Index" class="btn btn-outline-secondary me-2">
                 <i class="bi bi-table"></i> Administrar mesas
             </a>
-            <button class="btn btn-outline-primary position-relative" type="button"
-                    data-bs-toggle="offcanvas" data-bs-target="#offcanvasPendientes">
+            <button class="btn btn-outline-primary position-relative" type="button" data-bs-toggle="offcanvas"
+                    data-bs-target="#offcanvasPendientes">
                 <i class="bi bi-clock-history me-1"></i> Pedidos pendientes
-                @if (pendientes.Count > 0)
-                {
-                    <span class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle">
-                        @pendientes.Count
-                    </span>
-                }
+                
+                <!-- Vue evalúa la longitud del arreglo dinámicamente -->
+                <span v-if="pendientes.length > 0"
+                      class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle">
+                    {{ pendientes.length }}
+                </span>
             </button>
         </div>
     </div>
@@ -30,111 +28,137 @@
 
     <h5 class="text-secondary mb-3">Mesas</h5>
     <div class="row row-cols-2 row-cols-md-4 g-3 mb-4">
-        @foreach (var m in mesas)
-        {
-            bool ocupada = m.IdPedidoAbierto.HasValue;
-            <div class="col">
-                @if (ocupada)
-                {
-                    <a asp-controller="Pedido" asp-action="Detalle" asp-route-id="@m.IdPedidoAbierto"
-                       class="d-flex align-items-center justify-content-center text-decoration-none text-white bg-danger rounded-3 shadow-sm"
-                       style="aspect-ratio: 1; font-size: 1.5rem; font-weight: 600;"
-                       title="Mesa @m.Numero — ocupada">
-                        @m.Numero
-                    </a>
-                }
-                else
-                {
-                    <a asp-controller="Pedido" asp-action="Alta" asp-route-idMesa="@m.IdMesa"
-                       class="d-flex align-items-center justify-content-center text-decoration-none text-white bg-success rounded-3 shadow-sm"
-                       style="aspect-ratio: 1; font-size: 1.5rem; font-weight: 600;"
-                       title="Mesa @m.Numero — libre">
-                        @m.Numero
-                    </a>
-                }
-            </div>
-        }
-        @if (!mesas.Any())
-        {
-            <p class="text-muted">No hay mesas cargadas.</p>
-        }
+        
+        <div class="col" v-for="m in mesas" :key="m.idMesa">
+            
+            <a v-if="m.idPedidoAbierto" :href="'/Pedido/Detalle/' + m.idPedidoAbierto"
+               class="d-flex align-items-center justify-content-center text-decoration-none text-white bg-danger rounded-3 shadow-sm"
+               style="aspect-ratio: 1; font-size: 1.5rem; font-weight: 600;"
+               :title="'Mesa ' + m.numero + ' — ocupada'">
+                {{ m.numero }}
+            </a>
+            
+            <a v-else :href="'/Pedido/Alta?idMesa=' + m.idMesa"
+               class="d-flex align-items-center justify-content-center text-decoration-none text-white bg-success rounded-3 shadow-sm"
+               style="aspect-ratio: 1; font-size: 1.5rem; font-weight: 600;" :title="'Mesa ' + m.numero + ' — libre'">
+                {{ m.numero }}
+            </a>
+        </div>
+        
+        <p v-if="mesas.length === 0" class="text-muted">No hay mesas cargadas.</p>
     </div>
 
     <h5 class="text-secondary mb-3">Barra</h5>
     <div class="bg-light rounded-3 p-3 d-flex flex-wrap justify-content-center gap-3">
-        @foreach (var b in barra)
-        {
-            bool ocupada = b.IdPedidoAbierto.HasValue;
-            @if (ocupada)
-            {
-                <a asp-controller="Pedido" asp-action="Detalle" asp-route-id="@b.IdPedidoAbierto"
-                   class="d-flex align-items-center justify-content-center text-decoration-none text-white bg-danger rounded-circle shadow-sm"
-                   style="width: 52px; height: 52px; font-weight: 600;"
-                   title="Barra @b.Numero — ocupada">
-                    @b.Numero
-                </a>
-            }
-            else
-            {
-                <a asp-controller="Pedido" asp-action="Alta" asp-route-idMesa="@b.IdMesa"
-                   class="d-flex align-items-center justify-content-center text-decoration-none text-white bg-success rounded-circle shadow-sm"
-                   style="width: 52px; height: 52px; font-weight: 600;"
-                   title="Barra @b.Numero — libre">
-                    @b.Numero
-                </a>
-            }
-        }
-        @if (!barra.Any())
-        {
-            <span class="text-muted">No hay posiciones de barra cargadas.</span>
-        }
-    </div>
-</div>
+        
 
-<div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasPendientes" aria-labelledby="offcanvasPendientesLabel">
-    <div class="offcanvas-header">
-        <h5 class="offcanvas-title" id="offcanvasPendientesLabel"><i class="bi bi-clock-history me-2"></i>Pedidos pendientes</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
+        <template v-for="b in barra" :key="b.idMesa">
+            <a v-if="b.idPedidoAbierto" :href="'/Pedido/Detalle/' + b.idPedidoAbierto"
+               class="d-flex align-items-center justify-content-center text-decoration-none text-white bg-danger rounded-circle shadow-sm"
+               style="width: 52px; height: 52px; font-weight: 600;" :title="'Barra ' + b.numero + ' — ocupada'">
+                {{ b.numero }}
+            </a>
+            
+            <a v-else :href="'/Pedido/Alta?idMesa=' + b.idMesa"
+               class="d-flex align-items-center justify-content-center text-decoration-none text-white bg-success rounded-circle shadow-sm"
+               style="width: 52px; height: 52px; font-weight: 600;" :title="'Barra ' + b.numero + ' — libre'">
+                {{ b.numero }}
+            </a>
+        </template>
+        
+        <span v-if="barra.length === 0" class="text-muted">No hay posiciones de barra cargadas.</span>
     </div>
-    <div class="offcanvas-body">
-        @if (!pendientes.Any())
-        {
-            <p class="text-muted">No hay pedidos abiertos.</p>
-        }
-        else
-        {
-            <ul class="list-group">
-                @foreach (var p in pendientes)
-                {
-                    <li class="list-group-item">
-                        <a asp-controller="Pedido" asp-action="Detalle" asp-route-id="@p.IdPedido"
-                            class="d-flex justify-content-between align-items-center text-decoration-none">
+
+    <!-- Menú lateral de Pedidos Pendientes -->
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasPendientes"
+         aria-labelledby="offcanvasPendientesLabel">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="offcanvasPendientesLabel"><i class="bi bi-clock-history me-2"></i>Pedidos
+                pendientes</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
+            </div>
+            <div class="offcanvas-body">
+            
+                <p v-if="pendientes.length === 0" class="text-muted">No hay pedidos abiertos.</p>
+            
+                <ul v-else class="list-group">
+
+                    <li class="list-group-item" v-for="p in pendientes" :key="p.idPedido">
+                        <a :href="'/Pedido/Detalle/' + p.idPedido"
+                           class="d-flex justify-content-between align-items-center text-decoration-none">
                             <span>
-                                <strong>Mesa @p.Mesa?.Numero</strong>
+                                <strong>Mesa {{ p.mesaNumero }}</strong>
                                 <br />
-                                <small class="text-muted">@p.Empleado?.Apellido, @p.Empleado?.Nombre</small>
+                                <small class="text-muted">{{ p.empleadoNombre }}</small>
                             </span>
-                            <span class="badge bg-secondary tiempo-transcurrido" data-fecha-hora="@p.FechaHora.ToString("o")">
-                                --
+                        
+                            <!-- Uso de la función calcularMinutos de Vue de forma reactiva -->
+                            <span class="badge bg-secondary">
+                                <span v-if="calcularMinutos(p.fechaHora) < 1">recién</span>
+                                <span v-else>hace {{ calcularMinutos(p.fechaHora) }} min</span>
                             </span>
                         </a>
                     </li>
-                }
-            </ul>
-        }
+                </ul>
+            </div>
+        </div>
     </div>
-</div>
 
-@section Scripts {
-    <script>
-        function actualizarTiempos() {
-            document.querySelectorAll('.tiempo-transcurrido').forEach(function (el) {
-                var inicio = new Date(el.dataset.fechaHora);
-                var minutos = Math.max(0, Math.floor((Date.now() - inicio.getTime()) / 60000));
-                el.textContent = minutos < 1 ? 'recién' : 'hace ' + minutos + ' min';
-            });
-        }
-        actualizarTiempos();
-        setInterval(actualizarTiempos, 30000);
-    </script>
-}
+    @section Scripts {
+        <!-- Importamos Vue 3 de forma sencilla (sin instalaciones complejas) -->
+        <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+        <script>
+            const { createApp } = Vue;
+
+            createApp({
+                data() {
+                    return {
+                        // 1. Aquí guardaremos los datos que vengan del servidor
+                        mesas: [],
+                        barra: [],
+                        pendientes: [],
+                    
+                        // 2. Una variable para saber la hora actual en todo momento
+                        ahora: Date.now()
+                    }
+                },
+                methods: {
+                    // Función para ir a buscar los datos al servidor
+                    async cargarDatos() {
+                        try {
+                            const respuesta = await fetch('/Mesa/ObtenerEstadoSalonAjax');
+                            if (respuesta.ok) {
+                                const datos = await respuesta.json();
+                                this.mesas = datos.mesas;
+                                this.barra = datos.barra;
+                                this.pendientes = datos.pendientes;
+                            }
+                        } catch (error) {
+                            console.error("Error al cargar el salón:", error);
+                        }
+                    },
+
+                    // Función súper sencilla para calcular los minutos transcurridos
+                    calcularMinutos(fechaString) {
+                        if (!fechaString) return 0;
+                        const inicio = new Date(fechaString).getTime();
+                        const minutos = Math.floor((this.ahora - inicio) / 60000);
+                        return Math.max(0, minutos);
+                    }
+                },
+                mounted() {
+                    // 3. Apenas carga la pantalla, traemos los datos por primera vez
+                    this.cargarDatos();
+
+                    // 4. El famoso setInterval: 
+                    // Cada 10 segundos actualizamos la hora actual (para los minutos)
+                    // Y opcionalmente recargamos las mesas (polling)
+                    setInterval(() => {
+                        this.ahora = Date.now();
+                        this.cargarDatos(); // Trae las mesas nuevas automáticamente
+                    }, 10000); // 10000 ms = 10 segundos
+                }
+            }).mount('#app-salon'); // Le decimos a Vue que controle el div con este ID
+        </script>
+    }

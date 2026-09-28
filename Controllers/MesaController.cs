@@ -135,5 +135,28 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 
             return RedirectToAction(nameof(Index));
         }
+
+        //Metodo agregado para implementar Vue en la vista de Salon
+        [HttpGet]
+        public IActionResult ObtenerEstadoSalonAjax()
+        {
+            var todas = repoMesa.ObtenerTodosConOcupacion();
+
+            var mesas = todas.Where(m => m.Tipo == "Mesa").OrderBy(m => m.Numero).ToList();
+            var barra = todas.Where(m => m.Tipo == "Barra").OrderBy(m => m.Numero).ToList();
+
+            // Traemos los pedidos y los "aplanamos" para que JavaScript los lea mas fácil
+            var pendientes = repoPedido.ObtenerAbiertos().Select(p => new
+            {
+                idPedido = p.IdPedido,
+                mesaNumero = p.Mesa?.Numero,
+                empleadoNombre = $"{p.Empleado?.Apellido}, {p.Empleado?.Nombre}",
+                fechaHora = p.FechaHora.ToString("o")
+            }).ToList();
+
+            // Devolvemos un solo objeto JSON con las 3 listas 
+            return Json(new { mesas, barra, pendientes });
+        }
+
     }
 }
