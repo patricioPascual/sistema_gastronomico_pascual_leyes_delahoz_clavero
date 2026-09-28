@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 25-09-2026 a las 14:12:43
+-- Tiempo de generación: 28-09-2026 a las 21:25:34
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -62,6 +62,14 @@ CREATE TABLE `compra` (
   `id_proveedor` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Volcado de datos para la tabla `compra`
+--
+
+INSERT INTO `compra` (`id_compra`, `fecha_hora`, `numero_comprobante`, `total_compra`, `id_empleado`, `estado`, `id_proveedor`) VALUES
+(4, '2026-09-25 16:28:00', 'FC 00123123', 1800000.00, 1, 0, 1),
+(5, '2026-09-25 18:03:00', 'FC 00123155', 18000.00, 1, 1, 1);
+
 -- --------------------------------------------------------
 
 --
@@ -77,6 +85,14 @@ CREATE TABLE `detalle_compra` (
   `subtotal` decimal(10,2) GENERATED ALWAYS AS (`cantidad_ingresada` * `precio_costo_unitario`) STORED
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Volcado de datos para la tabla `detalle_compra`
+--
+
+INSERT INTO `detalle_compra` (`id_detalle_compra`, `id_compra`, `id_producto`, `cantidad_ingresada`, `precio_costo_unitario`) VALUES
+(4, 4, 2, 5.000, 3600.00),
+(5, 5, 2, 5.000, 3600.00);
+
 -- --------------------------------------------------------
 
 --
@@ -91,6 +107,13 @@ CREATE TABLE `detalle_pedido` (
   `precio_unitario` decimal(10,2) NOT NULL,
   `estado` enum('En Marcha','Despachado') DEFAULT 'En Marcha'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `detalle_pedido`
+--
+
+INSERT INTO `detalle_pedido` (`id_detalle_pedido`, `id_pedido`, `id_plato`, `cantidad`, `precio_unitario`, `estado`) VALUES
+(3, 2, 1, 2, 8000.00, 'En Marcha');
 
 -- --------------------------------------------------------
 
@@ -148,8 +171,16 @@ CREATE TABLE `mesa` (
   `id_mesa` int(11) NOT NULL,
   `numero` int(11) NOT NULL,
   `capacidad` int(11) NOT NULL DEFAULT 2,
-  `estado` tinyint(1) NOT NULL DEFAULT 0
+  `estado` tinyint(1) NOT NULL DEFAULT 0,
+  `tipo` varchar(50) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `mesa`
+--
+
+INSERT INTO `mesa` (`id_mesa`, `numero`, `capacidad`, `estado`, `tipo`) VALUES
+(1, 1, 2, 0, 'Mesa');
 
 -- --------------------------------------------------------
 
@@ -165,6 +196,14 @@ CREATE TABLE `pedido` (
   `estado` enum('Abierto','Pagado','Cancelado') DEFAULT 'Abierto',
   `total` decimal(10,2) DEFAULT 0.00
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `pedido`
+--
+
+INSERT INTO `pedido` (`id_pedido`, `id_mesa`, `id_empleado`, `fecha_hora`, `estado`, `total`) VALUES
+(1, 1, 1, '2026-09-28 13:11:14', 'Cancelado', 0.00),
+(2, 1, 1, '2026-09-28 16:18:23', 'Abierto', 16000.00);
 
 -- --------------------------------------------------------
 
@@ -208,7 +247,7 @@ CREATE TABLE `producto` (
 
 INSERT INTO `producto` (`id_producto`, `nombre`, `cantidad_stock`, `unidad_medida`, `precio_costo`, `estado`) VALUES
 (1, 'Harina', 30.000, 'kg', 1000.00, 1),
-(2, 'Tomate', 12.000, 'kg', 3600.00, 1),
+(2, 'Tomate', 17.000, 'kg', 3600.00, 1),
 (3, 'Carne Picada', 10.000, 'kg', 10000.00, 1),
 (4, 'Cebolla', 5.000, 'kg', 1000.00, 1),
 (5, 'Salsa de Ostras', 1.000, 'unidad', 23000.00, 0);
@@ -227,6 +266,13 @@ CREATE TABLE `proveedor` (
   `direccion` varchar(150) DEFAULT NULL,
   `estado` tinyint(1) DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `proveedor`
+--
+
+INSERT INTO `proveedor` (`id_proveedor`, `nombre`, `cuit`, `telefono`, `direccion`, `estado`) VALUES
+(1, 'Verduleria La Quinta', '33-77002222-2', '2665407728', 'Los Lapachos 123', 1);
 
 -- --------------------------------------------------------
 
@@ -279,7 +325,8 @@ ALTER TABLE `categoria`
 ALTER TABLE `compra`
   ADD PRIMARY KEY (`id_compra`),
   ADD UNIQUE KEY `uk_proveedor_comprobante` (`id_proveedor`,`numero_comprobante`),
-  ADD KEY `fk_compra_empleado` (`id_empleado`);
+  ADD KEY `fk_compra_empleado` (`id_empleado`),
+  ADD KEY `idx_id_proveedor` (`id_proveedor`);
 
 --
 -- Indices de la tabla `detalle_compra`
@@ -378,19 +425,19 @@ ALTER TABLE `categoria`
 -- AUTO_INCREMENT de la tabla `compra`
 --
 ALTER TABLE `compra`
-  MODIFY `id_compra` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id_compra` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT de la tabla `detalle_compra`
 --
 ALTER TABLE `detalle_compra`
-  MODIFY `id_detalle_compra` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id_detalle_compra` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT de la tabla `detalle_pedido`
 --
 ALTER TABLE `detalle_pedido`
-  MODIFY `id_detalle_pedido` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_detalle_pedido` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT de la tabla `detalle_receta`
@@ -408,13 +455,13 @@ ALTER TABLE `empleado`
 -- AUTO_INCREMENT de la tabla `mesa`
 --
 ALTER TABLE `mesa`
-  MODIFY `id_mesa` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_mesa` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT de la tabla `pedido`
 --
 ALTER TABLE `pedido`
-  MODIFY `id_pedido` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_pedido` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT de la tabla `plato`
@@ -432,7 +479,7 @@ ALTER TABLE `producto`
 -- AUTO_INCREMENT de la tabla `proveedor`
 --
 ALTER TABLE `proveedor`
-  MODIFY `id_proveedor` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_proveedor` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT de la tabla `rol`
@@ -454,7 +501,8 @@ ALTER TABLE `usuario`
 -- Filtros para la tabla `compra`
 --
 ALTER TABLE `compra`
-  ADD CONSTRAINT `fk_compra_empleado` FOREIGN KEY (`id_empleado`) REFERENCES `empleado` (`id_empleado`) ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_compra_empleado` FOREIGN KEY (`id_empleado`) REFERENCES `empleado` (`id_empleado`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_compra_proveedor` FOREIGN KEY (`id_proveedor`) REFERENCES `proveedor` (`id_proveedor`) ON UPDATE CASCADE;
 
 --
 -- Filtros para la tabla `detalle_compra`

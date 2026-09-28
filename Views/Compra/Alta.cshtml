@@ -112,7 +112,7 @@
 </div>
 
 @section Scripts {
-    <!-- CDN de Vue 3 (Global Build) -->
+    
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
     <script>
@@ -150,10 +150,10 @@
                 const item = binding.value;
                 const $el = $(el);
 
-                // Llama a la función global definida en site.js
+                // LLAma a la FUNCION de Site.js
                 inicializarSelect2Ajax($el);
 
-                // Cuando se selecciona un producto desde la búsqueda AJAX
+                // Cuando se selecciona un producto 
                 $el.on('select2:select', function (e) {
                     const data = e.params.data;
                     item.idProducto = data.id;
@@ -163,7 +163,7 @@
                     }
                 });
 
-                // Si se borra la selección
+                // Si se borra 
                 $el.on('select2:clear', function () {
                     item.idProducto = '';
                     item.precioCosto = 0;
