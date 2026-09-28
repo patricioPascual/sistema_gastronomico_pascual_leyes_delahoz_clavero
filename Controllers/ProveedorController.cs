@@ -23,7 +23,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             return View();
         }
 
-        // POST: Proveedor/Crear
+        
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Alta(Proveedor proveedor)
@@ -38,7 +38,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
                 int idGenerado = repoProveedor.Alta(proveedor);
                 if (idGenerado > 0)
                 {
-                    TempData["Exito"] = "Proveedor guardado correctamente.";
+                    TempData["Mensaje"] = "Proveedor guardado correctamente.";
                     return RedirectToAction(nameof(Index));
                 }
 
@@ -51,5 +51,29 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 
             return View(proveedor);
         }
+
+        public IActionResult Baja(int id)
+        {
+            try
+    {
+        bool exito = repoProveedor.Baja(id) ;
+
+        if (exito)
+        {
+            TempData["Mensaje"] = "El proveedor se dio de baja correctamente.";
+        }
+        else
+        {
+            TempData["Error"] = "No se pudo realizar la baja del proveedor.";
+        }
     }
+    catch (Exception ex)
+    {
+        TempData["Error"] = "Error al intentar eliminar el proveedor: " + ex.Message;
+    }
+
+    return RedirectToAction(nameof(Index));
+}
+        }
+    
 }
