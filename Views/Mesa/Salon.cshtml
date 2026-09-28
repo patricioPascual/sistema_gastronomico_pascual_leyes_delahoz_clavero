@@ -15,7 +15,7 @@
                     data-bs-target="#offcanvasPendientes">
                 <i class="bi bi-clock-history me-1"></i> Pedidos pendientes
                 
-                <!-- Vue evalúa la longitud del arreglo dinámicamente -->
+                <!-- Vue evalua la longitud del arreglo dinamicamente -->
                 <span v-if="pendientes.length > 0"
                       class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle">
                     {{ pendientes.length }}
@@ -153,7 +153,7 @@
 
                     // 4. El famoso setInterval: 
                     // Cada 10 segundos actualizamos la hora actual (para los minutos)
-                    // Y opcionalmente recargamos las mesas (polling)
+                    // Y opcionalmente recargamos las mesas
                     setInterval(() => {
                         this.ahora = Date.now();
                         this.cargarDatos(); // Trae las mesas nuevas automáticamente
