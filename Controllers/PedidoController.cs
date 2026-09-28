@@ -48,16 +48,21 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             if (pedido == null)
                 return NotFound();
 
-            // Platos para el formulario de agregar un renglón al pedido
             ViewBag.Platos = repoPlato.ObtenerTodos();
             return View(pedido);
         }
 
+        // idMesa llega desde el Salón cuando se hace click en una mesa/puesto libre,
+        // para preseleccionar la mesa en el formulario.
         [HttpGet]
-        public IActionResult Alta()
+        public IActionResult Alta(int? idMesa)
         {
             CargarCombos();
-            return View(new Pedido());
+            var pedido = new Pedido();
+            if (idMesa.HasValue)
+                pedido.IdMesa = idMesa.Value;
+
+            return View(pedido);
         }
 
         [HttpPost]
@@ -79,7 +84,6 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
                 }
                 catch (InvalidOperationException ex)
                 {
-                    // Plato inexistente o dado de baja
                     ModelState.AddModelError("", ex.Message);
                 }
                 catch (Exception ex)
@@ -126,7 +130,6 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             return RedirectToAction(nameof(Detalle), new { id = pedido.IdPedido });
         }
 
-        // Cancela el pedido (el estado pasa a 'Cancelado')
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Baja(int id)
@@ -211,7 +214,6 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             return RedirectToAction(nameof(Detalle), new { id = idPedido });
         }
 
-        // Los renglones solo se pueden tocar mientras el pedido está abierto
         private bool PedidoAbierto(int idPedido)
         {
             var pedido = repoPedido.ObtenerPorId(idPedido);

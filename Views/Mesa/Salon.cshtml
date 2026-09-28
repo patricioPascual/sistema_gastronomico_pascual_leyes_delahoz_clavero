@@ -1,0 +1,140 @@
+@using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
+@{
+    ViewData["Title"] = "Salón";
+    var mesas = ViewBag.Mesas as List<Mesa> ?? new List<Mesa>();
+    var barra = ViewBag.Barra as List<Mesa> ?? new List<Mesa>();
+    var pendientes = ViewBag.PedidosPendientes as List<Pedido> ?? new List<Pedido>();
+}
+
+<div class="container mt-4 mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0"><i class="bi bi-grid-3x3-gap me-2"></i>Salón</h2>
+        <div>
+            <a asp-action="Index" class="btn btn-outline-secondary me-2">
+                <i class="bi bi-table"></i> Administrar mesas
+            </a>
+            <button class="btn btn-outline-primary position-relative" type="button"
+                    data-bs-toggle="offcanvas" data-bs-target="#offcanvasPendientes">
+                <i class="bi bi-clock-history me-1"></i> Pedidos pendientes
+                @if (pendientes.Count > 0)
+                {
+                    <span class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle">
+                        @pendientes.Count
+                    </span>
+                }
+            </button>
+        </div>
+    </div>
+
+    <partial name="_Mensajes" />
+
+    <h5 class="text-secondary mb-3">Mesas</h5>
+    <div class="row row-cols-2 row-cols-md-4 g-3 mb-4">
+        @foreach (var m in mesas)
+        {
+            bool ocupada = m.IdPedidoAbierto.HasValue;
+            <div class="col">
+                @if (ocupada)
+                {
+                    <a asp-controller="Pedido" asp-action="Detalle" asp-route-id="@m.IdPedidoAbierto"
+                       class="d-flex align-items-center justify-content-center text-decoration-none text-white bg-danger rounded-3 shadow-sm"
+                       style="aspect-ratio: 1; font-size: 1.5rem; font-weight: 600;"
+                       title="Mesa @m.Numero — ocupada">
+                        @m.Numero
+                    </a>
+                }
+                else
+                {
+                    <a asp-controller="Pedido" asp-action="Alta" asp-route-idMesa="@m.IdMesa"
+                       class="d-flex align-items-center justify-content-center text-decoration-none text-white bg-success rounded-3 shadow-sm"
+                       style="aspect-ratio: 1; font-size: 1.5rem; font-weight: 600;"
+                       title="Mesa @m.Numero — libre">
+                        @m.Numero
+                    </a>
+                }
+            </div>
+        }
+        @if (!mesas.Any())
+        {
+            <p class="text-muted">No hay mesas cargadas.</p>
+        }
+    </div>
+
+    <h5 class="text-secondary mb-3">Barra</h5>
+    <div class="bg-light rounded-3 p-3 d-flex flex-wrap justify-content-center gap-3">
+        @foreach (var b in barra)
+        {
+            bool ocupada = b.IdPedidoAbierto.HasValue;
+            @if (ocupada)
+            {
+                <a asp-controller="Pedido" asp-action="Detalle" asp-route-id="@b.IdPedidoAbierto"
+                   class="d-flex align-items-center justify-content-center text-decoration-none text-white bg-danger rounded-circle shadow-sm"
+                   style="width: 52px; height: 52px; font-weight: 600;"
+                   title="Barra @b.Numero — ocupada">
+                    @b.Numero
+                </a>
+            }
+            else
+            {
+                <a asp-controller="Pedido" asp-action="Alta" asp-route-idMesa="@b.IdMesa"
+                   class="d-flex align-items-center justify-content-center text-decoration-none text-white bg-success rounded-circle shadow-sm"
+                   style="width: 52px; height: 52px; font-weight: 600;"
+                   title="Barra @b.Numero — libre">
+                    @b.Numero
+                </a>
+            }
+        }
+        @if (!barra.Any())
+        {
+            <span class="text-muted">No hay posiciones de barra cargadas.</span>
+        }
+    </div>
+</div>
+
+<div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasPendientes" aria-labelledby="offcanvasPendientesLabel">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="offcanvasPendientesLabel"><i class="bi bi-clock-history me-2"></i>Pedidos pendientes</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
+    </div>
+    <div class="offcanvas-body">
+        @if (!pendientes.Any())
+        {
+            <p class="text-muted">No hay pedidos abiertos.</p>
+        }
+        else
+        {
+            <ul class="list-group">
+                @foreach (var p in pendientes)
+                {
+                    <li class="list-group-item">
+                        <a asp-controller="Pedido" asp-action="Detalle" asp-route-id="@p.IdPedido"
+                            class="d-flex justify-content-between align-items-center text-decoration-none">
+                            <span>
+                                <strong>Mesa @p.Mesa?.Numero</strong>
+                                <br />
+                                <small class="text-muted">@p.Empleado?.Apellido, @p.Empleado?.Nombre</small>
+                            </span>
+                            <span class="badge bg-secondary tiempo-transcurrido" data-fecha-hora="@p.FechaHora.ToString("o")">
+                                --
+                            </span>
+                        </a>
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function actualizarTiempos() {
+            document.querySelectorAll('.tiempo-transcurrido').forEach(function (el) {
+                var inicio = new Date(el.dataset.fechaHora);
+                var minutos = Math.max(0, Math.floor((Date.now() - inicio.getTime()) / 60000));
+                el.textContent = minutos < 1 ? 'recién' : 'hace ' + minutos + ' min';
+            });
+        }
+        actualizarTiempos();
+        setInterval(actualizarTiempos, 30000);
+    </script>
+}

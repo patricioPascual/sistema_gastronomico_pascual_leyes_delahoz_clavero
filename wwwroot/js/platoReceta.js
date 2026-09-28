@@ -26,7 +26,7 @@ $(document).ready(function () {
         <td>
           <div class="input-group">
             <input type="number" step="0.01" min="0.01" class="form-control"
-                   name="Receta[${index}].CantidadRequerida" value="${cantidad}">
+                  name="Receta[${index}].CantidadRequerida" value="${cantidad}">
             <span class="input-group-text label-unidad bg-light">${unidadMedida}</span>
           </div>
         </td>

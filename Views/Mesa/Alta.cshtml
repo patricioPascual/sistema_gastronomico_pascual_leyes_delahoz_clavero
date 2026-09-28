@@ -1,0 +1,61 @@
+@model sistema_gastronomico_pascual_leyes_delahoz_clavero.Models.Mesa
+
+@{
+    ViewData["Title"] = "Alta de Mesa";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-header bg-success text-white py-3">
+                    <h4 class="card-title mb-0">
+                        <i class="bi bi-plus-circle me-2"></i>Nueva Mesa / Puesto de Barra
+                    </h4>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="Crear" method="post">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="Numero" class="form-label fw-bold">Número</label>
+                            <input asp-for="Numero" type="number" min="1" class="form-control" placeholder="Ej: 1" required />
+                            <span asp-validation-for="Numero" class="text-danger small"></span>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Capacidad" class="form-label fw-bold">Capacidad</label>
+                                <input asp-for="Capacidad" type="number" min="1" class="form-control" placeholder="Ej: 4" required />
+                                <span asp-validation-for="Capacidad" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Tipo" class="form-label fw-bold">Tipo</label>
+                                <select asp-for="Tipo" class="form-select" required>
+                                    <option value="Mesa">Mesa</option>
+                                    <option value="Barra">Barra</option>
+                                </select>
+                                <span asp-validation-for="Tipo" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <hr class="my-4" />
+
+                        <div class="d-flex justify-content-between">
+                            <a asp-action="Index" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Volver al Listado
+                            </a>
+                            <button type="submit" class="btn btn-success px-4">
+                                <i class="bi bi-check-lg me-1"></i> Guardar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

@@ -9,23 +9,41 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
         private readonly IConfiguration config;
         private readonly ILogger<MesaController> logger;
         private readonly RepositorioMesa repoMesa;
+        private readonly RepositorioPedido repoPedido;
 
-        public MesaController(IConfiguration config, ILogger<MesaController> logger, RepositorioMesa repoMesa)
+        public MesaController(IConfiguration config, ILogger<MesaController> logger, RepositorioMesa repoMesa, RepositorioPedido repoPedido)
         {
             this.config = config;
             this.logger = logger;
             this.repoMesa = repoMesa;
+            this.repoPedido = repoPedido;
         }
 
-        public IActionResult Index(int pagina = 1)
+        // Sin paginado a propósito: el salón es un conjunto chico y fijo de
+        // mesas/puestos (14 en este caso), no un catálogo que crece. Usa la misma
+        // fuente de ocupación que Salon() para no tener dos criterios de
+        // Libre/Ocupada distintos en la app.
+        public IActionResult Index()
         {
-            int tamPagina = 10;
-            var mesas = repoMesa.ObtenerLista(pagNro: pagina, tamPagina: tamPagina);
-            int totalRegistros = repoMesa.ObtenerCantidad();
+            var mesas = repoMesa.ObtenerTodosConOcupacion()
+                .OrderBy(m => m.Tipo)
+                .ThenBy(m => m.Numero)
+                .ToList();
 
-            ViewBag.PaginaActual = pagina;
-            ViewBag.TotalPaginas = (int)Math.Ceiling((double)totalRegistros / tamPagina);
             return View(mesas);
+        }
+
+        // Vista principal del salón: mesas + barra, coloreadas según si tienen
+        // un pedido abierto, más el offcanvas de pedidos pendientes.
+        public IActionResult Salon()
+        {
+            var todas = repoMesa.ObtenerTodosConOcupacion();
+
+            ViewBag.Mesas = todas.Where(m => m.Tipo == "Mesa").OrderBy(m => m.Numero).ToList();
+            ViewBag.Barra = todas.Where(m => m.Tipo == "Barra").OrderBy(m => m.Numero).ToList();
+            ViewBag.PedidosPendientes = repoPedido.ObtenerAbiertos();
+
+            return View();
         }
 
         [HttpGet]

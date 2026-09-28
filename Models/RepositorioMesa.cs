@@ -16,8 +16,8 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
 
             using (var conn = new MySqlConnection(connectionString))
             {
-                string query = @"INSERT INTO mesa (numero, capacidad, estado)
-                                 VALUES (@numero, @capacidad, @estado);
+                string query = @"INSERT INTO mesa (numero, capacidad, estado, tipo)
+                                 VALUES (@numero, @capacidad, @estado, @tipo);
                                  SELECT LAST_INSERT_ID();";
 
                 using (var cmd = new MySqlCommand(query, conn))
@@ -25,6 +25,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
                     cmd.Parameters.AddWithValue("@numero", m.Numero);
                     cmd.Parameters.AddWithValue("@capacidad", m.Capacidad);
                     cmd.Parameters.AddWithValue("@estado", false); // toda mesa nueva arranca Libre
+                    cmd.Parameters.AddWithValue("@tipo", string.IsNullOrWhiteSpace(m.Tipo) ? "Mesa" : m.Tipo);
 
                     conn.Open();
                     res = Convert.ToInt32(cmd.ExecuteScalar());
@@ -62,7 +63,8 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
                 string query = @"UPDATE mesa
                                  SET numero = @numero,
                                      capacidad = @capacidad,
-                                     estado = @estado
+                                     estado = @estado,
+                                     tipo = @tipo
                                  WHERE id_mesa = @idMesa;";
 
                 using (var cmd = new MySqlCommand(query, conn))
@@ -70,6 +72,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
                     cmd.Parameters.AddWithValue("@numero", m.Numero);
                     cmd.Parameters.AddWithValue("@capacidad", m.Capacidad);
                     cmd.Parameters.AddWithValue("@estado", m.Estado);
+                    cmd.Parameters.AddWithValue("@tipo", string.IsNullOrWhiteSpace(m.Tipo) ? "Mesa" : m.Tipo);
                     cmd.Parameters.AddWithValue("@idMesa", m.IdMesa);
 
                     conn.Open();
@@ -86,7 +89,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
 
             using (var conn = new MySqlConnection(connectionString))
             {
-                string sql = @"SELECT id_mesa, numero, capacidad, estado
+                string sql = @"SELECT id_mesa, numero, capacidad, estado, tipo
                               FROM mesa
                               WHERE id_mesa = @id;";
 
@@ -104,7 +107,8 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
                                 IdMesa = reader.GetInt32("id_mesa"),
                                 Numero = reader.GetInt32("numero"),
                                 Capacidad = reader.GetInt32("capacidad"),
-                                Estado = reader.GetBoolean("estado")
+                                Estado = reader.GetBoolean("estado"),
+                                Tipo = reader.GetString("tipo")
                             };
                         }
                     }
@@ -121,7 +125,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
 
             using (var conn = new MySqlConnection(connectionString))
             {
-                string sql = @"SELECT id_mesa, numero, capacidad, estado
+                string sql = @"SELECT id_mesa, numero, capacidad, estado, tipo
                             FROM mesa
                             ORDER BY numero
                             LIMIT @tamPagina OFFSET @offset;";
@@ -141,7 +145,8 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
                                 IdMesa = reader.GetInt32("id_mesa"),
                                 Numero = reader.GetInt32("numero"),
                                 Capacidad = reader.GetInt32("capacidad"),
-                                Estado = reader.GetBoolean("estado")
+                                Estado = reader.GetBoolean("estado"),
+                                Tipo = reader.GetString("tipo")
                             });
                         }
                     }
@@ -151,21 +156,44 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
             return lista;
         }
 
-        public int ObtenerCantidad()
+        // Trae todas las mesas y puestos de barra, marcando con qué pedido abierto
+        // está ocupada cada una (null si está libre). Es la fuente de verdad para
+        // el Salón: no depende de que Mesa.Estado esté sincronizado.
+        public List<Mesa> ObtenerTodosConOcupacion()
         {
-            int total = 0;
+            var lista = new List<Mesa>();
 
             using (var conn = new MySqlConnection(connectionString))
             {
-                string sql = "SELECT COUNT(*) FROM mesa;";
+                string sql = @"SELECT m.id_mesa, m.numero, m.capacidad, m.estado, m.tipo,
+                                      p.id_pedido AS id_pedido_abierto
+                              FROM mesa m
+                              LEFT JOIN pedido p ON p.id_mesa = m.id_mesa AND p.estado = 'Abierto';";
+
                 using (var cmd = new MySqlCommand(sql, conn))
                 {
                     conn.Open();
-                    total = Convert.ToInt32(cmd.ExecuteScalar());
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            lista.Add(new Mesa
+                            {
+                                IdMesa = reader.GetInt32("id_mesa"),
+                                Numero = reader.GetInt32("numero"),
+                                Capacidad = reader.GetInt32("capacidad"),
+                                Estado = reader.GetBoolean("estado"),
+                                Tipo = reader.GetString("tipo"),
+                                IdPedidoAbierto = reader.IsDBNull(reader.GetOrdinal("id_pedido_abierto"))
+                                    ? null
+                                    : reader.GetInt32("id_pedido_abierto")
+                            });
+                        }
+                    }
                 }
             }
 
-            return total;
+            return lista;
         }
 
         public IList<Mesa> Buscar(string q)
@@ -174,7 +202,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
 
             using (var conn = new MySqlConnection(connectionString))
             {
-                string query = @"SELECT id_mesa, numero, capacidad, estado
+                string query = @"SELECT id_mesa, numero, capacidad, estado, tipo
                                 FROM mesa
                                 WHERE numero LIKE @q
                                 LIMIT 20;";
@@ -192,7 +220,8 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
                                 IdMesa = reader.GetInt32("id_mesa"),
                                 Numero = reader.GetInt32("numero"),
                                 Capacidad = reader.GetInt32("capacidad"),
-                                Estado = reader.GetBoolean("estado")
+                                Estado = reader.GetBoolean("estado"),
+                                Tipo = reader.GetString("tipo")
                             });
                         }
                     }

@@ -7,11 +7,9 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
 {
     public class RepositorioPedido : RepositorioBase
     {
-
         public RepositorioPedido(IConfiguration configuration) : base(configuration)
         {
         }
-
 
         public int Alta(Pedido p)
         {
@@ -53,7 +51,6 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
             return p.IdPedido;
         }
 
-
         public bool Baja(int idpedido)
         {
             using (var conn = new MySqlConnection(connectionString))
@@ -70,7 +67,6 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
                 }
             }
         }
-
 
         public bool ModificarPedido(Pedido p)
         {
@@ -90,7 +86,8 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
                 }
             }
         }
-        public static void RecalcularTotal(int idPedido, MySqlConnection conn,MySqlTransaction tx)
+
+        public static void RecalcularTotal(int idPedido, MySqlConnection conn, MySqlTransaction tx)
         {
             string sql = @"UPDATE pedido
                    SET total = (SELECT COALESCE(SUM(cantidad * precio_unitario), 0)
@@ -102,7 +99,6 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
             cmd.Parameters.AddWithValue("@id", idPedido);
             cmd.ExecuteNonQuery();
         }
-
 
         public List<Pedido> ObtenerLista(int pagNro, int tamPagina)
         {
@@ -138,6 +134,38 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
             return lista;
         }
 
+        // Pedidos en curso para el offcanvas del Salón, el más viejo primero
+        // (es el que lleva más tiempo esperando).
+        public List<Pedido> ObtenerAbiertos()
+        {
+            var lista = new List<Pedido>();
+
+            using (var conn = new MySqlConnection(connectionString))
+            {
+                string sql = @"SELECT p.id_pedido, p.fecha_hora, p.estado, p.total, p.id_mesa, p.id_empleado,
+                                      m.numero AS numero_mesa,
+                                      e.nombre AS nombre_empleado, e.apellido AS apellido_empleado
+                               FROM pedido p
+                               INNER JOIN mesa m ON p.id_mesa = m.id_mesa
+                               INNER JOIN empleado e ON p.id_empleado = e.id_empleado
+                               WHERE p.estado = 'Abierto'
+                               ORDER BY p.fecha_hora ASC;";
+
+                using (var cmd = new MySqlCommand(sql, conn))
+                {
+                    conn.Open();
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            lista.Add(LeerPedido(reader));
+                        }
+                    }
+                }
+            }
+
+            return lista;
+        }
 
         public int ObtenerCantidad()
         {
@@ -152,7 +180,6 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
                 }
             }
         }
-
 
         public Pedido? ObtenerPorId(int idPedido)
         {
@@ -221,7 +248,6 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
             return pedido;
         }
 
-
         private static Pedido LeerPedido(MySqlDataReader reader)
         {
             return new Pedido
@@ -247,7 +273,5 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
                 }
             };
         }
-
     }
-
 }
