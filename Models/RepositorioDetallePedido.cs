@@ -37,6 +37,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
                 res = (int)cmd.LastInsertedId;
             }
 
+            RepositorioPedido.AjustarStock(d.IdPlato, d.Cantidad, conn, tx);
             RepositorioPedido.RecalcularTotal(d.IdPedido, conn, tx);
             tx.Commit();
             return res;
@@ -51,6 +52,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
 
             // Se busca antes del DELETE porque después el detalle ya no existe
             int idPedido = ObtenerIdPedido(idDetallePedido, conn, tx);
+            var (idPlato, cantidad) = ObtenerDatosDetalle(idDetallePedido, conn, tx);
 
             // El enum de estado no tiene un valor de baja, así que el detalle se borra
             string sql = @"DELETE FROM detalle_pedido
@@ -61,6 +63,8 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
                 cmd.ExecuteNonQuery();
             }
 
+            // Se devuelve al stock lo que se había descontado
+            RepositorioPedido.AjustarStock(idPlato, -cantidad, conn, tx);
             RepositorioPedido.RecalcularTotal(idPedido, conn, tx);
             tx.Commit();
             return true;
@@ -74,6 +78,10 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
             using var tx = conn.BeginTransaction();
 
             int idPedido = ObtenerIdPedido(idDetallePedido, conn, tx);
+            var (idPlato, cantidadAnterior) = ObtenerDatosDetalle(idDetallePedido, conn, tx);
+
+            // Solo se descuenta (o devuelve) la diferencia
+            RepositorioPedido.AjustarStock(idPlato, nuevaCantidad - cantidadAnterior, conn, tx);
 
             string sql = @"UPDATE detalle_pedido SET cantidad = @cantidad
                    WHERE id_detalle_pedido = @id;";
@@ -103,6 +111,22 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
                 throw new InvalidOperationException("El detalle no existe");
 
             return Convert.ToInt32(resultado);
+        }
+
+        // Busca qué plato es y cuántos se pidieron, para ajustar el stock
+        private (int IdPlato, int Cantidad) ObtenerDatosDetalle(int idDetallePedido, MySqlConnection conn, MySqlTransaction tx)
+        {
+            string sql = @"SELECT id_plato, cantidad FROM detalle_pedido
+                           WHERE id_detalle_pedido = @id;";
+
+            using var cmd = new MySqlCommand(sql, conn, tx);
+            cmd.Parameters.AddWithValue("@id", idDetallePedido);
+
+            using var reader = cmd.ExecuteReader();
+            if (!reader.Read())
+                throw new InvalidOperationException("El detalle no existe");
+
+            return (reader.GetInt32("id_plato"), reader.GetInt32("cantidad"));
         }
     }
 
