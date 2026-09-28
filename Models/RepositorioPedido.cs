@@ -43,6 +43,8 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
 
                 if (cmd.ExecuteNonQuery() == 0)
                     throw new InvalidOperationException($"El plato {d.IdPlato} no existe o está dado de baja");
+
+                AjustarStock(d.IdPlato, d.Cantidad, conn, tx);
             }
 
             RecalcularTotal(p.IdPedido, conn, tx);
@@ -53,19 +55,37 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
 
         public bool Baja(int idpedido)
         {
-            using (var conn = new MySqlConnection(connectionString))
-            {
-                string sql = @"UPDATE pedido
-                       SET estado = 'Cancelado'
-                       WHERE id_pedido = @id AND estado = 'Abierto';";
+            using var conn = new MySqlConnection(connectionString);
+            conn.Open();
+            using var tx = conn.BeginTransaction();
 
-                using (var cmd = new MySqlCommand(sql, conn))
-                {
-                    cmd.Parameters.AddWithValue("@id", idpedido);
-                    conn.Open();
-                    return cmd.ExecuteNonQuery() > 0;
-                }
+            string sql = @"UPDATE pedido
+                   SET estado = 'Cancelado'
+                   WHERE id_pedido = @id AND estado = 'Abierto';";
+
+            using (var cmd = new MySqlCommand(sql, conn, tx))
+            {
+                cmd.Parameters.AddWithValue("@id", idpedido);
+                if (cmd.ExecuteNonQuery() == 0)
+                    return false;
             }
+
+            // Se devuelve al stock lo que se había descontado
+            var detalles = new List<(int IdPlato, int Cantidad)>();
+            string sqlDetalles = "SELECT id_plato, cantidad FROM detalle_pedido WHERE id_pedido = @id;";
+            using (var cmd = new MySqlCommand(sqlDetalles, conn, tx))
+            {
+                cmd.Parameters.AddWithValue("@id", idpedido);
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                    detalles.Add((reader.GetInt32("id_plato"), reader.GetInt32("cantidad")));
+            }
+
+            foreach (var d in detalles)
+                AjustarStock(d.IdPlato, -d.Cantidad, conn, tx);
+
+            tx.Commit();
+            return true;
         }
 
         public bool ModificarPedido(Pedido p)
@@ -98,6 +118,45 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
             using var cmd = new MySqlCommand(sql, conn, tx);
             cmd.Parameters.AddWithValue("@id", idPedido);
             cmd.ExecuteNonQuery();
+        }
+
+        // Descuenta del stock los productos de la receta del plato.
+        // Con cantidad negativa devuelve el stock baja de detalle, pedido cancelado
+        public static void AjustarStock(int idPlato, int cantidad, MySqlConnection conn, MySqlTransaction tx)
+        {
+            if (cantidad == 0) return;
+
+            if (cantidad > 0)
+            {
+                string sqlFaltante = @"SELECT pr.nombre
+                                       FROM detalle_receta dr
+                                       INNER JOIN producto pr ON pr.id_producto = dr.id_producto
+                                       WHERE dr.id_plato = @idPlato
+                                         AND pr.cantidad_stock < dr.cantidad_requerida * @cantidad
+                                       LIMIT 1;";
+
+                using (var cmd = new MySqlCommand(sqlFaltante, conn, tx))
+                {
+                    cmd.Parameters.AddWithValue("@idPlato", idPlato);
+                    cmd.Parameters.AddWithValue("@cantidad", cantidad);
+
+                    var faltante = cmd.ExecuteScalar();
+                    if (faltante != null)
+                        throw new InvalidOperationException($"No hay stock suficiente de {faltante}");
+                }
+            }
+
+            string sql = @"UPDATE producto pr
+                           INNER JOIN detalle_receta dr ON dr.id_producto = pr.id_producto
+                           SET pr.cantidad_stock = pr.cantidad_stock - dr.cantidad_requerida * @cantidad
+                           WHERE dr.id_plato = @idPlato;";
+
+            using (var cmd = new MySqlCommand(sql, conn, tx))
+            {
+                cmd.Parameters.AddWithValue("@idPlato", idPlato);
+                cmd.Parameters.AddWithValue("@cantidad", cantidad);
+                cmd.ExecuteNonQuery();
+            }
         }
 
         public List<Pedido> ObtenerLista(int pagNro, int tamPagina)
