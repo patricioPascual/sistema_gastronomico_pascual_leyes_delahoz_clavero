@@ -6,8 +6,11 @@ $(document).ready(function () {
     const index = filaContador++;
     const idProducto = datos.idProducto || "";
     const nombreProducto = datos.nombreProducto || "";
-    const cantidad = datos.cantidadRequerida || "";
-    const unidadMedida = datos.unidadMedida || "-"; // Leemos la unidad o ponemos un guion
+    const unidadMedida = datos.unidadMedida || "-";
+
+    const cantidad = (datos.cantidadRequerida || "")
+      .toString()
+      .replace(".", ",");
 
     const opcionInicial = idProducto
       ? `<option value="${idProducto}" selected>${nombreProducto}</option>`
@@ -25,14 +28,15 @@ $(document).ready(function () {
         </td>
         <td>
           <div class="input-group">
-            <input type="number" step="0.01" min="0.01" class="form-control"
-                  name="Receta[${index}].CantidadRequerida" value="${cantidad}">
+            <!-- Usamos type="text" para que el navegador no te bloquee la coma, e inputmode para el celular -->
+            <input type="text" inputmode="decimal" class="form-control"
+                   name="Receta[${index}].CantidadRequerida" value="${cantidad}" required>
             <span class="input-group-text label-unidad bg-light">${unidadMedida}</span>
           </div>
         </td>
         <td class="text-end">
           <button type="button" class="btn btn-outline-danger btn-sm btn-quitar-fila">
-            <i class="bi bi-x-circle"></i>
+            <i class="bi bi-trash"></i>
           </button>
         </td>
       </tr>
@@ -66,6 +70,15 @@ $(document).ready(function () {
   $("#tablaReceta").on("click", ".btn-quitar-fila", function () {
     $(this).closest("tr").remove();
   });
+
+  $("#tablaReceta").on(
+    "input",
+    "input[name*='CantidadRequerida']",
+    function () {
+      this.value = this.value.replace(/\./g, ",");
+      this.value = this.value.replace(/[^0-9,]/g, "");
+    },
+  );
 
   $(window).on("keydown", function (event) {
     if (event.key === "Enter") {
