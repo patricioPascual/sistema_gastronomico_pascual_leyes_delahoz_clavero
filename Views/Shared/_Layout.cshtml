@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - Foodly</title>
 
+    <link rel="icon" type="image/svg+xml" href="~/logo-svg.svg" />
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" />
@@ -95,10 +96,17 @@
     <footer class="footer bg-white border-top py-4 mt-auto text-muted">
         <div class="container d-flex justify-content-between align-items-center">
             <small>&copy; 2026 Foodly. Gestión Gastronómica.</small>
-            <a href="https://github.com/patricioPascual/sistema_gastronomico_pascual_leyes_delahoz_clavero.git"
-               target="_blank" class="text-muted text-decoration-none hover-danger">
-                <i class="bi bi-github fs-5"></i>
-            </a>
+            <span>
+                <a class="text-muted text-decoration-none hover-danger" asp-controller="Home" asp-action="Privacy"
+                   title="Políticas de Privacidad y Uso Interno">
+                    <i class="bi bi-shield-shaded fs-5"></i>
+                </a>
+                &nbsp
+                <a href="https://github.com/patricioPascual/sistema_gastronomico_pascual_leyes_delahoz_clavero.git"
+                   target="_blank" class="text-muted text-decoration-none hover-danger" title="Repositorio">
+                    <i class="bi bi-github fs-5"></i>
+                </a>
+            </span>
         </div>
     </footer>
 

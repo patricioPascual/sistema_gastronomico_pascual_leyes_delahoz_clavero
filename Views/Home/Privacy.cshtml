@@ -1,6 +1,49 @@
 ﻿@{
-    ViewData["Title"] = "Privacy Policy";
+    ViewData["Title"] = "Política de Privacidad";
 }
-<h1>@ViewData["Title"]</h1>
 
-<p>Use this page to detail your site's privacy policy.</p>
+<div class="container-fluid py-3 max-w-75">
+    <div class="text-center mb-5">
+        <div class="bg-secondary bg-opacity-10 text-secondary rounded-circle p-3 mb-3 d-inline-flex align-items-center justify-content-center"
+             style="width: 72px; height: 72px;">
+            <i class="bi bi-shield-check fs-1"></i>
+        </div>
+        <h2 class="fw-bold">Políticas de Privacidad y Uso Interno</h2>
+        <p class="text-muted lead">Términos de confidencialidad para el uso del sistema Foodly.</p>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-5">
+            <h5 class="fw-bold text-dark mb-3"><i class="bi bi-database-lock me-2 text-danger"></i> 1. Manejo de la
+                Información</h5>
+                <p class="text-muted mb-4">
+                    Toda la información registrada en este sistema (incluyendo pero no limitándose a recetas, costos de
+                    insumos, volumen de ventas y datos de clientes) es de carácter estrictamente confidencial. Su uso está
+                    restringido exclusivamente a las operaciones diarias del establecimiento gastronómico.
+                </p>
+
+                <h5 class="fw-bold text-dark mb-3"><i class="bi bi-person-badge me-2 text-danger"></i> 2. Responsabilidad de
+                    Usuarios</h5>
+                    <p class="text-muted mb-4">
+                        Cada empleado es responsable de las acciones realizadas bajo su usuario. Queda prohibido compartir
+                        credenciales de acceso o utilizar el sistema para fines ajenos a la prestación del servicio en el salón,
+                        compras a proveedores o administración de inventario.
+                    </p>
+
+                    <h5 class="fw-bold text-dark mb-3"><i class="bi bi-cloud-arrow-up me-2 text-danger"></i> 3. Seguridad y
+                        Respaldo</h5>
+                        <p class="text-muted mb-0">
+                            Foodly registra temporalmente las transacciones y estados de pedidos (como los tiempos de atención en
+                            las mesas) para optimizar el servicio. Estos datos se respaldan periódicamente para garantizar la
+                            integridad operativa del restaurante y no son compartidos con terceros ajenos a la administración del
+                            local.
+                        </p>
+                    </div>
+                </div>
+    
+                <div class="text-center mt-4">
+                    <a asp-controller="Home" asp-action="Index" class="btn btn-light rounded-pill px-4">
+                        <i class="bi bi-arrow-left me-2"></i> Volver al Inicio
+                    </a>
+                </div>
+            </div>
