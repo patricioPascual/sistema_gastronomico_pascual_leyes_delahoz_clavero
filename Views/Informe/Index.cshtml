@@ -54,7 +54,7 @@
 
         <div v-else>
             <!-- BALANCE -->
-            <div v-if="pestanaActiva === 'balance'" class="row g-4">
+            <div v-cloak v-if="pestanaActiva === 'balance'" class="row g-4">
                 <div class="col-md-4">
                     <div class="card border-0 shadow-sm bg-success text-white">
                         <div class="card-body">
@@ -67,12 +67,14 @@
                     <div class="card border-0 shadow-sm bg-danger text-white">
                         <div class="card-body">
                             <h6>Total Compras</h6>
-                            <h3 class="mb-0">$ {{ balance.totalCompras ? balance.totalCompras.toFixed(2) : '0.00' }}</h3>
+                            <h3 class="mb-0">$ {{ balance.totalCompras ? balance.totalCompras.toFixed(2) : '0.00' }}
+                            </h3>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="card border-0 shadow-sm" :class="balance.saldoNeto >= 0 ? 'bg-primary text-white' : 'bg-warning text-dark'">
+                    <div class="card border-0 shadow-sm"
+                         :class="balance.saldoNeto >= 0 ? 'bg-primary text-white' : 'bg-warning text-dark'">
                         <div class="card-body">
                             <h6>Saldo Neto</h6>
                             <h3 class="mb-0">$ {{ balance.saldoNeto ? balance.saldoNeto.toFixed(2) : '0.00' }}</h3>
@@ -82,7 +84,7 @@
             </div>
 
             <!-- PESTAÑA PLATOS -->
-            <div v-if="pestanaActiva === 'platos'" class="table-responsive bg-white rounded shadow-sm p-3">
+            <div v-cloak v-if="pestanaActiva === 'platos'" class="table-responsive bg-white rounded shadow-sm p-3">
                 <table class="table table-hover align-middle">
                     <thead class="table-light">
                         <tr>
@@ -98,14 +100,15 @@
                             <td class="text-end text-success fw-bold">$ {{ item.totalRecaudado.toFixed(2) }}</td>
                         </tr>
                         <tr v-if="platos.length === 0">
-                            <td colspan="3" class="text-center text-muted">No se encontraron registros en este período.</td>
+                            <td colspan="3" class="text-center text-muted">No se encontraron registros en este período.
+                            </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
 
             <!--PESTANA PROVVEDOR -->
-            <div v-if="pestanaActiva === 'proveedores'" class="table-responsive bg-white rounded shadow-sm p-3">
+            <div v-cloak v-if="pestanaActiva === 'proveedores'" class="table-responsive bg-white rounded shadow-sm p-3">
                 <table class="table table-hover align-middle">
                     <thead class="table-light">
                         <tr>
@@ -121,14 +124,15 @@
                             <td class="text-end text-danger fw-bold">$ {{ item.totalAcumulado.toFixed(2) }}</td>
                         </tr>
                         <tr v-if="proveedores.length === 0">
-                            <td colspan="3" class="text-center text-muted">No se encontraron compras en este período.</td>
+                            <td colspan="3" class="text-center text-muted">No se encontraron compras en este período.
+                            </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
 
             <!--VENTAS MOZO-->
-            <div v-if="pestanaActiva === 'mozos'" class="table-responsive bg-white rounded shadow-sm p-3">
+            <div v-cloak v-if="pestanaActiva === 'mozos'" class="table-responsive bg-white rounded shadow-sm p-3">
                 <table class="table table-hover align-middle">
                     <thead class="table-light">
                         <tr>
@@ -144,87 +148,88 @@
                             <td class="text-end text-success fw-bold">$ {{ item.totalVentas.toFixed(2) }}</td>
                         </tr>
                         <tr v-if="mozos.length === 0">
-                            <td colspan="3" class="text-center text-muted">No hay ventas registradas por mozos en este período.</td>
-                        </tr>
-                    </tbody>
-                </table>
+                            <td colspan="3" class="text-center text-muted">No hay ventas registradas por mozos en este
+                                período.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-@section Scripts {
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    @section Scripts {
+        <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
-    <script>
-        const { createApp } = Vue;
+        <script>
+            const { createApp } = Vue;
 
-        createApp({
-            data() {
-                // Fechas por defecto: hace 30 días hasta hoy
-                const hoy = new Date().toISOString().split('T')[0];
-                const haceUnMes = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            createApp({
+                data() {
+                    // Fechas por defecto: hace 30 días hasta hoy
+                    const hoy = new Date().toISOString().split('T')[0];
+                    const haceUnMes = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-                return {
-                    fechaDesde: haceUnMes,
-                    fechaHasta: hoy,
-                    pestanaActiva: 'balance',
-                    cargando: false,
+                    return {
+                        fechaDesde: haceUnMes,
+                        fechaHasta: hoy,
+                        pestanaActiva: 'balance',
+                        cargando: false,
 
                  
-                    balance: {},
-                    platos: [],
-                    proveedores: [],
-                    mozos: []
-                };
-            },
-            methods: {
-                cambiarPestana(nombrePestana) {
-                    this.pestanaActiva = nombrePestana;
-                    
-                    
-                    const links = document.querySelectorAll('#pestañasInformes .nav-link');
-                    links.forEach(el => el.classList.remove('active'));
-                    event.currentTarget.classList.add('active');
-
-                    this.cargarInformeActivo();
+                        balance: {},
+                        platos: [],
+                        proveedores: [],
+                        mozos: []
+                    };
                 },
-                cargarInformeActivo() {
-                    this.cargando = true;
-                    let url = '';
+                methods: {
+                    cambiarPestana(nombrePestana) {
+                        this.pestanaActiva = nombrePestana;
+                    
+                    
+                        const links = document.querySelectorAll('#pestañasInformes .nav-link');
+                        links.forEach(el => el.classList.remove('active'));
+                        event.currentTarget.classList.add('active');
 
-                    switch (this.pestanaActiva) {
-                        case 'balance':
-                            url = `/Informe/GetBalance?desde=${this.fechaDesde}&hasta=${this.fechaHasta}`;
-                            break;
-                        case 'platos':
-                            url = `/Informe/GetPlatosMasVendidos?desde=${this.fechaDesde}&hasta=${this.fechaHasta}`;
-                            break;
-                        case 'proveedores':
-                            url = `/Informe/GetComprasPorProveedor?desde=${this.fechaDesde}&hasta=${this.fechaHasta}`;
-                            break;
-                        case 'mozos':
-                            url = `/Informe/GetVentasPorMozo?desde=${this.fechaDesde}&hasta=${this.fechaHasta}`;
-                            break;
+                        this.cargarInformeActivo();
+                    },
+                    cargarInformeActivo() {
+                        this.cargando = true;
+                        let url = '';
+
+                        switch (this.pestanaActiva) {
+                            case 'balance':
+                                url = `/Informe/GetBalance?desde=${this.fechaDesde}&hasta=${this.fechaHasta}`;
+                                break;
+                            case 'platos':
+                                url = `/Informe/GetPlatosMasVendidos?desde=${this.fechaDesde}&hasta=${this.fechaHasta}`;
+                                break;
+                            case 'proveedores':
+                                url = `/Informe/GetComprasPorProveedor?desde=${this.fechaDesde}&hasta=${this.fechaHasta}`;
+                                break;
+                            case 'mozos':
+                                url = `/Informe/GetVentasPorMozo?desde=${this.fechaDesde}&hasta=${this.fechaHasta}`;
+                                break;
+                        }
+
+                        fetch(url)
+                            .then(res => res.json())
+                            .then(data => {
+                                if (this.pestanaActiva === 'balance') this.balance = data;
+                                if (this.pestanaActiva === 'platos') this.platos = data;
+                                if (this.pestanaActiva === 'proveedores') this.proveedores = data;
+                                if (this.pestanaActiva === 'mozos') this.mozos = data;
+                            })
+                            .catch(err => console.error("Error al cargar informe:", err))
+                            .finally(() => {
+                                this.cargando = false;
+                            });
                     }
-
-                    fetch(url)
-                        .then(res => res.json())
-                        .then(data => {
-                            if (this.pestanaActiva === 'balance') this.balance = data;
-                            if (this.pestanaActiva === 'platos') this.platos = data;
-                            if (this.pestanaActiva === 'proveedores') this.proveedores = data;
-                            if (this.pestanaActiva === 'mozos') this.mozos = data;
-                        })
-                        .catch(err => console.error("Error al cargar informe:", err))
-                        .finally(() => {
-                            this.cargando = false;
-                        });
+                },
+                mounted() {
+                    this.cargarInformeActivo();
                 }
-            },
-            mounted() {
-                this.cargarInformeActivo();
-            }
-        }).mount('#appInformes');
-    </script>
-}
+            }).mount('#appInformes');
+        </script>
+    }
