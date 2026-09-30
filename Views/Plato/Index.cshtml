@@ -2,6 +2,8 @@
 
 @{
     ViewData["Title"] = "Gestión de Platos";
+    int paginaActual = ViewBag.PaginaActual ?? 1; // Corregido de PagNro a PaginaActual
+    int totalPaginas = ViewBag.TotalPaginas ?? 1;
 }
 
 <div class="container mt-4">
@@ -32,7 +34,7 @@
                         <tr>
                             <td>@item.IdPlato</td>
                             <td><strong>@item.Nombre</strong></td>
-                            <td>@item.IdCategoria</td>
+                            <td>@item.TipoPlato?.Nombre</td>
                             <td>$@item.PrecioVenta.ToString("N2")</td>
                             <td>
                                 @if (item.Estado)
@@ -45,10 +47,12 @@
                                 }
                             </td>
                             <td class="text-center">
-                                <a asp-action="Editar" asp-route-id="@item.IdPlato" class="btn btn-sm btn-outline-primary me-1" title="Editar">
-                                    <i class="bi bi-pencil"></i> Modificar
+                                <a asp-action="Editar" asp-route-id="@item.IdPlato" class="btn btn-sm btn-outline-primary me-1"
+                                   title="Editar">
+                                    <i class="bi bi-pencil"></i>
                                 </a>
-                                <a asp-action="Eliminar" asp-route-id="@item.IdPlato" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                                <a asp-action="Eliminar" asp-route-id="@item.IdPlato" class="btn btn-sm btn-outline-danger"
+                                   title="Eliminar">
                                     <i class="bi bi-trash"></i>
                                 </a>
                             </td>
@@ -66,4 +70,27 @@
             </tbody>
         </table>
     </div>
+
+    @if (totalPaginas > 1)
+    {
+        <nav aria-label="Paginación de platos" class="mt-4">
+            <ul class="pagination justify-content-center">
+                <li class="page-item @(paginaActual <= 1 ? "disabled" : "")">
+                    <!-- Cambiado de asp-route-pagNro a asp-route-pagina -->
+                    <a class="page-link" asp-action="Index" asp-route-pagina="@(paginaActual - 1)">Anterior</a>
+                </li>
+
+                @for (int i = 1; i <= totalPaginas; i++)
+                {
+                    <li class="page-item @(i == paginaActual ? "active" : "")">
+                        <a class="page-link" asp-action="Index" asp-route-pagina="@i">@i</a>
+                    </li>
+                }
+
+                <li class="page-item @(paginaActual >= totalPaginas ? "disabled" : "")">
+                    <a class="page-link" asp-action="Index" asp-route-pagina="@(paginaActual + 1)">Siguiente</a>
+                </li>
+            </ul>
+        </nav>
+    }
 </div>

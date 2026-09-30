@@ -9,10 +9,10 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
         private readonly RepositorioDetallePedido repoDetalle;
         private readonly RepositorioMesa repoMesa;
         private readonly RepositorioEmpleado repoEmpleado;
-        private readonly IRepositorioPlato repoPlato;
+        private readonly RepositorioPlato repoPlato;
 
         public PedidoController(RepositorioPedido repoPedido, RepositorioDetallePedido repoDetalle,
-            RepositorioMesa repoMesa, RepositorioEmpleado repoEmpleado, IRepositorioPlato repoPlato)
+            RepositorioMesa repoMesa, RepositorioEmpleado repoEmpleado, RepositorioPlato repoPlato)
         {
             this.repoPedido = repoPedido;
             this.repoDetalle = repoDetalle;

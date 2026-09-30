@@ -6,13 +6,13 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 {
     public class PlatoController : Controller
     {
-        private readonly IRepositorioPlato repositorioPlato;
-        private readonly IRepositorioDetalleReceta repositorioDetalleReceta;
+        private readonly RepositorioPlato repositorioPlato;
+        private readonly RepositorioDetalleReceta repositorioDetalleReceta;
         private readonly RepositorioCategoria repositorioCategoria;
 
         public PlatoController(
-            IRepositorioPlato repositorioPlato,
-            IRepositorioDetalleReceta repositorioDetalleReceta,
+            RepositorioPlato repositorioPlato,
+            RepositorioDetalleReceta repositorioDetalleReceta,
             RepositorioCategoria repositorioCategoria)
         {
             this.repositorioPlato = repositorioPlato;
@@ -20,10 +20,15 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             this.repositorioCategoria = repositorioCategoria;
         }
 
-        public IActionResult Index()
+        public IActionResult Index(int pagina = 1)
         {
-            var platos = repositorioPlato.ObtenerTodos();
-            return View(platos);
+            int tamPagina = 10;
+            var Platos = repositorioPlato.ObtenerLista(pagNro: pagina, tamPagina: tamPagina);
+            int totalRegistros = repositorioPlato.ObtenerTotalRegistros();
+
+            ViewBag.PaginaActual = pagina;
+            ViewBag.TotalPaginas = (int)Math.Ceiling((double)totalRegistros / tamPagina);
+            return View(Platos);
         }
 
         public IActionResult Crear()
@@ -135,5 +140,6 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             repositorioPlato.Baja(id);
             return RedirectToAction(nameof(Index));
         }
+
     }
 }

@@ -39,10 +39,13 @@
                             <td>Mesa @item.Mesa?.Numero</td>
                             <td>@item.Empleado?.Apellido, @item.Empleado?.Nombre</td>
                             <td>$@item.Total.ToString("N2")</td>
-                            <td><partial name="_EstadoBadge" model="item.estado" /></td>
+                            <td>
+                                <partial name="_EstadoBadge" model="item.estado" />
+                            </td>
                             <td class="text-center">
-                                <a asp-action="Detalle" asp-route-id="@item.IdPedido" class="btn btn-sm btn-outline-primary" title="Ver detalle">
-                                    <i class="bi bi-eye"></i> Ver
+                                <a asp-action="Detalle" asp-route-id="@item.IdPedido" class="btn btn-sm btn-outline-primary"
+                                   title="Ver detalle">
+                                    <i class="bi bi-eye"></i>
                                 </a>
                             </td>
                         </tr>

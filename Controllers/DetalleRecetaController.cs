@@ -7,9 +7,9 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 {
     public class DetalleRecetaController : ControllerBase
     {
-        private readonly IRepositorioDetalleReceta repositorioDetalleReceta;
+        private readonly RepositorioDetalleReceta repositorioDetalleReceta;
 
-        public DetalleRecetaController(IRepositorioDetalleReceta repositorioDetalleReceta)
+        public DetalleRecetaController(RepositorioDetalleReceta repositorioDetalleReceta)
         {
             this.repositorioDetalleReceta = repositorioDetalleReceta;
         }

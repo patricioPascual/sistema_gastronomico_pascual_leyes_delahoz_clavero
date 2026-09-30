@@ -52,13 +52,12 @@
                                 }
                             </td>
                             <td class="text-center">
-                                <a asp-action="Modificar" asp-route-id="@item.IdProducto" class="btn btn-sm btn-outline-primary me-1" title="Editar">
-                                    <i class="bi bi-pencil"></i> Modificar
+                                <a asp-action="Modificar" asp-route-id="@item.IdProducto"
+                                   class="btn btn-sm btn-outline-primary me-1" title="Editar">
+                                    <i class="bi bi-pencil"></i>
                                 </a>
                                 
-                                <button type="button" 
-                                        class="btn btn-sm btn-outline-danger" 
-                                        title="Eliminar"
+                                <button type="button" class="btn btn-sm btn-outline-danger" title="Eliminar"
                                         onclick="abrirModalEliminar(@item.IdProducto, '@item.Nombre', '@Url.Action("Eliminar", "Producto")')">
                                     <i class="bi bi-trash"></i>
                                 </button>

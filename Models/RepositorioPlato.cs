@@ -4,10 +4,12 @@ using MySql.Data.MySqlClient;
 
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
 {
-    public class RepositorioPlato : RepositorioBase, IRepositorioPlato
+    public class RepositorioPlato : RepositorioBase
     {
-        public RepositorioPlato(IConfiguration configuration) : base(configuration)
+        RepositorioCategoria repositorioCategoria;
+        public RepositorioPlato(IConfiguration configuration, RepositorioCategoria repositorioCategoria) : base(configuration)
         {
+            this.repositorioCategoria = repositorioCategoria;
         }
 
         public int Alta(Plato p)
@@ -130,9 +132,9 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
             return lista;
         }
 
-        public Plato ObtenerPorId(int id)
+        public Plato? ObtenerPorId(int id)
         {
-            Plato p = null;
+            Plato? p = null;
             using (var conn = new MySqlConnection(connectionString))
             {
                 string query = @"SELECT id_plato, nombre, precio_venta, activo, id_categoria
@@ -189,8 +191,55 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
                 Nombre = reader.GetString("nombre"),
                 PrecioVenta = reader.GetDecimal("precio_venta"),
                 Estado = reader.GetBoolean("activo"),
-                IdCategoria = reader.GetInt32("id_categoria")
+                IdCategoria = reader.GetInt32("id_categoria"),
+                TipoPlato = repositorioCategoria.ObtenerPorId(reader.GetInt32("id_categoria"))
             };
         }
+
+        public IList<Plato> ObtenerLista(int pagNro, int tamPagina)
+        {
+            var lista = new List<Plato>();
+            int offset = (pagNro - 1) * tamPagina;
+
+            using (var conn = new MySqlConnection(connectionString))
+            {
+                string query = @"SELECT id_plato, nombre, precio_venta, activo, id_categoria 
+                         FROM plato 
+                         ORDER BY id_plato DESC
+                         LIMIT @tamPagina OFFSET @offset;";
+
+                using (var cmd = new MySqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@tamPagina", tamPagina);
+                    cmd.Parameters.AddWithValue("@offset", offset);
+
+                    conn.Open();
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            lista.Add(MapearPlato(reader));
+                        }
+                    }
+                }
+            }
+            return lista;
+        }
+
+        public int ObtenerTotalRegistros()
+        {
+            int total = 0;
+            using (var conn = new MySqlConnection(connectionString))
+            {
+                string query = "SELECT COUNT(*) FROM plato;";
+                using (var cmd = new MySqlCommand(query, conn))
+                {
+                    conn.Open();
+                    total = Convert.ToInt32(cmd.ExecuteScalar());
+                }
+            }
+            return total;
+        }
+
     }
 }

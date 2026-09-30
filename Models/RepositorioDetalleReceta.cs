@@ -4,7 +4,7 @@ using MySql.Data.MySqlClient;
 
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
 {
-    public class RepositorioDetalleReceta : RepositorioBase, IRepositorioDetalleReceta
+    public class RepositorioDetalleReceta : RepositorioBase
     {
         public RepositorioDetalleReceta(IConfiguration configuration) : base(configuration)
         {

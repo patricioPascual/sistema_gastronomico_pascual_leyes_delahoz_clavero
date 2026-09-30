@@ -40,15 +40,14 @@
                                     <td>@(string.IsNullOrEmpty(item.Telefono) ? "-" : item.Telefono)</td>
                                     <td>@(string.IsNullOrEmpty(item.Direccion) ? "-" : item.Direccion)</td>
                                     <td class="text-center">
-                                        <a asp-action="Editar" asp-route-id="@item.IdProveedor" class="btn btn-sm btn-outline-primary me-1" title="Editar">
-                                            <i class="bi bi-pencil"></i> Editar
+                                        <a asp-action="Editar" asp-route-id="@item.IdProveedor"
+                                           class="btn btn-sm btn-outline-primary me-1" title="Editar">
+                                            <i class="bi bi-pencil"></i>
                                         </a>
-                                        <button type="button" 
-                                        class="btn btn-sm btn-outline-danger" 
-                                        title="Eliminar"
-                                        onclick="abrirModalEliminar(@item.IdProveedor, '@item.Nombre', '@Url.Action("Baja", "Proveedor")')">
-                                    <i class="bi bi-trash"></i>
-                                </button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" title="Eliminar"
+                                                onclick="abrirModalEliminar(@item.IdProveedor, '@item.Nombre', '@Url.Action("Baja", "Proveedor")')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
                                     </td>
                                 </tr>
                             }
