@@ -41,7 +41,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             }
 
             var productos = _context.Productos
-                .Where(p => p.Nombre.Contains(q))
+                .Where(p => p.Nombre != null && p.Nombre.Contains(q))
                 .Take(20)
                 .ToList();
 
@@ -96,7 +96,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             }
 
             var productos = _context.Productos
-                .Where(p => p.Nombre.Contains(q))
+                .Where(p => p.Nombre != null && p.Nombre.Contains(q))
                 .Take(20)
                 .Select(p => new
                 {

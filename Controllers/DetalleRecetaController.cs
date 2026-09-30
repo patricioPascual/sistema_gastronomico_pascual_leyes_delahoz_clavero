@@ -33,7 +33,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             return Ok(detalle);
         }
 
-        [HttpPost("{id}")]
+        [HttpPost("modificar/{id}")]
         public IActionResult Modificar(int id, DetalleReceta detalle)
         {
             if (!ModelState.IsValid)
@@ -55,7 +55,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             return NoContent();
         }
 
-        [HttpPost("{id}")]
+        [HttpPost("eliminar/{id}")]
         public IActionResult Eliminar(int id)
         {
             var detalle = _context.DetalleRecetas.Find(id);
