@@ -128,6 +128,22 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
 
             return (reader.GetInt32("id_plato"), reader.GetInt32("cantidad"));
         }
+
+
+        public bool CambiarEstadoDetalle(int idDetallePedido, string nuevoEstado)
+{
+    using var conn = new MySqlConnection(connectionString);
+    string sql = @"UPDATE detalle_pedido 
+                   SET estado = @estado 
+                   WHERE id_detalle_pedido = @idDetalle;";
+
+    using var cmd = new MySqlCommand(sql, conn);
+    cmd.Parameters.AddWithValue("@estado", nuevoEstado); 
+    cmd.Parameters.AddWithValue("@idDetalle", idDetallePedido);
+
+    conn.Open();
+    return cmd.ExecuteNonQuery() > 0;
+}
     }
 
 }
