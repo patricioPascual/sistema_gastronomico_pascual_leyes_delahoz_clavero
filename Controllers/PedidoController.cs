@@ -231,5 +231,23 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             ViewBag.Empleados = repoEmpleado.ObtenerLista(1, 100);
             ViewBag.Platos = repoPlato.ObtenerTodos();
         }
+
+        [HttpPost]
+public IActionResult DespacharPedido(int idDetallePedido, int idPedido)
+{
+    bool exito = repoDetalle.CambiarEstadoDetalle(idDetallePedido, "Despachado");
+
+    if (!exito)
+    {
+        TempData["Error"] = "No se pudo actualizar el estado del plato.";
+    }
+    else
+    {
+        TempData["Exito"] = "Plato marcado como despachado.";
+    }
+
+    
+    return RedirectToAction("Detalle", new { id = idPedido });
+}
     }
 }

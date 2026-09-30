@@ -332,5 +332,81 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
                 }
             };
         }
+
+        public List<Pedido> ObtenerPedidosConDetallesEnMarcha()
+{
+    var mapaPedidos = new Dictionary<int, Pedido>();
+
+    using var conn = new MySqlConnection(connectionString);
+    conn.Open();
+
+    // Hacemos JOIN entre pedido, mesa, empleado, detalle_pedido y plato
+    // Filtrando unicamente donde el detalle esté 'En Marcha'
+    string sql = @"
+        SELECT 
+            p.id_pedido, p.fecha_hora, p.estado AS estado_pedido, p.total, p.id_mesa, p.id_empleado,
+            m.numero AS numero_mesa,
+            e.nombre AS nombre_empleado, e.apellido AS apellido_empleado,
+            d.id_detalle_pedido, d.cantidad, d.precio_unitario, d.estado AS estado_detalle,
+            pl.id_plato, pl.nombre AS nombre_plato
+        FROM pedido p
+        INNER JOIN mesa m ON p.id_mesa = m.id_mesa
+        INNER JOIN empleado e ON p.id_empleado = e.id_empleado
+        INNER JOIN detalle_pedido d ON p.id_pedido = d.id_pedido
+        INNER JOIN plato pl ON d.id_plato = pl.id_plato
+        WHERE p.estado = 'Abierto' AND d.estado = 'En Marcha'
+        ORDER BY p.fecha_hora ASC;";
+
+    using var cmd = new MySqlCommand(sql, conn);
+    using var reader = cmd.ExecuteReader();
+
+    while (reader.Read())
+    {
+        int idPedido = reader.GetInt32("id_pedido");
+
+        // Si el pedido no está en el mapa, lo creamos con su cabecera
+        if (!mapaPedidos.TryGetValue(idPedido, out var pedido))
+        {
+            pedido = new Pedido
+            {
+                IdPedido = idPedido,
+                FechaHora = reader.GetDateTime("fecha_hora"),
+                Total = reader.GetDecimal("total"),
+                IdMesa = reader.GetInt32("id_mesa"),
+                Mesa = new Mesa
+                {
+                    IdMesa = reader.GetInt32("id_mesa"),
+                    Numero = reader.GetInt32("numero_mesa")
+                },
+                IdEmpleado = reader.GetInt32("id_empleado"),
+                Empleado = new Empleado
+                {
+                    IdEmpleado = reader.GetInt32("id_empleado"),
+                    Nombre = reader.GetString("nombre_empleado"),
+                    Apellido = reader.GetString("apellido_empleado")
+                },
+                Detalles = new List<DetallePedido>()
+            };
+
+            mapaPedidos.Add(idPedido, pedido);
+        }
+
+        // Le agregamos el detalle 'En Marcha'
+        pedido.Detalles.Add(new DetallePedido
+        {
+            IdDetallePedido = reader.GetInt32("id_detalle_pedido"),
+            IdPedido = idPedido,
+            Cantidad = reader.GetInt32("cantidad"),
+            PrecioUnitario = reader.GetDecimal("precio_unitario"),
+            Plato = new Plato
+            {
+                IdPlato = reader.GetInt32("id_plato"),
+                Nombre = reader.GetString("nombre_plato")
+            }
+        });
+    }
+
+    return mapaPedidos.Values.ToList();
+}
     }
 }
