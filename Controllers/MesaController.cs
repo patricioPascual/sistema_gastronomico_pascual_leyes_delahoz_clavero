@@ -137,26 +137,31 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
         }
 
         //Metodo agregado para implementar Vue en la vista de Salon
-        [HttpGet]
-        public IActionResult ObtenerEstadoSalonAjax()
+       
+[HttpGet]
+public IActionResult ObtenerEstadoSalonAjax()
+{
+    var todas = repoMesa.ObtenerTodosConOcupacion();
+
+    var mesas = todas.Where(m => m.Tipo == "Mesa").OrderBy(m => m.Numero).ToList();
+    var barra = todas.Where(m => m.Tipo == "Barra").OrderBy(m => m.Numero).ToList();
+
+    var pendientes = repoPedido.ObtenerPedidosConDetallesEnMarcha().Select(p => new
+    {
+        idPedido = p.IdPedido,
+        mesaNumero = p.Mesa != null ? p.Mesa.Numero : 0,
+        empleadoNombre = p.Empleado != null ? $"{p.Empleado.Apellido}, {p.Empleado.Nombre}" : "Sin asignar",
+        fechaHora = p.FechaHora.ToString("o"),
+        detalles = p.Detalles.Select(d => new
         {
-            var todas = repoMesa.ObtenerTodosConOcupacion();
+            idDetallePedido = d.IdDetallePedido,
+            cantidad = d.Cantidad,
+            nombrePlato = d.Plato != null ? d.Plato.Nombre : "Plato"
+        }).ToList()
+    }).ToList();
 
-            var mesas = todas.Where(m => m.Tipo == "Mesa").OrderBy(m => m.Numero).ToList();
-            var barra = todas.Where(m => m.Tipo == "Barra").OrderBy(m => m.Numero).ToList();
-
-            // Traemos los pedidos y los "aplanamos" para que JavaScript los lea mas fácil
-            var pendientes = repoPedido.ObtenerAbiertos().Select(p => new
-            {
-                idPedido = p.IdPedido,
-                mesaNumero = p.Mesa?.Numero,
-                empleadoNombre = $"{p.Empleado?.Apellido}, {p.Empleado?.Nombre}",
-                fechaHora = p.FechaHora.ToString("o")
-            }).ToList();
-
-            // Devolvemos un solo objeto JSON con las 3 listas 
-            return Json(new { mesas, barra, pendientes });
-        }
+    return Json(new { mesas, barra, pendientes });
+}
 
     }
 }
