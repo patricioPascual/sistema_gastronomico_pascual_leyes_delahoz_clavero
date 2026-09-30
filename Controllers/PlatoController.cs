@@ -21,11 +21,11 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             int totalRegistros = _context.Platos.Count();
 
             // Paginacion en base de datos con LINQ
-            var platos = _context.Platos
+            var platos = _context.Platos // Esto devuelve todos los platos de la DB
                 .Include(p => p.Categoria) // Reemplaza al JOIN manual
-                .OrderBy(p => p.Nombre)
-                .Skip((pagina - 1) * tamPagina)
-                .Take(tamPagina)
+                .OrderBy(p => p.Nombre) // Ordena por nombre (la default creo que es ASC)
+                .Skip((pagina - 1) * tamPagina) //Offset
+                .Take(tamPagina) //Limit
                 .ToList();
 
             ViewBag.PaginaActual = pagina;

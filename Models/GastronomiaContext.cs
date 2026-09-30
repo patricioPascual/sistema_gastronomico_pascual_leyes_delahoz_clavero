@@ -8,6 +8,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
         {
         }
 
+        //Esto representaria cada tabla como una entidad 
         public DbSet<Empleado> Empleados { get; set; }
         public DbSet<Usuario> Usuarios { get; set; }
         public DbSet<Rol> Roles { get; set; }
