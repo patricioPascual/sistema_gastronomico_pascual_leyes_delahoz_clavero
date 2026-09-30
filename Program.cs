@@ -1,20 +1,20 @@
+using Microsoft.EntityFrameworkCore;
 using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// Ahora nuestras vistas utilizan los controller sin los repositorios
 builder.Services.AddControllersWithViews();
-builder.Services.AddScoped<RepositorioProducto>();
-builder.Services.AddScoped<RepositorioDetalleReceta>();
-builder.Services.AddScoped<RepositorioPlato>();
-builder.Services.AddScoped<RepositorioCategoria>();
-builder.Services.AddScoped<RepositorioCompra>();
-builder.Services.AddScoped<RepositorioMesa>();
-builder.Services.AddScoped<RepositorioEmpleado>();
-builder.Services.AddScoped<RepositorioPedido>();
-builder.Services.AddScoped<RepositorioDetallePedido>();
-builder.Services.AddScoped<RepositorioProveedor>();
-builder.Services.AddScoped<RepositorioInforme>();
+
+// 1. Obtenemos la cadena de conexión desde el appsettings.json
+var connectionString = builder.Configuration.GetConnectionString("MySql");
+
+// 2. Registramos el GastronomiaContext usando Pomelo para MySQL
+builder.Services.AddDbContext<GastronomiaContext>(options =>
+    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+
+// Nota: Ya no necesitamos registrar los Repositorios antiguos (RepositorioPlato, RepositorioEmpleado, etc.) 
+// porque ahora los controladores trabajarán directamente con el GastronomiaContext de Entity Framework Core.
 
 var app = builder.Build();
 
@@ -22,7 +22,6 @@ var app = builder.Build();
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
@@ -35,8 +34,7 @@ app.MapStaticAssets();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}")
+    pattern: "{controller=Plato}/{action=Index}/{id?}")
     .WithStaticAssets();
-
 
 app.Run();

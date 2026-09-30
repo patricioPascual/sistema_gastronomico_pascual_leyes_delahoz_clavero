@@ -192,7 +192,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
                 PrecioVenta = reader.GetDecimal("precio_venta"),
                 Estado = reader.GetBoolean("activo"),
                 IdCategoria = reader.GetInt32("id_categoria"),
-                TipoPlato = repositorioCategoria.ObtenerPorId(reader.GetInt32("id_categoria"))
+                Categoria = repositorioCategoria.ObtenerPorId(reader.GetInt32("id_categoria"))
             };
         }
 

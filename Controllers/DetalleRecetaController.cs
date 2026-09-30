@@ -1,17 +1,17 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models;
 
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 {
+    [Route("api/[controller]")]
+    [ApiController]
     public class DetalleRecetaController : ControllerBase
     {
-        private readonly RepositorioDetalleReceta repositorioDetalleReceta;
+        private readonly GastronomiaContext _context;
 
-        public DetalleRecetaController(RepositorioDetalleReceta repositorioDetalleReceta)
+        public DetalleRecetaController(GastronomiaContext context)
         {
-            this.repositorioDetalleReceta = repositorioDetalleReceta;
+            _context = context;
         }
 
         [HttpPost]
@@ -22,17 +22,18 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
                 return BadRequest(ModelState);
             }
 
-            var id = repositorioDetalleReceta.Alta(detalle);
-            if (id <= 0)
+            _context.DetalleRecetas.Add(detalle);
+            int filas = _context.SaveChanges();
+
+            if (filas <= 0)
             {
                 return StatusCode(500, "No se pudo dar de alta el detalle de receta.");
             }
 
-            detalle.IdDetalleReceta = id;
             return Ok(detalle);
         }
 
-        [HttpPost]
+        [HttpPost("{id}")]
         public IActionResult Modificar(int id, DetalleReceta detalle)
         {
             if (!ModelState.IsValid)
@@ -40,24 +41,31 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
                 return BadRequest(ModelState);
             }
 
-            detalle.IdDetalleReceta = id;
-            var filasAfectadas = repositorioDetalleReceta.Modificar(detalle);
-            if (filasAfectadas <= 0)
+            var existente = _context.DetalleRecetas.Find(id);
+            if (existente == null)
             {
                 return NotFound();
             }
+
+            existente.IdProducto = detalle.IdProducto;
+            existente.CantidadRequerida = detalle.CantidadRequerida;
+
+            _context.SaveChanges();
 
             return NoContent();
         }
 
-        [HttpPost]
+        [HttpPost("{id}")]
         public IActionResult Eliminar(int id)
         {
-            var filasAfectadas = repositorioDetalleReceta.Eliminar(id);
-            if (filasAfectadas <= 0)
+            var detalle = _context.DetalleRecetas.Find(id);
+            if (detalle == null)
             {
                 return NotFound();
             }
+
+            _context.DetalleRecetas.Remove(detalle);
+            _context.SaveChanges();
 
             return NoContent();
         }
