@@ -22,7 +22,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
             Cancelado
         }
 
-        [Column("estado ")]
+        [Column("estado")]
         public Estado estado { get; set; }
 
         [Column("total")]
