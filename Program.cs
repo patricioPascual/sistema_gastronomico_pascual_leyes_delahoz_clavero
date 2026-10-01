@@ -15,6 +15,15 @@ builder.Services.AddDbContext<GastronomiaContext>(options =>
 
 // Nota: Ya no necesitamos registrar los Repositorios antiguos (RepositorioPlato, RepositorioEmpleado, etc.) 
 // porque ahora los controladores trabajarán directamente con el GastronomiaContext de Entity Framework Core.
+  builder.Services.AddScoped<RepositorioCompra>();
+  builder.Services.AddScoped<RepositorioProducto>();  
+builder.Services.AddScoped<RepositorioProveedor>();
+builder.Services.AddScoped<RepositorioPedido>();
+builder.Services.AddScoped<RepositorioDetallePedido>();
+builder.Services.AddScoped<RepositorioMesa>();
+builder.Services.AddScoped<RepositorioPlato>();
+builder.Services.AddScoped<RepositorioCategoria>();
+builder.Services.AddScoped<RepositorioEmpleado>();
 
 var app = builder.Build();
 

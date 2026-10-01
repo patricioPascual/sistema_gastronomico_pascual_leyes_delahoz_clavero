@@ -41,6 +41,14 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
             modelBuilder.Entity<Mesa>().ToTable("mesa");
             modelBuilder.Entity<Producto>().ToTable("producto");
             modelBuilder.Entity<Proveedor>().ToTable("proveedor");
+
+            modelBuilder.Entity<Pedido>()
+                .Property(p => p.estado)
+                .HasConversion<string>();
+
+            modelBuilder.Entity<DetallePedido>()
+                .Property(d => d.estado)
+                .HasConversion<string>();
         }
     }
 }
