@@ -6,26 +6,21 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 {
     public class ProductoController : Controller
     {
-        private readonly GastronomiaContext _context;
+        private readonly RepositorioProducto _repositorioProducto;
         private readonly ILogger<ProductoController> _logger;
 
-        public ProductoController(GastronomiaContext context, ILogger<ProductoController> logger)
+        public ProductoController(RepositorioProducto repositorioProducto, ILogger<ProductoController> logger)
         {
-            _context = context;
+            _repositorioProducto = repositorioProducto;
             _logger = logger;
         }
 
         public IActionResult Index(int pagina = 1)
         {
             int tamPagina = 10;
-            int totalRegistros = _context.Productos.Count();
+            int totalRegistros = _repositorioProducto.ObtenerCantidad();
 
-            // Paginacion eficiente con LINQ
-            var productos = _context.Productos
-                .OrderBy(p => p.Nombre)
-                .Skip((pagina - 1) * tamPagina)
-                .Take(tamPagina)
-                .ToList();
+            var productos = _repositorioProducto.ObtenerLista(pagina, tamPagina);
 
             ViewBag.PaginaActual = pagina;
             ViewBag.TotalPaginas = (int)Math.Ceiling((double)totalRegistros / tamPagina);
@@ -40,10 +35,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
                 return Json(new List<object>());
             }
 
-            var productos = _context.Productos
-                .Where(p => p.Nombre != null && p.Nombre.Contains(q))
-                .Take(20)
-                .ToList();
+            var productos = _repositorioProducto.Buscar(q);
 
             var resultado = productos.Select(p => new
             {
@@ -75,8 +67,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 
             try
             {
-                _context.Productos.Add(producto);
-                _context.SaveChanges();
+                _repositorioProducto.Alta(producto);
                 TempData["Mensaje"] = "Insumo registrado correctamente.";
                 return RedirectToAction(nameof(Index));
             }
@@ -95,25 +86,23 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
                 return Json(new List<object>());
             }
 
-            var productos = _context.Productos
-                .Where(p => p.Nombre != null && p.Nombre.Contains(q))
-                .Take(20)
-                .Select(p => new
-                {
-                    id = p.IdProducto,
-                    texto = p.Nombre,
-                    unidad = p.Unidad_medida,
-                    precioCosto = p.Precio_costo
-                })
-                .ToList();
+            var productos = _repositorioProducto.Buscar(q);
 
-            return Json(productos);
+            var resultado = productos.Select(p => new
+            {
+                id = p.IdProducto,
+                texto = p.Nombre,
+                unidad = p.Unidad_medida,
+                precioCosto = p.Precio_costo
+            });
+
+            return Json(resultado);
         }
 
         [HttpGet]
         public IActionResult Modificar(int id)
         {
-            var producto = _context.Productos.Find(id);
+            var producto = _repositorioProducto.ObtenerPorId(id);
 
             if (producto == null)
             {
@@ -132,8 +121,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             {
                 if (ModelState.IsValid)
                 {
-                    _context.Productos.Update(producto);
-                    int filas = _context.SaveChanges();
+                    int filas = _repositorioProducto.Modificar(producto);
 
                     if (filas > 0)
                     {
@@ -164,11 +152,9 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
         {
             try
             {
-                var producto = _context.Productos.Find(id);
-                if (producto != null)
+                int filas = _repositorioProducto.Baja(id);
+                if (filas > 0)
                 {
-                    producto.Estado = false; // Baja logica
-                    _context.SaveChanges();
                     TempData["Exito"] = "El producto se dio de baja correctamente.";
                 }
                 else

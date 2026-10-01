@@ -7,11 +7,11 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
     [ApiController]
     public class DetalleRecetaController : ControllerBase
     {
-        private readonly GastronomiaContext _context;
+        private readonly RepositorioDetalleReceta _repositorioDetalleReceta;
 
-        public DetalleRecetaController(GastronomiaContext context)
+        public DetalleRecetaController(RepositorioDetalleReceta repositorioDetalleReceta)
         {
-            _context = context;
+            _repositorioDetalleReceta = repositorioDetalleReceta;
         }
 
         [HttpPost]
@@ -22,10 +22,9 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
                 return BadRequest(ModelState);
             }
 
-            _context.DetalleRecetas.Add(detalle);
-            int filas = _context.SaveChanges();
+            int id = _repositorioDetalleReceta.Alta(detalle);
 
-            if (filas <= 0)
+            if (id <= 0)
             {
                 return StatusCode(500, "No se pudo dar de alta el detalle de receta.");
             }
@@ -41,16 +40,13 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
                 return BadRequest(ModelState);
             }
 
-            var existente = _context.DetalleRecetas.Find(id);
-            if (existente == null)
+            detalle.IdDetalleReceta = id;
+            int filas = _repositorioDetalleReceta.Modificar(detalle);
+
+            if (filas <= 0)
             {
                 return NotFound();
             }
-
-            existente.IdProducto = detalle.IdProducto;
-            existente.CantidadRequerida = detalle.CantidadRequerida;
-
-            _context.SaveChanges();
 
             return NoContent();
         }
@@ -58,14 +54,11 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
         [HttpPost("eliminar/{id}")]
         public IActionResult Eliminar(int id)
         {
-            var detalle = _context.DetalleRecetas.Find(id);
-            if (detalle == null)
+            int filas = _repositorioDetalleReceta.Eliminar(id);
+            if (filas <= 0)
             {
                 return NotFound();
             }
-
-            _context.DetalleRecetas.Remove(detalle);
-            _context.SaveChanges();
 
             return NoContent();
         }

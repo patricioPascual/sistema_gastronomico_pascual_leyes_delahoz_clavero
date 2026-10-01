@@ -51,10 +51,11 @@
                                    title="Editar">
                                     <i class="bi bi-pencil"></i>
                                 </a>
-                                <a asp-action="Eliminar" asp-route-id="@item.IdPlato" class="btn btn-sm btn-outline-danger"
-                                   title="Eliminar">
+                                <button type="button" class="btn btn-sm btn-outline-danger" title="Eliminar"
+                                        onclick="abrirModalEliminar(@item.IdPlato, '@item.Nombre', '@Url.Action("Eliminar", "Plato")')"
+                                    @(item.Estado ? "" : "disabled")>
                                     <i class="bi bi-trash"></i>
-                                </a>
+                                </button>
                             </td>
                         </tr>
                     }
@@ -94,3 +95,5 @@
         </nav>
     }
 </div>
+
+<partial name="_ModalEliminar" />

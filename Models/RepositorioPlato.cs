@@ -1,245 +1,94 @@
-using System;
-using System.Collections.Generic;
-using MySql.Data.MySqlClient;
+using Microsoft.EntityFrameworkCore;
 
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
 {
-    public class RepositorioPlato : RepositorioBase
+    public class RepositorioPlato
     {
-        RepositorioCategoria repositorioCategoria;
-        public RepositorioPlato(IConfiguration configuration, RepositorioCategoria repositorioCategoria) : base(configuration)
+        private readonly GastronomiaContext _context;
+
+        public RepositorioPlato(GastronomiaContext context)
         {
-            this.repositorioCategoria = repositorioCategoria;
+            _context = context;
         }
 
         public int Alta(Plato p)
         {
-            int res = -1;
-
-            using (var conn = new MySqlConnection(connectionString))
-            {
-                string query = @"INSERT INTO plato (nombre, precio_venta, activo, id_categoria)
-                                 VALUES (@nombre, @precioVenta, @activo, @idCategoria);
-                                 SELECT LAST_INSERT_ID();";
-
-                using (var cmd = new MySqlCommand(query, conn))
-                {
-                    cmd.Parameters.AddWithValue("@nombre", p.Nombre);
-                    cmd.Parameters.AddWithValue("@precioVenta", p.PrecioVenta);
-                    cmd.Parameters.AddWithValue("@activo", p.Estado);
-                    cmd.Parameters.AddWithValue("@idCategoria", p.IdCategoria);
-
-                    conn.Open();
-                    res = Convert.ToInt32(cmd.ExecuteScalar());
-                }
-            }
-
-            return res;
+            _context.Platos.Add(p);
+            _context.SaveChanges();
+            return p.IdPlato;
         }
 
         public int Baja(int id)
         {
-            int res = -1;
-            using (var conn = new MySqlConnection(connectionString))
+            var plato = _context.Platos.Find(id);
+            if (plato != null)
             {
-                string sql = "UPDATE plato SET activo = @es WHERE id_plato = @id";
-                using (var cmd = new MySqlCommand(sql, conn))
-                {
-                    cmd.Parameters.AddWithValue("@id", id);
-                    cmd.Parameters.AddWithValue("@es", false);
-
-                    conn.Open();
-                    res = cmd.ExecuteNonQuery();
-                }
+                plato.Estado = false;
+                return _context.SaveChanges();
             }
-            return res;
+            return 0;
         }
 
         public int Modificar(Plato p)
         {
-            int res = -1;
-
-            using (var conn = new MySqlConnection(connectionString))
+            var platoExistente = _context.Platos.Find(p.IdPlato);
+            if (platoExistente != null)
             {
-                string query = @"UPDATE plato
-                                 SET nombre = @nombre,
-                                     precio_venta = @precioVenta,
-                                     id_categoria = @idCategoria
-                                 WHERE id_plato = @idPlato;";
-
-                using (var cmd = new MySqlCommand(query, conn))
-                {
-                    cmd.Parameters.AddWithValue("@nombre", p.Nombre);
-                    cmd.Parameters.AddWithValue("@precioVenta", p.PrecioVenta);
-                    cmd.Parameters.AddWithValue("@idCategoria", p.IdCategoria);
-                    cmd.Parameters.AddWithValue("@idPlato", p.IdPlato);
-
-                    conn.Open();
-                    res = cmd.ExecuteNonQuery();
-                }
+                platoExistente.Nombre = p.Nombre;
+                platoExistente.PrecioVenta = p.PrecioVenta;
+                platoExistente.IdCategoria = p.IdCategoria;
+                return _context.SaveChanges();
             }
-
-            return res;
+            return 0;
         }
 
         public IList<Plato> ObtenerTodos()
         {
-            var lista = new List<Plato>();
-            using (var conn = new MySqlConnection(connectionString))
-            {
-                string query = @"SELECT id_plato, nombre, precio_venta, activo, id_categoria
-                                 FROM plato
-                                 ORDER BY nombre;";
-
-                using (var cmd = new MySqlCommand(query, conn))
-                {
-                    conn.Open();
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            lista.Add(MapearPlato(reader));
-                        }
-                    }
-                }
-            }
-            return lista;
+            return _context.Platos
+                .Include(p => p.Categoria)
+                .OrderBy(p => p.Nombre)
+                .ToList();
         }
 
         public IList<Plato> ObtenerPorCategoria(int idCategoria)
         {
-            var lista = new List<Plato>();
-            using (var conn = new MySqlConnection(connectionString))
-            {
-                string query = @"SELECT id_plato, nombre, precio_venta, activo, id_categoria
-                                 FROM plato
-                                 WHERE id_categoria = @idCategoria
-                                 ORDER BY nombre;";
-
-                using (var cmd = new MySqlCommand(query, conn))
-                {
-                    cmd.Parameters.AddWithValue("@idCategoria", idCategoria);
-                    conn.Open();
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            lista.Add(MapearPlato(reader));
-                        }
-                    }
-                }
-            }
-            return lista;
+            return _context.Platos
+                .Include(p => p.Categoria)
+                .Where(p => p.IdCategoria == idCategoria)
+                .OrderBy(p => p.Nombre)
+                .ToList();
         }
 
         public Plato? ObtenerPorId(int id)
         {
-            Plato? p = null;
-            using (var conn = new MySqlConnection(connectionString))
-            {
-                string query = @"SELECT id_plato, nombre, precio_venta, activo, id_categoria
-                                 FROM plato
-                                 WHERE id_plato = @id;";
-
-                using (var cmd = new MySqlCommand(query, conn))
-                {
-                    cmd.Parameters.AddWithValue("@id", id);
-                    conn.Open();
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        if (reader.Read())
-                        {
-                            p = MapearPlato(reader);
-                        }
-                    }
-                }
-            }
-            return p;
+            return _context.Platos
+                .Include(p => p.Categoria)
+                .FirstOrDefault(p => p.IdPlato == id);
         }
 
         public IList<Plato> Buscar(string q)
         {
-            var lista = new List<Plato>();
-            using (var conn = new MySqlConnection(connectionString))
-            {
-                string query = @"SELECT id_plato, nombre, precio_venta, activo, id_categoria
-                                 FROM plato
-                                 WHERE activo = 1 AND nombre LIKE @q
-                                 LIMIT 20;";
-
-                using (var cmd = new MySqlCommand(query, conn))
-                {
-                    cmd.Parameters.AddWithValue("@q", "%" + q + "%");
-                    conn.Open();
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            lista.Add(MapearPlato(reader));
-                        }
-                    }
-                }
-            }
-            return lista;
-        }
-
-        private Plato MapearPlato(MySqlDataReader reader)
-        {
-            return new Plato
-            {
-                IdPlato = reader.GetInt32("id_plato"),
-                Nombre = reader.GetString("nombre"),
-                PrecioVenta = reader.GetDecimal("precio_venta"),
-                Estado = reader.GetBoolean("activo"),
-                IdCategoria = reader.GetInt32("id_categoria"),
-                Categoria = repositorioCategoria.ObtenerPorId(reader.GetInt32("id_categoria"))
-            };
+            return _context.Platos
+                .Include(p => p.Categoria)
+                .Where(p => p.Estado && p.Nombre != null && p.Nombre.Contains(q))
+                .Take(20)
+                .ToList();
         }
 
         public IList<Plato> ObtenerLista(int pagNro, int tamPagina)
         {
-            var lista = new List<Plato>();
             int offset = (pagNro - 1) * tamPagina;
-
-            using (var conn = new MySqlConnection(connectionString))
-            {
-                string query = @"SELECT id_plato, nombre, precio_venta, activo, id_categoria 
-                         FROM plato 
-                         ORDER BY id_plato DESC
-                         LIMIT @tamPagina OFFSET @offset;";
-
-                using (var cmd = new MySqlCommand(query, conn))
-                {
-                    cmd.Parameters.AddWithValue("@tamPagina", tamPagina);
-                    cmd.Parameters.AddWithValue("@offset", offset);
-
-                    conn.Open();
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            lista.Add(MapearPlato(reader));
-                        }
-                    }
-                }
-            }
-            return lista;
+            return _context.Platos
+                .Include(p => p.Categoria)
+                .OrderByDescending(p => p.IdPlato)
+                .Skip(offset)
+                .Take(tamPagina)
+                .ToList();
         }
 
         public int ObtenerTotalRegistros()
         {
-            int total = 0;
-            using (var conn = new MySqlConnection(connectionString))
-            {
-                string query = "SELECT COUNT(*) FROM plato;";
-                using (var cmd = new MySqlCommand(query, conn))
-                {
-                    conn.Open();
-                    total = Convert.ToInt32(cmd.ExecuteScalar());
-                }
-            }
-            return total;
+            return _context.Platos.Count();
         }
-
     }
 }

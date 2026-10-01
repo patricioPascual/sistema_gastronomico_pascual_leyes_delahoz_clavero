@@ -1,32 +1,30 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models;
 
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 {
     public class PlatoController : Controller
     {
-        private readonly GastronomiaContext _context;
+        private readonly RepositorioPlato _repositorioPlato;
+        private readonly RepositorioDetalleReceta _repositorioDetalleReceta;
+        private readonly RepositorioCategoria _repositorioCategoria;
 
-        // Inyectamos directamente el contexto de EF Core ESTA PARTE VA EN PROGRAMS y tambien tenemos que crear un .cs con la configuracion como con sequelize
-        public PlatoController(GastronomiaContext context)
+        public PlatoController(
+            RepositorioPlato repositorioPlato,
+            RepositorioDetalleReceta repositorioDetalleReceta,
+            RepositorioCategoria repositorioCategoria)
         {
-            _context = context;
+            _repositorioPlato = repositorioPlato;
+            _repositorioDetalleReceta = repositorioDetalleReceta;
+            _repositorioCategoria = repositorioCategoria;
         }
 
-        // Listado con Paginación y Categoria incluida (JOIN)
         public IActionResult Index(int pagina = 1)
         {
             int tamPagina = 10;
-            int totalRegistros = _context.Platos.Count();
+            int totalRegistros = _repositorioPlato.ObtenerTotalRegistros();
 
-            // Paginacion en base de datos con LINQ
-            var platos = _context.Platos // Esto devuelve todos los platos de la DB
-                .Include(p => p.Categoria) // Reemplaza al JOIN manual
-                .OrderBy(p => p.Nombre) // Ordena por nombre (la default creo que es ASC)
-                .Skip((pagina - 1) * tamPagina) //Offset
-                .Take(tamPagina) //Limit
-                .ToList();
+            var platos = _repositorioPlato.ObtenerLista(pagina, tamPagina);
 
             ViewBag.PaginaActual = pagina;
             ViewBag.TotalPaginas = (int)Math.Ceiling((double)totalRegistros / tamPagina);
@@ -34,86 +32,101 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             return View(platos);
         }
 
-        // Vista de Creación (GET)
         public IActionResult Crear()
         {
             var vm = new PlatoFormViewModel
             {
-                Categorias = _context.Categorias.Where(c => c.Estado).ToList()
+                Categorias = _repositorioCategoria.ObtenerTodos().Where(c => c.Estado).ToList()
             };
             return View(vm);
         }
 
-        // Guardar Plato y su Receta (POST)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Crear(PlatoFormViewModel vm)
         {
             if (!ModelState.IsValid)
             {
-                vm.Categorias = _context.Categorias.Where(c => c.Estado).ToList();
+                vm.Categorias = _repositorioCategoria.ObtenerTodos().Where(c => c.Estado).ToList();
                 return View(vm);
             }
 
-            vm.Plato.Estado = true;
-
-            // 1. Agregamos el plato al contexto
-            _context.Platos.Add(vm.Plato);
-            _context.SaveChanges(); // Al guardar, EF Core asigna el ID autoincremental a vm.Plato.IdPlato
-
-            // 2. Procesamos y guardamos los detalles de la receta
-            if (vm.Receta != null)
+            try
             {
-                var detalles = vm.Receta
-                    .Where(r => r.IdProducto > 0 && r.CantidadRequerida > 0)
-                    .Select(r => new DetalleReceta
-                    {
-                        IdPlato = vm.Plato.IdPlato,
-                        IdProducto = r.IdProducto,
-                        CantidadRequerida = r.CantidadRequerida
-                    })
-                    .ToList();
+                vm.Plato.Estado = true;
 
-                _context.DetalleRecetas.AddRange(detalles);
-                _context.SaveChanges();
+                int idPlato = _repositorioPlato.Alta(vm.Plato);
+
+                if (vm.Receta != null && idPlato > 0)
+                {
+                    var detalles = vm.Receta
+                        .Where(r => r.IdProducto > 0 && r.CantidadRequerida > 0)
+                        .Select(r => new DetalleReceta
+                        {
+                            IdPlato = idPlato,
+                            IdProducto = r.IdProducto,
+                            CantidadRequerida = r.CantidadRequerida
+                        })
+                        .ToList();
+
+                    _repositorioDetalleReceta.GuardarReceta(idPlato, detalles);
+                }
+
+                TempData["Exito"] = "El plato se registró correctamente.";
+                return RedirectToAction(nameof(Index));
             }
-
-            return RedirectToAction(nameof(Index));
+            catch (Exception ex)
+            {
+                TempData["Error"] = "Error al registrar el plato: " + ex.Message;
+                vm.Categorias = _repositorioCategoria.ObtenerTodos().Where(c => c.Estado).ToList();
+                return View(vm);
+            }
         }
 
-        // Baja lógica del Plato
-        [HttpPost, ActionName("Eliminar")]
+        [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult EliminarConfirmado(int id)
+        public IActionResult Eliminar(int id)
         {
-            var plato = _context.Platos.Find(id);
-            if (plato != null)
+            try
             {
-                plato.Estado = false; // Baja lógica
-                _context.SaveChanges();
+                var plato = _repositorioPlato.ObtenerPorId(id);
+                if (plato != null)
+                {
+                    if (!plato.Estado)
+                    {
+                        TempData["Error"] = "El plato ya se encuentra inactivo.";
+                    }
+                    else
+                    {
+                        _repositorioPlato.Baja(id);
+                        TempData["Exito"] = "El plato se dio de baja correctamente.";
+                    }
+                }
+                else
+                {
+                    TempData["Error"] = "No se pudo encontrar el plato.";
+                }
             }
+            catch (Exception ex)
+            {
+                TempData["Error"] = "Error al intentar eliminar el plato: " + ex.Message;
+            }
+
             return RedirectToAction(nameof(Index));
         }
 
-        // Vista de Edición (GET)
         public IActionResult Editar(int id)
         {
-            // Buscamos el plato incluyendo su categoría
-            var plato = _context.Platos
-                .FirstOrDefault(p => p.IdPlato == id);
+            var plato = _repositorioPlato.ObtenerPorId(id);
 
             if (plato == null)
             {
-                return NotFound();
+                TempData["Error"] = "El plato que intenta modificar no existe.";
+                return RedirectToAction(nameof(Index));
             }
 
-            // Obtenemos los detalles de la receta actual del plato junto con sus productos asociados
-            var receta = _context.DetalleRecetas
-                .Include(d => d.Producto)
-                .Where(d => d.IdPlato == id)
-                .ToList();
+            var receta = _repositorioDetalleReceta.ObtenerPorPlato(id);
 
-            // Armamos el ViewModel de la misma forma que en el repositorio original
             var vm = new PlatoFormViewModel
             {
                 Plato = plato,
@@ -125,60 +138,62 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
                     NombreProducto = d.Producto?.Nombre,
                     UnidadMedida = d.Producto?.Unidad_medida
                 }).ToList(),
-                Categorias = _context.Categorias.Where(c => c.Estado).ToList()
+                Categorias = _repositorioCategoria.ObtenerTodos().Where(c => c.Estado).ToList()
             };
 
             return View(vm);
         }
 
-        // Guardar Edición de Plato y su Receta (POST)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Editar(int id, PlatoFormViewModel vm)
         {
             if (!ModelState.IsValid)
             {
-                vm.Categorias = _context.Categorias.Where(c => c.Estado).ToList();
+                vm.Categorias = _repositorioCategoria.ObtenerTodos().Where(c => c.Estado).ToList();
                 return View(vm);
             }
 
-            var platoExistente = _context.Platos.Find(id);
-            if (platoExistente == null)
+            try
             {
-                return NotFound();
+                var platoExistente = _repositorioPlato.ObtenerPorId(id);
+                if (platoExistente == null)
+                {
+                    TempData["Error"] = "El plato no existe.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                platoExistente.Nombre = vm.Plato.Nombre;
+                platoExistente.PrecioVenta = vm.Plato.PrecioVenta;
+                platoExistente.IdCategoria = vm.Plato.IdCategoria;
+
+                _repositorioPlato.Modificar(platoExistente);
+
+                var nuevosDetalles = new List<DetalleReceta>();
+                if (vm.Receta != null)
+                {
+                    nuevosDetalles = vm.Receta
+                        .Where(r => r.IdProducto > 0 && r.CantidadRequerida > 0)
+                        .Select(r => new DetalleReceta
+                        {
+                            IdPlato = id,
+                            IdProducto = r.IdProducto,
+                            CantidadRequerida = r.CantidadRequerida
+                        })
+                        .ToList();
+                }
+
+                _repositorioDetalleReceta.GuardarReceta(id, nuevosDetalles);
+
+                TempData["Exito"] = "El plato se modificó correctamente.";
+                return RedirectToAction(nameof(Index));
             }
-
-            // 1. Actualizamos las propiedades del plato
-            platoExistente.Nombre = vm.Plato.Nombre;
-            platoExistente.PrecioVenta = vm.Plato.PrecioVenta;
-            platoExistente.IdCategoria = vm.Plato.IdCategoria;
-
-            _context.Platos.Update(platoExistente);
-
-            // 2. Actualizamos la receta: Una estrategia limpia es eliminar los detalles anteriores y agregar los nuevos del formulario
-            var recetaAnterior = _context.DetalleRecetas.Where(d => d.IdPlato == id).ToList();
-            _context.DetalleRecetas.RemoveRange(recetaAnterior);
-
-            if (vm.Receta != null)
+            catch (Exception ex)
             {
-                var nuevosDetalles = vm.Receta
-                    .Where(r => r.IdProducto > 0 && r.CantidadRequerida > 0)
-                    .Select(r => new DetalleReceta
-                    {
-                        IdPlato = id,
-                        IdProducto = r.IdProducto,
-                        CantidadRequerida = r.CantidadRequerida
-                    })
-                    .ToList();
-
-                _context.DetalleRecetas.AddRange(nuevosDetalles);
+                TempData["Error"] = "Error al modificar el plato: " + ex.Message;
+                vm.Categorias = _repositorioCategoria.ObtenerTodos().Where(c => c.Estado).ToList();
+                return View(vm);
             }
-
-            // Guardamos todos los cambios juntos en la base de datos de manera atómica
-            _context.SaveChanges();
-
-            return RedirectToAction(nameof(Index));
         }
-
     }
 }

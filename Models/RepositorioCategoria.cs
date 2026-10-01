@@ -1,70 +1,27 @@
-using System.Collections.Generic;
-using MySql.Data.MySqlClient;
+using Microsoft.EntityFrameworkCore;
 
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
 {
-    public class RepositorioCategoria : RepositorioBase
+    public class RepositorioCategoria
     {
-        public RepositorioCategoria(IConfiguration configuration) : base(configuration)
+        private readonly GastronomiaContext _context;
+
+        public RepositorioCategoria(GastronomiaContext context)
         {
+            _context = context;
         }
 
         public IList<Categoria> ObtenerTodos()
         {
-            var lista = new List<Categoria>();
-            using (var conn = new MySqlConnection(connectionString))
-            {
-                string query = "SELECT id_categoria, nombre, estado FROM categoria WHERE estado = 1 ORDER BY nombre;";
-
-                using (var cmd = new MySqlCommand(query, conn))
-                {
-                    conn.Open();
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            lista.Add(new Categoria
-                            {
-                                IdCategoria = reader.GetInt32("id_categoria"),
-                                Nombre = reader.GetString("nombre"),
-                                Estado = reader.GetBoolean("estado")
-                            });
-                        }
-                    }
-                }
-            }
-            return lista;
+            return _context.Categorias
+                .Where(c => c.Estado)
+                .OrderBy(c => c.Nombre)
+                .ToList();
         }
 
         public Categoria? ObtenerPorId(int id)
         {
-            Categoria? c = null;
-            using (var conn = new MySqlConnection(connectionString))
-            {
-                string query = @"SELECT id_categoria, nombre, estado
-                         FROM categoria
-                         WHERE id_categoria = @id;";
-
-                using (var cmd = new MySqlCommand(query, conn))
-                {
-                    cmd.Parameters.AddWithValue("@id", id);
-                    conn.Open();
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        if (reader.Read())
-                        {
-                            c = new Categoria
-                            {
-                                IdCategoria = reader.GetInt32("id_categoria"),
-                                Nombre = reader.GetString("nombre"),
-                                Estado = reader.GetBoolean("estado")
-                            };
-                        }
-                    }
-                }
-            }
-            return c;
+            return _context.Categorias.Find(id);
         }
-
     }
 }
