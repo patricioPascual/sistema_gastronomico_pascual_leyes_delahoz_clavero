@@ -1,149 +1,186 @@
 using System;
 using System.Collections.Generic;
-using System.Data;
-using MySql.Data.MySqlClient;
+using System.Linq;
+using Microsoft.EntityFrameworkCore;
 
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
 {
-    public class RepositorioDetallePedido : RepositorioBase
+    public class RepositorioDetallePedido
     {
+        private readonly GastronomiaContext _context;
 
-        public RepositorioDetallePedido(IConfiguration configuration) : base(configuration)
+        public RepositorioDetallePedido(GastronomiaContext context)
         {
+            _context = context;
         }
 
-
-        public int Alta(DetallePedido d)
+       
+        public bool Alta(DetallePedido detalle)
         {
-            using var conn = new MySqlConnection(connectionString);
-            conn.Open();
-            using var tx = conn.BeginTransaction();
-
-            // El precio se toma del plato, no del formulario
-            string sql = @"INSERT INTO detalle_pedido (id_pedido, id_plato, cantidad, precio_unitario, estado)
-                           SELECT @idpedido, id_plato, @c, precio_venta, 'En Marcha'
-                           FROM plato
-                           WHERE id_plato = @idplato AND activo = 1;";
-
-            int res;
-            using (var cmd = new MySqlCommand(sql, conn, tx))
+            using var transaction = _context.Database.BeginTransaction();
+            try
             {
-                cmd.Parameters.AddWithValue("@idpedido", d.IdPedido);
-                cmd.Parameters.AddWithValue("@idplato", d.IdPlato);
-                cmd.Parameters.AddWithValue("@c", d.Cantidad);
+                // 1. Obtener plato para asignar su precio actual de venta
+                var plato = _context.Platos.FirstOrDefault(p => p.IdPlato == detalle.IdPlato && p.Estado);
+                if (plato == null) return false;
 
-                if (cmd.ExecuteNonQuery() == 0)
-                    throw new InvalidOperationException($"El plato {d.IdPlato} no existe o está dado de baja");
-                res = (int)cmd.LastInsertedId;
+                detalle.PrecioUnitario = plato.PrecioVenta;
+                detalle.estado = DetallePedido.Estado.EnMarcha;
+                detalle.FechaHora = DateTime.Now;
+
+                _context.DetallePedidos.Add(detalle);
+
+                // 2. Descontar el stock a nivel de detalle
+                DescontarStock(detalle.IdPlato, detalle.Cantidad);
+
+                _context.SaveChanges();
+
+                // 3. Recalcular el total en la cabecera del Pedido
+                RecalcularTotalPedido(detalle.IdPedido);
+
+                transaction.Commit();
+                return true;
             }
-
-            RepositorioPedido.AjustarStock(d.IdPlato, d.Cantidad, conn, tx);
-            RepositorioPedido.RecalcularTotal(d.IdPedido, conn, tx);
-            tx.Commit();
-            return res;
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
         }
 
-
+        /// <summary>
+        /// Elimina un detalle, restituye la cantidad al stock del producto y actualiza el total del pedido.
+        /// </summary>
         public bool Baja(int idDetallePedido)
         {
-            using var conn = new MySqlConnection(connectionString);
-            conn.Open();
-            using var tx = conn.BeginTransaction();
+            var detalle = _context.DetallePedidos.Find(idDetallePedido);
+            if (detalle == null) return false;
 
-            // Se busca antes del DELETE porque después el detalle ya no existe
-            int idPedido = ObtenerIdPedido(idDetallePedido, conn, tx);
-            var (idPlato, cantidad) = ObtenerDatosDetalle(idDetallePedido, conn, tx);
-
-            // El enum de estado no tiene un valor de baja, así que el detalle se borra
-            string sql = @"DELETE FROM detalle_pedido
-                   WHERE id_detalle_pedido = @id;";
-            using (var cmd = new MySqlCommand(sql, conn, tx))
+            using var transaction = _context.Database.BeginTransaction();
+            try
             {
-                cmd.Parameters.AddWithValue("@id", idDetallePedido);
-                cmd.ExecuteNonQuery();
-            }
+                int idPedido = detalle.IdPedido;
 
-            // Se devuelve al stock lo que se había descontado
-            RepositorioPedido.AjustarStock(idPlato, -cantidad, conn, tx);
-            RepositorioPedido.RecalcularTotal(idPedido, conn, tx);
-            tx.Commit();
-            return true;
+                // 1. Devolver la cantidad consumida al stock
+                RestituirStock(detalle.IdPlato, detalle.Cantidad);
+
+                // 2. Remover el detalle
+                _context.DetallePedidos.Remove(detalle);
+                _context.SaveChanges();
+
+                // 3. Recalcular el total del pedido
+                RecalcularTotalPedido(idPedido);
+
+                transaction.Commit();
+                return true;
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
         }
 
-
+        /// <summary>
+        /// Modifica la cantidad de un ítem, ajustando únicamente la diferencia en stock.
+        /// </summary>
         public bool ModificarCantidad(int idDetallePedido, int nuevaCantidad)
         {
-            using var conn = new MySqlConnection(connectionString);
-            conn.Open();
-            using var tx = conn.BeginTransaction();
+            if (nuevaCantidad <= 0) return Baja(idDetallePedido);
 
-            int idPedido = ObtenerIdPedido(idDetallePedido, conn, tx);
-            var (idPlato, cantidadAnterior) = ObtenerDatosDetalle(idDetallePedido, conn, tx);
+            var detalle = _context.DetallePedidos.Find(idDetallePedido);
+            if (detalle == null) return false;
 
-            // Solo se descuenta (o devuelve) la diferencia
-            RepositorioPedido.AjustarStock(idPlato, nuevaCantidad - cantidadAnterior, conn, tx);
-
-            string sql = @"UPDATE detalle_pedido SET cantidad = @cantidad
-                   WHERE id_detalle_pedido = @id;";
-            using (var cmd = new MySqlCommand(sql, conn, tx))
+            using var transaction = _context.Database.BeginTransaction();
+            try
             {
-                cmd.Parameters.AddWithValue("@cantidad", nuevaCantidad);
-                cmd.Parameters.AddWithValue("@id", idDetallePedido);
-                cmd.ExecuteNonQuery();
+                int diferencia = nuevaCantidad - detalle.Cantidad;
+
+                // Si la diferencia es positiva, se vendieron más unidades (descuenta stock).
+                // Si la diferencia es negativa, se quitaron unidades (restituye stock).
+                if (diferencia > 0)
+                {
+                    DescontarStock(detalle.IdPlato, diferencia);
+                }
+                else if (diferencia < 0)
+                {
+                    RestituirStock(detalle.IdPlato, Math.Abs(diferencia));
+                }
+
+                detalle.Cantidad = nuevaCantidad;
+                _context.DetallePedidos.Update(detalle);
+                _context.SaveChanges();
+
+                RecalcularTotalPedido(detalle.IdPedido);
+
+                transaction.Commit();
+                return true;
             }
-
-            RepositorioPedido.RecalcularTotal(idPedido, conn, tx);
-            tx.Commit();
-            return true;
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
         }
 
-        // Busca a qué pedido pertenece un detalle
-        private int ObtenerIdPedido(int idDetallePedido, MySqlConnection conn, MySqlTransaction tx)
+        /// <summary>
+        /// Cambia el estado del detalle (ej: de 'EnMarcha' a 'Despachado' para la cocina).
+        /// </summary>
+        public bool CambiarEstadoDetalle(int idDetallePedido, DetallePedido.Estado nuevoEstado)
         {
-            string sql = @"SELECT id_pedido FROM detalle_pedido
-                           WHERE id_detalle_pedido = @id;";
+            var detalle = _context.DetallePedidos.Find(idDetallePedido);
+            if (detalle == null) return false;
 
-            using var cmd = new MySqlCommand(sql, conn, tx);
-            cmd.Parameters.AddWithValue("@id", idDetallePedido);
-
-            var resultado = cmd.ExecuteScalar();
-            if (resultado == null)
-                throw new InvalidOperationException("El detalle no existe");
-
-            return Convert.ToInt32(resultado);
+            detalle.estado = nuevoEstado;
+            _context.DetallePedidos.Update(detalle);
+            return _context.SaveChanges() > 0;
         }
 
-        // Busca qué plato es y cuántos se pidieron, para ajustar el stock
-        private (int IdPlato, int Cantidad) ObtenerDatosDetalle(int idDetallePedido, MySqlConnection conn, MySqlTransaction tx)
+        /// <summary>
+        /// Obtiene un detalle con los datos cargados de su Plato.
+        /// </summary>
+        public DetallePedido? ObtenerPorId(int idDetallePedido)
         {
-            string sql = @"SELECT id_plato, cantidad FROM detalle_pedido
-                           WHERE id_detalle_pedido = @id;";
-
-            using var cmd = new MySqlCommand(sql, conn, tx);
-            cmd.Parameters.AddWithValue("@id", idDetallePedido);
-
-            using var reader = cmd.ExecuteReader();
-            if (!reader.Read())
-                throw new InvalidOperationException("El detalle no existe");
-
-            return (reader.GetInt32("id_plato"), reader.GetInt32("cantidad"));
+            return _context.DetallePedidos
+                .Include(d => d.Plato)
+                .FirstOrDefault(d => d.IdDetallePedido == idDetallePedido);
         }
 
+        // --- MÉTODOS PRIVADOS AUXILIARES PARA MANEJO DE STOCK Y TOTALES ---
 
-        public bool CambiarEstadoDetalle(int idDetallePedido, string nuevoEstado)
-{
-    using var conn = new MySqlConnection(connectionString);
-    string sql = @"UPDATE detalle_pedido 
-                   SET estado = @estado 
-                   WHERE id_detalle_pedido = @idDetalle;";
+        public void DescontarStock(int idPlato, int cantidad)
+        {
+            var producto = _context.Productos.Find(idPlato);
+            if (producto != null)
+            {
+                producto.Cantidad_stock -= cantidad;
+                if (producto.Cantidad_stock < 0) producto.Cantidad_stock = 0;
+                _context.Productos.Update(producto);
+            }
+        }
 
-    using var cmd = new MySqlCommand(sql, conn);
-    cmd.Parameters.AddWithValue("@estado", nuevoEstado); 
-    cmd.Parameters.AddWithValue("@idDetalle", idDetallePedido);
+        public void RestituirStock(int idPlato, int cantidad)
+        {
+            var producto = _context.Productos.Find(idPlato);
+            if (producto != null)
+            {
+                producto.Cantidad_stock += cantidad;
+                _context.Productos.Update(producto);
+            }
+        }
 
-    conn.Open();
-    return cmd.ExecuteNonQuery() > 0;
-}
+        private void RecalcularTotalPedido(int idPedido)
+        {
+            var pedido = _context.Pedidos
+                .Include(p => p.Detalles)
+                .FirstOrDefault(p => p.IdPedido == idPedido);
+
+            if (pedido != null)
+            {
+                pedido.Total = pedido.Detalles?.Sum(d => d.Cantidad * d.PrecioUnitario) ?? 0;
+                _context.Pedidos.Update(pedido);
+                _context.SaveChanges();
+            }
+        }
     }
-
 }

@@ -122,7 +122,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
                 return View("Editar", pedido);
             }
 
-            if (repoPedido.ModificarPedido(pedido))
+            if (repoPedido.Modificar(pedido))
                 TempData["Mensaje"] = "Pedido actualizado correctamente.";
             else
                 TempData["Error"] = "No se pudo modificar el pedido: no existe o ya no está abierto.";
@@ -235,7 +235,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
         [HttpPost]
 public IActionResult DespacharPedido(int idDetallePedido, int idPedido)
 {
-    bool exito = repoDetalle.CambiarEstadoDetalle(idDetallePedido, "Despachado");
+    bool exito = repoDetalle.CambiarEstadoDetalle(idDetallePedido, DetallePedido.Estado.Despachado);
 
     if (!exito)
     {

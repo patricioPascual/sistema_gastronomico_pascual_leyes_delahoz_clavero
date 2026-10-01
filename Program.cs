@@ -18,6 +18,12 @@ builder.Services.AddDbContext<GastronomiaContext>(options =>
   builder.Services.AddScoped<RepositorioCompra>();
   builder.Services.AddScoped<RepositorioProducto>();  
 builder.Services.AddScoped<RepositorioProveedor>();
+builder.Services.AddScoped<RepositorioPedido>();
+builder.Services.AddScoped<RepositorioDetallePedido>();
+builder.Services.AddScoped<RepositorioMesa>();
+builder.Services.AddScoped<RepositorioPlato>();
+builder.Services.AddScoped<RepositorioCategoria>();
+builder.Services.AddScoped<RepositorioEmpleado>();
 
 var app = builder.Build();
 
