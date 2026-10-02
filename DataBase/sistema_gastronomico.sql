@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 28-09-2026 a las 21:25:34
+-- Tiempo de generación: 02-10-2026 a las 16:48:17
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -68,7 +68,10 @@ CREATE TABLE `compra` (
 
 INSERT INTO `compra` (`id_compra`, `fecha_hora`, `numero_comprobante`, `total_compra`, `id_empleado`, `estado`, `id_proveedor`) VALUES
 (4, '2026-09-25 16:28:00', 'FC 00123123', 1800000.00, 1, 0, 1),
-(5, '2026-09-25 18:03:00', 'FC 00123155', 18000.00, 1, 1, 1);
+(5, '2026-09-25 18:03:00', 'FC 00123155', 18000.00, 1, 1, 1),
+(8, '2026-09-28 16:54:00', NULL, 3600.00, 1, 0, 1),
+(9, '2026-10-01 16:28:00', 'FC 15154654', 5000.00, 1, 0, 3),
+(10, '2026-10-01 16:40:00', 'FC 12312366', 25000.00, 1, 1, 3);
 
 -- --------------------------------------------------------
 
@@ -91,7 +94,10 @@ CREATE TABLE `detalle_compra` (
 
 INSERT INTO `detalle_compra` (`id_detalle_compra`, `id_compra`, `id_producto`, `cantidad_ingresada`, `precio_costo_unitario`) VALUES
 (4, 4, 2, 5.000, 3600.00),
-(5, 5, 2, 5.000, 3600.00);
+(5, 5, 2, 5.000, 3600.00),
+(6, 8, 2, 1.000, 3600.00),
+(7, 9, 1, 5.000, 1000.00),
+(8, 10, 7, 1.000, 25000.00);
 
 -- --------------------------------------------------------
 
@@ -105,15 +111,20 @@ CREATE TABLE `detalle_pedido` (
   `id_plato` int(11) NOT NULL,
   `cantidad` int(11) NOT NULL DEFAULT 1,
   `precio_unitario` decimal(10,2) NOT NULL,
-  `estado` enum('En Marcha','Despachado') DEFAULT 'En Marcha'
+  `estado` enum('En Marcha','Despachado') DEFAULT 'En Marcha',
+  `fecha_hora` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Volcado de datos para la tabla `detalle_pedido`
 --
 
-INSERT INTO `detalle_pedido` (`id_detalle_pedido`, `id_pedido`, `id_plato`, `cantidad`, `precio_unitario`, `estado`) VALUES
-(3, 2, 1, 2, 8000.00, 'En Marcha');
+INSERT INTO `detalle_pedido` (`id_detalle_pedido`, `id_pedido`, `id_plato`, `cantidad`, `precio_unitario`, `estado`, `fecha_hora`) VALUES
+(3, 2, 1, 2, 8000.00, 'Despachado', '2026-10-01 17:14:54'),
+(5, 2, 1, 1, 8000.00, 'Despachado', '2026-10-01 17:14:54'),
+(6, 3, 2, 2, 15000.00, 'Despachado', '2026-10-01 17:14:54'),
+(7, 4, 2, 1, 15000.00, 'Despachado', '2026-10-01 17:14:54'),
+(8, 2, 2, 1, 15000.00, 'En Marcha', '2026-10-01 17:14:54');
 
 -- --------------------------------------------------------
 
@@ -133,9 +144,12 @@ CREATE TABLE `detalle_receta` (
 --
 
 INSERT INTO `detalle_receta` (`id_detalle_receta`, `id_plato`, `id_producto`, `cantidad_requerida`) VALUES
-(1, 1, 1, 150.000),
-(2, 1, 3, 8.000),
-(3, 1, 4, 5.000);
+(34, 1, 1, 0.150),
+(35, 1, 3, 0.080),
+(36, 1, 4, 0.050),
+(40, 2, 3, 0.200),
+(41, 2, 2, 0.050),
+(42, 2, 6, 0.150);
 
 -- --------------------------------------------------------
 
@@ -180,7 +194,9 @@ CREATE TABLE `mesa` (
 --
 
 INSERT INTO `mesa` (`id_mesa`, `numero`, `capacidad`, `estado`, `tipo`) VALUES
-(1, 1, 2, 0, 'Mesa');
+(1, 1, 2, 0, 'Mesa'),
+(2, 2, 3, 0, 'Mesa'),
+(3, 4, 4, 0, 'Mesa');
 
 -- --------------------------------------------------------
 
@@ -203,7 +219,9 @@ CREATE TABLE `pedido` (
 
 INSERT INTO `pedido` (`id_pedido`, `id_mesa`, `id_empleado`, `fecha_hora`, `estado`, `total`) VALUES
 (1, 1, 1, '2026-09-28 13:11:14', 'Cancelado', 0.00),
-(2, 1, 1, '2026-09-28 16:18:23', 'Abierto', 16000.00);
+(2, 1, 1, '2026-09-28 16:18:23', 'Abierto', 39000.00),
+(3, 2, 1, '2026-09-28 20:32:16', 'Abierto', 30000.00),
+(4, 3, 1, '2026-09-29 14:45:33', 'Abierto', 15000.00);
 
 -- --------------------------------------------------------
 
@@ -224,7 +242,8 @@ CREATE TABLE `plato` (
 --
 
 INSERT INTO `plato` (`id_plato`, `nombre`, `id_categoria`, `precio_venta`, `activo`) VALUES
-(1, 'Empanada de Carne', 1, 8000.00, 1);
+(1, 'Empanada de Carne', 1, 8000.00, 1),
+(2, 'Pastel de papa', 2, 15000.00, 1);
 
 -- --------------------------------------------------------
 
@@ -246,11 +265,13 @@ CREATE TABLE `producto` (
 --
 
 INSERT INTO `producto` (`id_producto`, `nombre`, `cantidad_stock`, `unidad_medida`, `precio_costo`, `estado`) VALUES
-(1, 'Harina', 30.000, 'kg', 1000.00, 1),
-(2, 'Tomate', 17.000, 'kg', 3600.00, 1),
-(3, 'Carne Picada', 10.000, 'kg', 10000.00, 1),
-(4, 'Cebolla', 5.000, 'kg', 1000.00, 1),
-(5, 'Salsa de Ostras', 1.000, 'unidad', 23000.00, 0);
+(1, 'Harina', 29.850, 'kg', 1000.00, 1),
+(2, 'Tomate', 16.800, 'kg', 3600.00, 1),
+(3, 'Carne Picada', 9.120, 'kg', 10000.00, 1),
+(4, 'Cebolla', 4.950, 'kg', 1000.00, 1),
+(5, 'Salsa de Ostras', 1.000, 'unidad', 23000.00, 0),
+(6, 'Papa', 9.400, 'kg', 1500.00, 1),
+(7, 'Chocolate Cobertura Semi amargo', 3.000, 'kg', 25000.00, 1);
 
 -- --------------------------------------------------------
 
@@ -272,7 +293,10 @@ CREATE TABLE `proveedor` (
 --
 
 INSERT INTO `proveedor` (`id_proveedor`, `nombre`, `cuit`, `telefono`, `direccion`, `estado`) VALUES
-(1, 'Verduleria La Quinta', '33-77002222-2', '2665407728', 'Los Lapachos 123', 1);
+(1, 'Verduleria La Quinta', '33-77002222-2', '2665407728', 'Los Lapachos 123', 1),
+(2, 'Carniceria La Brava', '24-21222212-2', '2656475444', 'siempreViva 123 ', 1),
+(3, 'Distribuidora JyM', '02-21222555-2', '2665411444', 'San Martin 232', 1),
+(4, 'Distribuidora JyM', '02-21222555-3', '2665411444', 'San Martin 232', 0);
 
 -- --------------------------------------------------------
 
@@ -303,6 +327,7 @@ INSERT INTO `rol` (`id_rol`, `nombre`) VALUES
 CREATE TABLE `usuario` (
   `id_usuario` int(11) NOT NULL,
   `id_empleado` int(11) NOT NULL,
+  `avatar` varchar(255) DEFAULT NULL,
   `id_rol` int(11) NOT NULL,
   `username` varchar(50) NOT NULL,
   `password_hash` varchar(255) NOT NULL,
@@ -425,25 +450,25 @@ ALTER TABLE `categoria`
 -- AUTO_INCREMENT de la tabla `compra`
 --
 ALTER TABLE `compra`
-  MODIFY `id_compra` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id_compra` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT de la tabla `detalle_compra`
 --
 ALTER TABLE `detalle_compra`
-  MODIFY `id_detalle_compra` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id_detalle_compra` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT de la tabla `detalle_pedido`
 --
 ALTER TABLE `detalle_pedido`
-  MODIFY `id_detalle_pedido` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id_detalle_pedido` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT de la tabla `detalle_receta`
 --
 ALTER TABLE `detalle_receta`
-  MODIFY `id_detalle_receta` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id_detalle_receta` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=43;
 
 --
 -- AUTO_INCREMENT de la tabla `empleado`
@@ -455,31 +480,31 @@ ALTER TABLE `empleado`
 -- AUTO_INCREMENT de la tabla `mesa`
 --
 ALTER TABLE `mesa`
-  MODIFY `id_mesa` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id_mesa` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT de la tabla `pedido`
 --
 ALTER TABLE `pedido`
-  MODIFY `id_pedido` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id_pedido` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT de la tabla `plato`
 --
 ALTER TABLE `plato`
-  MODIFY `id_plato` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id_plato` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT de la tabla `producto`
 --
 ALTER TABLE `producto`
-  MODIFY `id_producto` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id_producto` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT de la tabla `proveedor`
 --
 ALTER TABLE `proveedor`
-  MODIFY `id_proveedor` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id_proveedor` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT de la tabla `rol`
