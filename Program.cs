@@ -21,6 +21,8 @@ builder.Services.AddScoped<RepositorioPlato>();
 builder.Services.AddScoped<RepositorioDetalleReceta>();
 builder.Services.AddScoped<RepositorioCategoria>();
 builder.Services.AddScoped<RepositorioEmpleado>();
+builder.Services.AddScoped<RepositorioRol>();
+builder.Services.AddScoped<RepositorioUsuario>();
 
 var app = builder.Build();
 
