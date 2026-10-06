@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 02-10-2026 a las 16:48:17
+-- Tiempo de generación: 06-10-2026 a las 23:09:02
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -111,7 +111,7 @@ CREATE TABLE `detalle_pedido` (
   `id_plato` int(11) NOT NULL,
   `cantidad` int(11) NOT NULL DEFAULT 1,
   `precio_unitario` decimal(10,2) NOT NULL,
-  `estado` enum('En Marcha','Despachado') DEFAULT 'En Marcha',
+  `estado` enum('EnMarcha','Despachado') NOT NULL DEFAULT 'EnMarcha',
   `fecha_hora` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -124,7 +124,9 @@ INSERT INTO `detalle_pedido` (`id_detalle_pedido`, `id_pedido`, `id_plato`, `can
 (5, 2, 1, 1, 8000.00, 'Despachado', '2026-10-01 17:14:54'),
 (6, 3, 2, 2, 15000.00, 'Despachado', '2026-10-01 17:14:54'),
 (7, 4, 2, 1, 15000.00, 'Despachado', '2026-10-01 17:14:54'),
-(8, 2, 2, 1, 15000.00, 'En Marcha', '2026-10-01 17:14:54');
+(8, 2, 2, 1, 15000.00, 'EnMarcha', '2026-10-01 17:14:54'),
+(9, 3, 1, 1, 8000.00, 'Despachado', '2026-10-06 17:32:36'),
+(10, 5, 1, 2, 8000.00, 'Despachado', '2026-10-06 17:50:32');
 
 -- --------------------------------------------------------
 
@@ -219,9 +221,10 @@ CREATE TABLE `pedido` (
 
 INSERT INTO `pedido` (`id_pedido`, `id_mesa`, `id_empleado`, `fecha_hora`, `estado`, `total`) VALUES
 (1, 1, 1, '2026-09-28 13:11:14', 'Cancelado', 0.00),
-(2, 1, 1, '2026-09-28 16:18:23', 'Abierto', 39000.00),
-(3, 2, 1, '2026-09-28 20:32:16', 'Abierto', 30000.00),
-(4, 3, 1, '2026-09-29 14:45:33', 'Abierto', 15000.00);
+(2, 1, 1, '2026-09-28 16:18:23', 'Pagado', 39000.00),
+(3, 2, 1, '2026-09-28 20:32:16', 'Abierto', 38000.00),
+(4, 3, 1, '2026-09-29 14:45:33', 'Abierto', 15000.00),
+(5, 1, 1, '2026-10-06 17:50:32', 'Abierto', 16000.00);
 
 -- --------------------------------------------------------
 
@@ -265,7 +268,7 @@ CREATE TABLE `producto` (
 --
 
 INSERT INTO `producto` (`id_producto`, `nombre`, `cantidad_stock`, `unidad_medida`, `precio_costo`, `estado`) VALUES
-(1, 'Harina', 29.850, 'kg', 1000.00, 1),
+(1, 'Harina', 26.850, 'kg', 1000.00, 1),
 (2, 'Tomate', 16.800, 'kg', 3600.00, 1),
 (3, 'Carne Picada', 9.120, 'kg', 10000.00, 1),
 (4, 'Cebolla', 4.950, 'kg', 1000.00, 1),
@@ -462,7 +465,7 @@ ALTER TABLE `detalle_compra`
 -- AUTO_INCREMENT de la tabla `detalle_pedido`
 --
 ALTER TABLE `detalle_pedido`
-  MODIFY `id_detalle_pedido` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id_detalle_pedido` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT de la tabla `detalle_receta`
@@ -486,7 +489,7 @@ ALTER TABLE `mesa`
 -- AUTO_INCREMENT de la tabla `pedido`
 --
 ALTER TABLE `pedido`
-  MODIFY `id_pedido` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id_pedido` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT de la tabla `plato`

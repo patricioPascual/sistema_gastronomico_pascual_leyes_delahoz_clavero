@@ -249,5 +249,23 @@ public IActionResult DespacharPedido(int idDetallePedido, int idPedido)
     
     return RedirectToAction("Detalle", new { id = idPedido });
 }
+
+
+[HttpPost]
+public IActionResult CerrarMesa(int idPedido)
+{
+    bool exito = repoPedido.CerrarYPagarPedido(idPedido);
+
+    if (exito)
+    {
+        TempData["Exito"] = "La mesa fue cobrada y liberada con éxito.";
+    }
+    else
+    {
+        TempData["Error"] = "No se pudo procesar el cierre del pedido.";
+    }
+
+    return RedirectToAction("Index");
+}
     }
 }

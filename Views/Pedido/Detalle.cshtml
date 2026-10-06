@@ -13,9 +13,18 @@
         <div>
             @if (abierto)
             {
+                <form asp-action="CerrarMesa" method="post" class="d-inline"
+                      onsubmit="return confirm('¿Confirmar cobro y cerrar el pedido #@Model.IdPedido por $@Model.Total.ToString("N2")?');">
+                    <input type="hidden" name="idPedido" value="@Model.IdPedido" />
+                    <button type="submit" class="btn btn-success me-2">
+                        <i class="bi bi-cash-coin"></i> Pagar y Cerrar Mesa
+                    </button>
+                </form>
+
                 <a asp-action="Editar" asp-route-id="@Model.IdPedido" class="btn btn-outline-primary me-2">
                     <i class="bi bi-pencil"></i> Modificar
                 </a>
+
                 <form asp-action="Baja" asp-route-id="@Model.IdPedido" method="post" class="d-inline"
                       onsubmit="return confirm('¿Cancelar el pedido #@Model.IdPedido?');">
                     <button type="submit" class="btn btn-outline-danger">
@@ -150,6 +159,6 @@
     }
 
     <div class="mt-4">
-        <a  asp-controller="Mesa" asp-action="Salon" class="btn btn-outline-secondary">Volver</a>
+        <a asp-controller="Mesa" asp-action="Salon" class="btn btn-outline-secondary">Volver</a>
     </div>
 </div>
