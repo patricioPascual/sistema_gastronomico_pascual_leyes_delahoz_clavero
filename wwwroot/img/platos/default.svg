@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="256" height="256">
-  <!-- Fondo rojo con bordes redondeados -->
-  <rect width="128" height="128" rx="28" fill="#D43A43" />
+  <!-- Fondo gris con bordes redondeados -->
+  <rect width="128" height="128" rx="28" fill="#6c757d" />
   
-  <!-- Ícono sólido (Tenedor y Cuchillo) -->
-  <g fill="white">
+  <!-- Ícono sólido (Tenedor y Cuchillo) con mayor padding (escalado y centrado) -->
+  <g fill="white" transform="translate(16, 16) scale(0.75)">
     
     <!-- Tenedor -->
     <path d="M 38 30 

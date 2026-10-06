@@ -57,6 +57,13 @@ main {
   transition: all 0.3s ease;
 }
 
+#img_default {
+  padding: 2.5rem;
+  object-fit: contain !important;
+  filter: blur(1px) opacity(0.3);
+  background-color: #f8f9fa;
+}
+
 @media (min-width: 768px) {
   html {
     font-size: 16px;

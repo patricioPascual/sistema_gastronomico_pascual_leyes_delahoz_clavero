@@ -3,7 +3,7 @@
 <div class="container mt-4">
     <h2><i class="bi bi-egg-fried"></i> @ViewData["Titulo"]</h2>
 
-    <form asp-action="@ViewData["FormAction"]" method="post" class="mt-3">
+    <form asp-action="@ViewData["FormAction"]" method="post" enctype="multipart/form-data" class="mt-3">
         @if (Model.Plato.IdPlato > 0)
         {
             <input type="hidden" asp-for="Plato.IdPlato" />
@@ -35,6 +35,27 @@
         </div>
 
         <hr class="my-4" />
+        <h4>Imagen del Plato</h4>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Subir nueva foto (JPG/PNG)</label>
+                <input type="file" asp-for="ArchivoImagen" class="form-control" accept="image/jpeg, image/png" />
+            </div>
+            
+            @if (Model.Plato.IdPlato > 0)
+            {
+                <div class="col-md-6 d-flex align-items-end">
+                    <div>
+                        <input type="checkbox" class="btn-check" asp-for="EliminarImagen" autocomplete="off">
+                        <label class="btn btn-outline-danger" asp-for="EliminarImagen" title="Eliminar foto actual">
+                            <i class="bi bi-trash"></i>
+                        </label>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <hr class="my-4" />
 
         <h4>Receta</h4>
         <p class="text-muted">Insumos y cantidades que componen el plato. Escribí al menos 2 letras para buscar un
@@ -63,5 +84,3 @@
             </div>
         </form>
     </div>
-
-

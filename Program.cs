@@ -23,6 +23,7 @@ builder.Services.AddScoped<RepositorioCategoria>();
 builder.Services.AddScoped<RepositorioEmpleado>();
 builder.Services.AddScoped<RepositorioRol>();
 builder.Services.AddScoped<RepositorioUsuario>();
+builder.Services.AddScoped<RepositorioInforme>();
 
 var app = builder.Build();
 

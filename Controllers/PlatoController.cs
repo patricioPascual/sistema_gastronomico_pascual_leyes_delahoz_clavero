@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models;
+using Microsoft.AspNetCore.Hosting;
 
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 {
@@ -8,15 +9,18 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
         private readonly RepositorioPlato _repositorioPlato;
         private readonly RepositorioDetalleReceta _repositorioDetalleReceta;
         private readonly RepositorioCategoria _repositorioCategoria;
+        private readonly IWebHostEnvironment _host;
 
         public PlatoController(
             RepositorioPlato repositorioPlato,
             RepositorioDetalleReceta repositorioDetalleReceta,
-            RepositorioCategoria repositorioCategoria)
+            RepositorioCategoria repositorioCategoria,
+            IWebHostEnvironment host)
         {
             _repositorioPlato = repositorioPlato;
             _repositorioDetalleReceta = repositorioDetalleReceta;
             _repositorioCategoria = repositorioCategoria;
+            _host = host;
         }
 
         public IActionResult Index(int pagina = 1)
@@ -43,7 +47,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Crear(PlatoFormViewModel vm)
+        public async Task<IActionResult> Crear(PlatoFormViewModel vm)
         {
             if (!ModelState.IsValid)
             {
@@ -54,23 +58,16 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             try
             {
                 vm.Plato.Estado = true;
-
                 int idPlato = _repositorioPlato.Alta(vm.Plato);
 
                 if (vm.Receta != null && idPlato > 0)
                 {
-                    var detalles = vm.Receta
-                        .Where(r => r.IdProducto > 0 && r.CantidadRequerida > 0)
-                        .Select(r => new DetalleReceta
-                        {
-                            IdPlato = idPlato,
-                            IdProducto = r.IdProducto,
-                            CantidadRequerida = r.CantidadRequerida
-                        })
-                        .ToList();
-
+                    var detalles = vm.Receta.Where(r => r.IdProducto > 0 && r.CantidadRequerida > 0)
+                        .Select(r => new DetalleReceta { IdPlato = idPlato, IdProducto = r.IdProducto, CantidadRequerida = r.CantidadRequerida }).ToList();
                     _repositorioDetalleReceta.GuardarReceta(idPlato, detalles);
                 }
+
+                await ProcesarImagenLocal(idPlato, vm.ArchivoImagen, false);
 
                 TempData["Exito"] = "El plato se registró correctamente.";
                 return RedirectToAction(nameof(Index));
@@ -78,6 +75,45 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             catch (Exception ex)
             {
                 TempData["Error"] = "Error al registrar el plato: " + ex.Message;
+                vm.Categorias = _repositorioCategoria.ObtenerTodos().Where(c => c.Estado).ToList();
+                return View(vm);
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Editar(int id, PlatoFormViewModel vm)
+        {
+            if (!ModelState.IsValid)
+            {
+                vm.Categorias = _repositorioCategoria.ObtenerTodos().Where(c => c.Estado).ToList();
+                return View(vm);
+            }
+
+            try
+            {
+                var platoExistente = _repositorioPlato.ObtenerPorId(id);
+                if (platoExistente == null) return NotFound();
+
+                platoExistente.Nombre = vm.Plato.Nombre;
+                platoExistente.PrecioVenta = vm.Plato.PrecioVenta;
+                platoExistente.IdCategoria = vm.Plato.IdCategoria;
+
+                _repositorioPlato.Modificar(platoExistente);
+
+                var nuevosDetalles = vm.Receta != null
+                    ? vm.Receta.Where(r => r.IdProducto > 0 && r.CantidadRequerida > 0).Select(r => new DetalleReceta { IdPlato = id, IdProducto = r.IdProducto, CantidadRequerida = r.CantidadRequerida }).ToList()
+                    : new List<DetalleReceta>();
+                _repositorioDetalleReceta.GuardarReceta(id, nuevosDetalles);
+
+                await ProcesarImagenLocal(id, vm.ArchivoImagen, vm.EliminarImagen);
+
+                TempData["Exito"] = "El plato se modificó correctamente.";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = "Error al modificar el plato: " + ex.Message;
                 vm.Categorias = _repositorioCategoria.ObtenerTodos().Where(c => c.Estado).ToList();
                 return View(vm);
             }
@@ -144,56 +180,32 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             return View(vm);
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult Editar(int id, PlatoFormViewModel vm)
+        private async Task ProcesarImagenLocal(int idPlato, IFormFile? archivo, bool eliminar)
         {
-            if (!ModelState.IsValid)
+            string carpetaDestino = Path.Combine(_host.WebRootPath, "img", "platos");
+            string rutaArchivo = Path.Combine(carpetaDestino, $"plato_{idPlato}.jpg");
+
+            if (eliminar || archivo != null)
             {
-                vm.Categorias = _repositorioCategoria.ObtenerTodos().Where(c => c.Estado).ToList();
-                return View(vm);
+                if (System.IO.File.Exists(rutaArchivo))
+                {
+                    System.IO.File.Delete(rutaArchivo);
+                }
             }
 
-            try
+            if (archivo != null && archivo.Length > 0)
             {
-                var platoExistente = _repositorioPlato.ObtenerPorId(id);
-                if (platoExistente == null)
+                if (!Directory.Exists(carpetaDestino))
                 {
-                    TempData["Error"] = "El plato no existe.";
-                    return RedirectToAction(nameof(Index));
+                    Directory.CreateDirectory(carpetaDestino);
                 }
 
-                platoExistente.Nombre = vm.Plato.Nombre;
-                platoExistente.PrecioVenta = vm.Plato.PrecioVenta;
-                platoExistente.IdCategoria = vm.Plato.IdCategoria;
-
-                _repositorioPlato.Modificar(platoExistente);
-
-                var nuevosDetalles = new List<DetalleReceta>();
-                if (vm.Receta != null)
+                using (var stream = new FileStream(rutaArchivo, FileMode.Create))
                 {
-                    nuevosDetalles = vm.Receta
-                        .Where(r => r.IdProducto > 0 && r.CantidadRequerida > 0)
-                        .Select(r => new DetalleReceta
-                        {
-                            IdPlato = id,
-                            IdProducto = r.IdProducto,
-                            CantidadRequerida = r.CantidadRequerida
-                        })
-                        .ToList();
+                    await archivo.CopyToAsync(stream);
                 }
-
-                _repositorioDetalleReceta.GuardarReceta(id, nuevosDetalles);
-
-                TempData["Exito"] = "El plato se modificó correctamente.";
-                return RedirectToAction(nameof(Index));
-            }
-            catch (Exception ex)
-            {
-                TempData["Error"] = "Error al modificar el plato: " + ex.Message;
-                vm.Categorias = _repositorioCategoria.ObtenerTodos().Where(c => c.Estado).ToList();
-                return View(vm);
             }
         }
+
     }
 }
