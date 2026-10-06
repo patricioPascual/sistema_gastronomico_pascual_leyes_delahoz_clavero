@@ -146,7 +146,34 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
                     .ThenInclude(d => d.Plato)
                 .FirstOrDefault(p => p.IdPedido == idPedido);
         }
+         
+        public bool CerrarYPagarPedido(int idPedido)
+{
+  
+    var pedido = _context.Pedidos
+        .Include(p => p.Detalles)
+        .FirstOrDefault(p => p.IdPedido == idPedido);
 
+    if (pedido == null || pedido.estado != Pedido.Estado.Abierto)
+    {
+        return false;
+    }
+
+    pedido.Total = pedido.Detalles?.Sum(d => d.Cantidad * d.PrecioUnitario) ?? 0;
+
+  
+    pedido.estado = Pedido.Estado.Pagado;
+    _context.Pedidos.Update(pedido);
+
+
+    var mesa = _context.Mesas.FirstOrDefault(m => m.IdMesa == pedido.IdMesa);
+    if (mesa != null)
+    {
+        mesa.Estado = false;
+        _context.Mesas.Update(mesa);
+    }
+    return _context.SaveChanges() > 0;
+}
      
         public List<Pedido> ObtenerPedidosConDetallesEnMarcha()
         {

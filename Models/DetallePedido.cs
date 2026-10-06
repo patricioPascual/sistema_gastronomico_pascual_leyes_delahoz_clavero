@@ -24,7 +24,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
         }
 
         [Column("estado")]
-        public Estado estado { get; set; }
+        public Estado estado { get; set; }= Estado.EnMarcha;
 
        
         [Column("fecha_hora")]
