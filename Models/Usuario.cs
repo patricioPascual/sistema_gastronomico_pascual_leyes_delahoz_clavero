@@ -34,7 +34,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
         [Column("password_hash")]
         public String? PasswordHash { get; set; }
 
-        [Column("estado")]
+        [Column("activo")]
         public Boolean Estado { get; set; }
     }
 }
