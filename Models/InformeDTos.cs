@@ -34,4 +34,14 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
     public int CantidadPedidos { get; set; }
     public decimal TotalVentas { get; set; }
 }
+
+
+public class ResultadoStockPlato
+{
+    public int CantidadDisponible { get; set; }
+    public bool TieneStock => CantidadDisponible > 0;
+    public string? InsumoFaltante { get; set; }
+    public decimal StockActualInsumo { get; set; }
+    public decimal InsumoRequeridoPorPorcion { get; set; }
+}
 }
