@@ -151,12 +151,13 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
                 idPedido = p.IdPedido,
                 mesaNumero = p.Mesa != null ? p.Mesa.Numero : 0,
                 empleadoNombre = p.Empleado != null ? $"{p.Empleado.Apellido}, {p.Empleado.Nombre}" : "Sin asignar",
-                fechaHora = p.FechaHora.ToString("o"),
+                fechaHora = p.FechaHora.ToString("o"), // hace cuánto está abierta la MESA (contexto, no el tiempo de espera del plato)
                 detalles = p.Detalles.Select(d => new
                 {
                     idDetallePedido = d.IdDetallePedido,
                     cantidad = d.Cantidad,
-                    nombrePlato = d.Plato != null ? d.Plato.Nombre : "Plato"
+                    nombrePlato = d.Plato != null ? d.Plato.Nombre : "Plato",
+                    fechaHora = d.FechaHora.ToString("o") // hace cuánto se pidió ESTE plato puntual
                 }).ToList()
             }).ToList();
 
