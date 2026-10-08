@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models;
-using MySql.Data.MySqlClient;
+using MySqlConnector;
 
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 {

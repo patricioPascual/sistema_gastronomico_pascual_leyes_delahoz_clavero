@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models;
-using MySql.Data.MySqlClient;
-
+using MySqlConnector;  // en lugar de MySql.Data.MySqlClient
+using Microsoft.EntityFrameworkCore;   // para DbUpdateException
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 {
     public class EmpleadoController : Controller
@@ -73,7 +73,8 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
                 TempData["Mensaje"] = "Empleado registrado correctamente.";
                 return RedirectToAction(nameof(Index));
             }
-            catch (MySqlException ex) when (ex.Number == 1062)
+           catch (DbUpdateException ex) when (ex.InnerException is MySqlException mysqlEx && mysqlEx.Number == 1062)
+
             {
                 ModelState.AddModelError("", "Ya existe un empleado con ese legajo o DNI.");
                 return View("Alta", empleado);
