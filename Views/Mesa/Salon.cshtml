@@ -14,10 +14,10 @@
             <button class="btn btn-outline-primary position-relative" type="button" data-bs-toggle="offcanvas"
                     data-bs-target="#offcanvasPendientes">
                 <i class="bi bi-clock-history me-1"></i> Pedidos pendientes
-                
+
                 <!-- Vue evalua la longitud del arreglo dinamicamente -->
                 <span v-if="pendientes.length > 0"
-                      class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle">
+                    class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle">
                     {{ pendientes.length }}
                 </span>
             </button>
@@ -27,88 +27,96 @@
 
     <h5 class="text-secondary mb-3">Mesas</h5>
     <div class="row row-cols-2 row-cols-md-4 g-3 mb-4">
-        
+
         <div class="col" v-for="m in mesas" :key="m.idMesa">
-            
+
             <a v-if="m.idPedidoAbierto" :href="'/Pedido/Detalle/' + m.idPedidoAbierto"
-               class="d-flex align-items-center justify-content-center text-decoration-none text-white bg-danger rounded-3 shadow-sm"
-               style="aspect-ratio: 1; font-size: 1.5rem; font-weight: 600;"
-               :title="'Mesa ' + m.numero + ' — ocupada'">
+            class="d-flex align-items-center justify-content-center text-decoration-none text-white bg-danger rounded-3 shadow-sm"
+            style="aspect-ratio: 1; font-size: 1.5rem; font-weight: 600;"
+            :title="'Mesa ' + m.numero + ' — ocupada'">
                 {{ m.numero }}
             </a>
-            
+
             <a v-else :href="'/Pedido/Alta?idMesa=' + m.idMesa"
-               class="d-flex align-items-center justify-content-center text-decoration-none text-white bg-success rounded-3 shadow-sm"
-               style="aspect-ratio: 1; font-size: 1.5rem; font-weight: 600;" :title="'Mesa ' + m.numero + ' — libre'">
+            class="d-flex align-items-center justify-content-center text-decoration-none text-white bg-success rounded-3 shadow-sm"
+            style="aspect-ratio: 1; font-size: 1.5rem; font-weight: 600;" :title="'Mesa ' + m.numero + ' — libre'">
                 {{ m.numero }}
             </a>
         </div>
-        
+
         <p v-if="mesas.length === 0" class="text-muted">No hay mesas cargadas.</p>
     </div>
 
     <h5 class="text-secondary mb-3">Barra</h5>
     <div class="bg-light rounded-3 p-3 d-flex flex-wrap justify-content-center gap-3">
-        
+
 
         <template v-for="b in barra" :key="b.idMesa">
             <a v-if="b.idPedidoAbierto" :href="'/Pedido/Detalle/' + b.idPedidoAbierto"
-               class="d-flex align-items-center justify-content-center text-decoration-none text-white bg-danger rounded-circle shadow-sm"
-               style="width: 52px; height: 52px; font-weight: 600;" :title="'Barra ' + b.numero + ' — ocupada'">
+            class="d-flex align-items-center justify-content-center text-decoration-none text-white bg-danger rounded-circle shadow-sm"
+            style="width: 52px; height: 52px; font-weight: 600;" :title="'Barra ' + b.numero + ' — ocupada'">
                 {{ b.numero }}
             </a>
-            
+
             <a v-else :href="'/Pedido/Alta?idMesa=' + b.idMesa"
-               class="d-flex align-items-center justify-content-center text-decoration-none text-white bg-success rounded-circle shadow-sm"
-               style="width: 52px; height: 52px; font-weight: 600;" :title="'Barra ' + b.numero + ' — libre'">
+            class="d-flex align-items-center justify-content-center text-decoration-none text-white bg-success rounded-circle shadow-sm"
+            style="width: 52px; height: 52px; font-weight: 600;" :title="'Barra ' + b.numero + ' — libre'">
                 {{ b.numero }}
             </a>
         </template>
-        
+
         <span v-if="barra.length === 0" class="text-muted">No hay posiciones de barra cargadas.</span>
     </div>
 
     <!-- Menú lateral de Pedidos Pendientes -->
     <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasPendientes"
-         aria-labelledby="offcanvasPendientesLabel">
+        aria-labelledby="offcanvasPendientesLabel">
         <div class="offcanvas-header">
             <h5 class="offcanvas-title" id="offcanvasPendientesLabel"><i class="bi bi-clock-history me-2"></i>Pedidos
                 pendientes</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
             </div>
             <div class="offcanvas-body">
-            
+
                 <p v-if="pendientes.length === 0" class="text-muted">No hay pedidos abiertos.</p>
             <ul v-else class="list-group">
     <li class="list-group-item" v-for="p in pendientes" :key="p.idPedido">
         <!-- Cabecera del pedido (Mesa y Empleado) -->
-        <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="d-flex justify-content-between align-items-center mb-1">
             <a :href="'/Pedido/Detalle/' + p.idPedido" class="text-decoration-none text-dark fw-bold">
                 Mesa {{ p.mesaNumero }}
             </a>
-            <span class="badge bg-secondary">
-                <span v-if="calcularMinutos(p.fechaHora) < 1">recién</span>
-                <span v-else>hace {{ calcularMinutos(p.fechaHora) }} min</span>
-            </span>
+            <!-- Tiempo de la MESA (contexto), ya no es el tiempo de espera de los platos -->
+            <small class="text-muted">
+                <i class="bi bi-door-open me-1"></i>Mesa abierta hace {{ calcularMinutos(p.fechaHora) }} min
+            </small>
         </div>
         <small class="text-muted d-block mb-2"><i class="bi bi-person me-1"></i>{{ p.empleadoNombre }}</small>
 
         <!-- Lista de Platos/Detalles del Pedido -->
         <div class="list-group list-group-flush border-top pt-2">
-            <div v-for="d in p.detalles" :key="d.idDetallePedido" 
-                 class="d-flex justify-content-between align-items-center py-1">
+            <div v-for="d in p.detalles" :key="d.idDetallePedido"
+                class="d-flex justify-content-between align-items-center py-1">
                 <div>
                     <span class="badge bg-primary me-1">{{ d.cantidad }}x</span>
                     <span class="small">{{ d.nombrePlato }}</span>
                 </div>
 
-                <!-- Botón para despachar EL DETALLE individual -->
-                <button type="button" 
-                        class="btn btn-sm btn-outline-success border-0 px-2 py-0" 
-                        title="Despachar este plato"
-                        v-on:click="despacharDetalle(d.idDetallePedido, p.idPedido)">
-                    <i class="bi bi-check-circle-fill fs-5"></i>
-                </button>
+                <div class="d-flex align-items-center gap-2">
+                    <!-- Tiempo de ESTE plato puntual, calculado con su propio fechaHora -->
+                    <span class="badge" :class="calcularMinutos(d.fechaHora) >= 15 ? 'bg-danger' : 'bg-secondary'">
+                        <span v-if="calcularMinutos(d.fechaHora) < 1">recién</span>
+                        <span v-else>hace {{ calcularMinutos(d.fechaHora) }} min</span>
+                    </span>
+
+                    <!-- Botón para despachar EL DETALLE individual -->
+                    <button type="button"
+                            class="btn btn-sm btn-outline-success border-0 px-2 py-0"
+                            title="Despachar este plato"
+                            v-on:click="despacharDetalle(d.idDetallePedido, p.idPedido)">
+                        <i class="bi bi-check-circle-fill fs-5"></i>
+                    </button>
+                </div>
             </div>
         </div>
     </li>
@@ -150,7 +158,8 @@
                     }
                 },
 
-                // 2. Calcular minutos transcurridos desde el pedido
+                // 2. Calcular minutos transcurridos desde una fecha dada
+                // (se usa tanto con p.fechaHora -mesa- como con d.fechaHora -plato-)
                 calcularMinutos(fechaString) {
                     if (!fechaString) return 0;
                     const inicio = new Date(fechaString).getTime();
