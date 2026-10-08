@@ -207,5 +207,25 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             }
         }
 
+        [HttpGet]
+        public IActionResult BuscarPlato(string q)
+        {
+            if (string.IsNullOrWhiteSpace(q))
+            {
+                return Json(new List<object>());
+            }
+
+            var productos = _repositorioPlato.BuscarPlato(q);
+
+            var resultado = productos.Select(p => new
+            {
+                id = p.IdPlato,
+                texto = p.Nombre,
+                precioCosto = p.PrecioVenta
+            });
+
+            return Json(resultado);
+        }
     }
+
 }

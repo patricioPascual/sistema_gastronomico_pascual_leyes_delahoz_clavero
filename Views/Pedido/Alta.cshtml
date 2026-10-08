@@ -5,13 +5,12 @@
     ViewData["Title"] = "Nuevo Pedido";
     var mesas = ViewBag.Mesas as IEnumerable<Mesa> ?? new List<Mesa>();
     var empleados = ViewBag.Empleados as IEnumerable<Empleado> ?? new List<Empleado>();
-    var platos = (ViewBag.Platos as IEnumerable<Plato> ?? new List<Plato>()).Where(p => p.Estado);
-
-    // Datos para Vue: catálogo de platos y renglones ya cargados (si el POST volvió con errores)
-    var catalogoJson = System.Text.Json.JsonSerializer.Serialize(
-        platos.Select(p => new { id = p.IdPlato, nombre = p.Nombre, precio = p.PrecioVenta }));
     var detallesJson = System.Text.Json.JsonSerializer.Serialize(
-        Model.Detalles.Select(d => new { idPlato = d.IdPlato, cantidad = d.Cantidad }));
+        Model.Detalles.Select(d => new
+        {
+            idPlato = d.IdPlato,
+            cantidad = d.Cantidad
+        }));
 }
 
 <div class="container mt-4 mb-5" id="appPedido">
@@ -69,22 +68,19 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="(item, index) in detalles" :key="index">
+                            <tr v-for="(item, index) in detalles" :key="item.uid">
                                 <td>
-                                    <select :name="`Detalles[${index}].IdPlato`" v-model.number="item.idPlato"
-                                            class="form-select" required>
-                                        <option value="" disabled>Seleccione un plato...</option>
-                                        <option v-for="p in catalogoPlatos" :key="p.id" :value="p.id">{{ p.nombre }}
-                                        </option>
+                                    <select :data-uid="item.uid" :name="`Detalles[${index}].IdPlato`"
+                                            class="form-select plato-ajax" required>
+                                        <option value="" disabled selected hidden>Seleccione un plato...</option>
                                     </select>
                                 </td>
                                 <td>
                                     <input type="number" min="1" :name="`Detalles[${index}].Cantidad`"
                                            v-model.number="item.cantidad" class="form-control" required />
                                 </td>
-                                <!-- El precio es solo informativo: el servidor lo toma del plato -->
-                                <td>{{ precioDe(item).toFixed(2) }}</td>
-                                <td>{{ (precioDe(item) * (item.cantidad || 0)).toFixed(2) }}</td>
+                                <td>{{ (item.precio || 0).toFixed(2) }}</td>
+                                <td>{{ ((item.precio || 0) * (item.cantidad || 0)).toFixed(2) }}</td>
                                 <td class="text-center">
                                     <button type="button" class="btn btn-outline-danger btn-sm"
                                         @@click="eliminarRenglon(index)">
@@ -112,39 +108,97 @@
 </div>
 
 @section Scripts {
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
     <script>
         const { createApp } = Vue;
+        let nextUid = 1;
 
-        createApp({
+        const app = createApp({
             data() {
+                const detallesIniciales = @Html.Raw(detallesJson);
                 return {
-                    catalogoPlatos: @Html.Raw(catalogoJson),
-                    detalles: @Html.Raw(detallesJson)
-                    };
+                    detalles: detallesIniciales.length
+                        ? detallesIniciales.map(d => ({
+                            uid: nextUid++,
+                            idPlato: d.idPlato || '',
+                            precio: 0,
+                            cantidad: d.cantidad || 1,
+                        }))
+                        : [],
+                };
             },
             computed: {
                 total() {
-                    return this.detalles.reduce((sum, item) => sum + this.precioDe(item) * (item.cantidad || 0), 0);
-                }
+                    return this.detalles.reduce(
+                        (sum, item) => sum + (item.precio || 0) * (item.cantidad || 0),
+                        0
+                    );
+                },
             },
             methods: {
-                precioDe(item) {
-                    const plato = this.catalogoPlatos.find(p => p.id === item.idPlato);
-                    return plato ? plato.precio : 0;
-                },
                 agregarRenglon() {
-                    this.detalles.push({ idPlato: '', cantidad: 1 });
+                    this.detalles.push({ uid: nextUid++, idPlato: '', precio: 0, cantidad: 1 });
+                    this.$nextTick(() => this.inicializarSelect2Pendientes());
                 },
                 eliminarRenglon(index) {
+                    const item = this.detalles[index];
+                    const $select = $(`select[data-uid="${item.uid}"]`);
+                    if ($select.data('select2')) {
+                        $select.select2('destroy');
+                    }
                     this.detalles.splice(index, 1);
-                }
+                },
+                seleccionarPlato(uid, data) {
+                    const item = this.detalles.find(d => d.uid === uid);
+                    if (!item) return;
+                    item.idPlato = data.id;
+                    item.precio = data.precioCosto ?? 0;
+                },
+                inicializarSelect2Pendientes() {
+                    $('.plato-ajax').each((_, el) => {
+                        const $el = $(el);
+                        if ($el.data('select2')) return;
+
+                        $el.select2({
+                            theme: 'bootstrap-5',
+                            placeholder: 'Escriba para buscar un plato...',
+                            minimumInputLength: 2,
+                            ajax: {
+                                url: '@Url.Action("BuscarPlato", "Plato")',
+                                dataType: 'json',
+                                delay: 300,
+                                data: (params) => ({ q: params.term }),
+                                processResults: (data) => ({
+                                    results: data.map(p => ({
+                                        id: p.id,
+                                        text: p.texto,
+                                        precioCosto: p.precioCosto,
+                                    })),
+                                }),
+                                cache: true,
+                            },
+                        });
+
+                        const uid = Number($el.data('uid'));
+
+                        $el.on('select2:select', (e) => {
+                            this.seleccionarPlato(uid, e.params.data);
+                        });
+
+                        $el.on('select2:clear', () => {
+                            this.seleccionarPlato(uid, { id: '', texto: '', precioCosto: 0 });
+                        });
+                    });
+                },
             },
             mounted() {
-                if (this.detalles.length === 0)
-                    this.agregarRenglon();
-            }
+                if (this.detalles.length === 0) this.agregarRenglon();
+                this.$nextTick(() => this.inicializarSelect2Pendientes());
+            },
         }).mount('#appPedido');
     </script>
 }

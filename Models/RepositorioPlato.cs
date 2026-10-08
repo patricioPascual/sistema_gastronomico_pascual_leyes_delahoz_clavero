@@ -90,5 +90,14 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
         {
             return _context.Platos.Count();
         }
+
+        public IList<Plato> BuscarPlato(String q)
+        {
+            return _context.Platos
+                .Where(p => p.Estado && p.Nombre != null && p.Nombre.Contains(q))
+                .Take(20)
+                .ToList();
+        }
+
     }
 }

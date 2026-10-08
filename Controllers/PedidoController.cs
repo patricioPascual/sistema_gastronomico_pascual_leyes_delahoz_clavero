@@ -233,39 +233,39 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
         }
 
         [HttpPost]
-public IActionResult DespacharPedido(int idDetallePedido, int idPedido)
-{
-    bool exito = repoDetalle.CambiarEstadoDetalle(idDetallePedido, DetallePedido.Estado.Despachado);
+        public IActionResult DespacharPedido(int idDetallePedido, int idPedido)
+        {
+            bool exito = repoDetalle.CambiarEstadoDetalle(idDetallePedido, DetallePedido.Estado.Despachado);
 
-    if (!exito)
-    {
-        TempData["Error"] = "No se pudo actualizar el estado del plato.";
-    }
-    else
-    {
-        TempData["Exito"] = "Plato marcado como despachado.";
-    }
-
-    
-    return RedirectToAction("Detalle", new { id = idPedido });
-}
+            if (!exito)
+            {
+                TempData["Error"] = "No se pudo actualizar el estado del plato.";
+            }
+            else
+            {
+                TempData["Exito"] = "Plato marcado como despachado.";
+            }
 
 
-[HttpPost]
-public IActionResult CerrarMesa(int idPedido)
-{
-    bool exito = repoPedido.CerrarYPagarPedido(idPedido);
+            return RedirectToAction("Detalle", new { id = idPedido });
+        }
 
-    if (exito)
-    {
-        TempData["Exito"] = "La mesa fue cobrada y liberada con éxito.";
-    }
-    else
-    {
-        TempData["Error"] = "No se pudo procesar el cierre del pedido.";
-    }
 
-    return RedirectToAction("Index");
-}
+        [HttpPost]
+        public IActionResult CerrarMesa(int idPedido)
+        {
+            bool exito = repoPedido.CerrarYPagarPedido(idPedido);
+
+            if (exito)
+            {
+                TempData["Exito"] = "La mesa fue cobrada y liberada con éxito.";
+            }
+            else
+            {
+                TempData["Error"] = "No se pudo procesar el cierre del pedido.";
+            }
+
+            return RedirectToAction("Index");
+        }
     }
 }
