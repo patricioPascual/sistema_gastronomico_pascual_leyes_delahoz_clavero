@@ -2,8 +2,7 @@
 
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
 {
-   
-   
+
 
     public class ComprasPorProveedorDto
     {
@@ -12,7 +11,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
         public decimal TotalAcumulado { get; set; }
     }
 
-   
+
     public class PlatoMasVendidoDto
     {
         public string NombrePlato { get; set; } = string.Empty;
@@ -20,7 +19,6 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
         public decimal TotalRecaudado { get; set; }
     }
 
- 
     public class BalanceGeneralDto
     {
         public decimal TotalVentas { get; set; }

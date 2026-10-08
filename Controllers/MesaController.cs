@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models;
 using MySql.Data.MySqlClient;
 
@@ -83,7 +84,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
                 TempData["Mensaje"] = "Mesa registrada correctamente.";
                 return RedirectToAction(nameof(Index));
             }
-            catch (MySqlException ex) when (ex.Number == 1062)
+            catch (DbUpdateException ex) when (ex.InnerException is MySqlException mysqlEx && mysqlEx.Number == 1062)
             {
                 ModelState.AddModelError("Numero", "Ya existe una mesa con el número " + mesa.Numero + ".");
                 return View("Alta", mesa);
@@ -96,7 +97,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             if (mesa == null)
                 return NotFound();
 
-            return View(mesa);
+            return View("Modificar", mesa); // el archivo es Modificar.cshtml, no Editar.cshtml
         }
 
         [HttpPost]
@@ -104,7 +105,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
         public IActionResult Modificar(Mesa mesa)
         {
             if (!ModelState.IsValid)
-                return View("Editar", mesa);
+                return View("Modificar", mesa);
 
             try
             {
@@ -112,10 +113,10 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
                 TempData["Mensaje"] = "Mesa actualizada correctamente.";
                 return RedirectToAction(nameof(Index));
             }
-            catch (MySqlException ex) when (ex.Number == 1062)
+            catch (DbUpdateException ex) when (ex.InnerException is MySqlException mysqlEx && mysqlEx.Number == 1062)
             {
                 ModelState.AddModelError("Numero", "Ya existe una mesa con el número " + mesa.Numero + ".");
-                return View("Editar", mesa);
+                return View("Modificar", mesa);
             }
         }
 
@@ -128,7 +129,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
                 repoMesa.Baja(id);
                 TempData["Mensaje"] = "Mesa eliminada correctamente.";
             }
-            catch (MySqlException ex) when (ex.Number == 1451)
+            catch (DbUpdateException ex) when (ex.InnerException is MySqlException mysqlEx && mysqlEx.Number == 1451)
             {
                 TempData["Error"] = "No se puede eliminar la mesa: tiene pedidos asociados.";
             }
@@ -137,31 +138,29 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
         }
 
         //Metodo agregado para implementar Vue en la vista de Salon
-       
-[HttpGet]
-public IActionResult ObtenerEstadoSalonAjax()
-{
-    var todas = repoMesa.ObtenerTodosConOcupacion();
-
-    var mesas = todas.Where(m => m.Tipo == "Mesa").OrderBy(m => m.Numero).ToList();
-    var barra = todas.Where(m => m.Tipo == "Barra").OrderBy(m => m.Numero).ToList();
-
-    var pendientes = repoPedido.ObtenerPedidosConDetallesEnMarcha().Select(p => new
-    {
-        idPedido = p.IdPedido,
-        mesaNumero = p.Mesa != null ? p.Mesa.Numero : 0,
-        empleadoNombre = p.Empleado != null ? $"{p.Empleado.Apellido}, {p.Empleado.Nombre}" : "Sin asignar",
-        fechaHora = p.FechaHora.ToString("o"),
-        detalles = p.Detalles.Select(d => new
+        [HttpGet]
+        public IActionResult ObtenerEstadoSalonAjax()
         {
-            idDetallePedido = d.IdDetallePedido,
-            cantidad = d.Cantidad,
-            nombrePlato = d.Plato != null ? d.Plato.Nombre : "Plato"
-        }).ToList()
-    }).ToList();
+            var todas = repoMesa.ObtenerTodosConOcupacion();
 
-    return Json(new { mesas, barra, pendientes });
-}
+            var mesas = todas.Where(m => m.Tipo == "Mesa").OrderBy(m => m.Numero).ToList();
+            var barra = todas.Where(m => m.Tipo == "Barra").OrderBy(m => m.Numero).ToList();
 
+            var pendientes = repoPedido.ObtenerPedidosConDetallesEnMarcha().Select(p => new
+            {
+                idPedido = p.IdPedido,
+                mesaNumero = p.Mesa != null ? p.Mesa.Numero : 0,
+                empleadoNombre = p.Empleado != null ? $"{p.Empleado.Apellido}, {p.Empleado.Nombre}" : "Sin asignar",
+                fechaHora = p.FechaHora.ToString("o"),
+                detalles = p.Detalles.Select(d => new
+                {
+                    idDetallePedido = d.IdDetallePedido,
+                    cantidad = d.Cantidad,
+                    nombrePlato = d.Plato != null ? d.Plato.Nombre : "Plato"
+                }).ToList()
+            }).ToList();
+
+            return Json(new { mesas, barra, pendientes });
+        }
     }
 }

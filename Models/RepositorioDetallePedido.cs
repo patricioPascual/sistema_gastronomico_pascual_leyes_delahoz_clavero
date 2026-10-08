@@ -14,7 +14,6 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
             _context = context;
         }
 
-       
         public bool Alta(DetallePedido detalle)
         {
             using var transaction = _context.Database.BeginTransaction();

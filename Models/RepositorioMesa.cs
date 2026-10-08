@@ -1,234 +1,116 @@
-using System;
 using System.Collections.Generic;
-using MySql.Data.MySqlClient;
+using System.Linq;
+using Microsoft.EntityFrameworkCore;
 
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
 {
-    public class RepositorioMesa : RepositorioBase
+    public class RepositorioMesa
     {
-        public RepositorioMesa(IConfiguration configuration) : base(configuration)
+        private readonly GastronomiaContext _context;
+
+        public RepositorioMesa(GastronomiaContext context)
         {
+            _context = context;
         }
 
         public int Alta(Mesa m)
         {
-            int res = -1;
+            m.Estado = false; // toda mesa nueva arranca Libre
+            m.Tipo = string.IsNullOrWhiteSpace(m.Tipo) ? "Mesa" : m.Tipo;
 
-            using (var conn = new MySqlConnection(connectionString))
-            {
-                string query = @"INSERT INTO mesa (numero, capacidad, estado, tipo)
-                                 VALUES (@numero, @capacidad, @estado, @tipo);
-                                 SELECT LAST_INSERT_ID();";
+            _context.Mesas.Add(m);
+            _context.SaveChanges();
 
-                using (var cmd = new MySqlCommand(query, conn))
-                {
-                    cmd.Parameters.AddWithValue("@numero", m.Numero);
-                    cmd.Parameters.AddWithValue("@capacidad", m.Capacidad);
-                    cmd.Parameters.AddWithValue("@estado", false); // toda mesa nueva arranca Libre
-                    cmd.Parameters.AddWithValue("@tipo", string.IsNullOrWhiteSpace(m.Tipo) ? "Mesa" : m.Tipo);
-
-                    conn.Open();
-                    res = Convert.ToInt32(cmd.ExecuteScalar());
-                }
-            }
-
-            return res;
+            // EF completa el id autogenerado en el propio objeto tras el INSERT
+            return m.IdMesa;
         }
 
         public int Baja(int id)
         {
-            int res = -1;
+            var mesa = _context.Mesas.Find(id);
+            if (mesa == null)
+                return 0;
 
-            using (var conn = new MySqlConnection(connectionString))
-            {
-                string sql = "DELETE FROM mesa WHERE id_mesa = @id";
-                using (var cmd = new MySqlCommand(sql, conn))
-                {
-                    cmd.Parameters.AddWithValue("@id", id);
-
-                    conn.Open();
-                    res = cmd.ExecuteNonQuery();
-                }
-            }
-
-            return res;
+            _context.Mesas.Remove(mesa);
+            return _context.SaveChanges();
         }
 
         public int Modificar(Mesa m)
         {
-            int res = -1;
+            var existente = _context.Mesas.Find(m.IdMesa);
+            if (existente == null)
+                return 0;
 
-            using (var conn = new MySqlConnection(connectionString))
-            {
-                string query = @"UPDATE mesa
-                                 SET numero = @numero,
-                                     capacidad = @capacidad,
-                                     estado = @estado,
-                                     tipo = @tipo
-                                 WHERE id_mesa = @idMesa;";
+            existente.Numero = m.Numero;
+            existente.Capacidad = m.Capacidad;
+            existente.Estado = m.Estado;
+            existente.Tipo = string.IsNullOrWhiteSpace(m.Tipo) ? "Mesa" : m.Tipo;
 
-                using (var cmd = new MySqlCommand(query, conn))
-                {
-                    cmd.Parameters.AddWithValue("@numero", m.Numero);
-                    cmd.Parameters.AddWithValue("@capacidad", m.Capacidad);
-                    cmd.Parameters.AddWithValue("@estado", m.Estado);
-                    cmd.Parameters.AddWithValue("@tipo", string.IsNullOrWhiteSpace(m.Tipo) ? "Mesa" : m.Tipo);
-                    cmd.Parameters.AddWithValue("@idMesa", m.IdMesa);
-
-                    conn.Open();
-                    res = cmd.ExecuteNonQuery();
-                }
-            }
-
-            return res;
+            return _context.SaveChanges();
         }
 
         public Mesa? ObtenerPorId(int id)
         {
-            Mesa? m = null;
-
-            using (var conn = new MySqlConnection(connectionString))
-            {
-                string sql = @"SELECT id_mesa, numero, capacidad, estado, tipo
-                              FROM mesa
-                              WHERE id_mesa = @id;";
-
-                using (var cmd = new MySqlCommand(sql, conn))
-                {
-                    cmd.Parameters.AddWithValue("@id", id);
-
-                    conn.Open();
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        if (reader.Read())
-                        {
-                            m = new Mesa
-                            {
-                                IdMesa = reader.GetInt32("id_mesa"),
-                                Numero = reader.GetInt32("numero"),
-                                Capacidad = reader.GetInt32("capacidad"),
-                                Estado = reader.GetBoolean("estado"),
-                                Tipo = reader.GetString("tipo")
-                            };
-                        }
-                    }
-                }
-            }
-
-            return m;
+            return _context.Mesas
+                .AsNoTracking()
+                .FirstOrDefault(m => m.IdMesa == id);
         }
 
         public List<Mesa> ObtenerLista(int pagNro, int tamPagina)
         {
-            var lista = new List<Mesa>();
             int offset = (pagNro - 1) * tamPagina;
 
-            using (var conn = new MySqlConnection(connectionString))
-            {
-                string sql = @"SELECT id_mesa, numero, capacidad, estado, tipo
-                            FROM mesa
-                            ORDER BY numero
-                            LIMIT @tamPagina OFFSET @offset;";
-
-                using (var cmd = new MySqlCommand(sql, conn))
-                {
-                    cmd.Parameters.AddWithValue("@tamPagina", tamPagina);
-                    cmd.Parameters.AddWithValue("@offset", offset);
-
-                    conn.Open();
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            lista.Add(new Mesa
-                            {
-                                IdMesa = reader.GetInt32("id_mesa"),
-                                Numero = reader.GetInt32("numero"),
-                                Capacidad = reader.GetInt32("capacidad"),
-                                Estado = reader.GetBoolean("estado"),
-                                Tipo = reader.GetString("tipo")
-                            });
-                        }
-                    }
-                }
-            }
-
-            return lista;
+            return _context.Mesas
+                .AsNoTracking()
+                .OrderBy(m => m.Numero)
+                .Skip(offset)
+                .Take(tamPagina)
+                .ToList();
         }
 
         // Trae todas las mesas y puestos de barra, marcando con qué pedido abierto
         // está ocupada cada una (null si está libre). Es la fuente de verdad para
         // el Salón: no depende de que Mesa.Estado esté sincronizado.
+        //
+        // Equivalente LINQ del LEFT JOIN ... ON ... AND p.estado='Abierto' que tenía
+        // la versión en SQL crudo: el filtro por 'Abierto' se aplica ANTES del join,
+        // sobre la secuencia de pedidos (GroupJoin), nunca en un Where() posterior
+        // al resultado ya unido — es la misma distinción ON-vs-WHERE de siempre.
         public List<Mesa> ObtenerTodosConOcupacion()
         {
-            var lista = new List<Mesa>();
+            var pedidosAbiertos = _context.Pedidos
+                .Where(p => p.estado == Pedido.Estado.Abierto);
 
-            using (var conn = new MySqlConnection(connectionString))
-            {
-                string sql = @"SELECT m.id_mesa, m.numero, m.capacidad, m.estado, m.tipo,
-                                      p.id_pedido AS id_pedido_abierto
-                              FROM mesa m
-                              LEFT JOIN pedido p ON p.id_mesa = m.id_mesa AND p.estado = 'Abierto';";
-
-                using (var cmd = new MySqlCommand(sql, conn))
+            return _context.Mesas
+                .AsNoTracking()
+                .GroupJoin(
+                    pedidosAbiertos,
+                    mesa => mesa.IdMesa,
+                    pedido => pedido.IdMesa,
+                    (mesa, pedidos) => new { mesa, pedido = pedidos.FirstOrDefault() })
+                .Select(x => new Mesa
                 {
-                    conn.Open();
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            lista.Add(new Mesa
-                            {
-                                IdMesa = reader.GetInt32("id_mesa"),
-                                Numero = reader.GetInt32("numero"),
-                                Capacidad = reader.GetInt32("capacidad"),
-                                Estado = reader.GetBoolean("estado"),
-                                Tipo = reader.GetString("tipo"),
-                                IdPedidoAbierto = reader.IsDBNull(reader.GetOrdinal("id_pedido_abierto"))
-                                    ? null
-                                    : reader.GetInt32("id_pedido_abierto")
-                            });
-                        }
-                    }
-                }
-            }
-
-            return lista;
+                    IdMesa = x.mesa.IdMesa,
+                    Numero = x.mesa.Numero,
+                    Capacidad = x.mesa.Capacidad,
+                    Estado = x.mesa.Estado,
+                    Tipo = x.mesa.Tipo,
+                    IdPedidoAbierto = x.pedido != null ? x.pedido.IdPedido : (int?)null
+                })
+                .ToList();
         }
 
         public IList<Mesa> Buscar(string q)
         {
-            var lista = new List<Mesa>();
-
-            using (var conn = new MySqlConnection(connectionString))
-            {
-                string query = @"SELECT id_mesa, numero, capacidad, estado, tipo
-                                FROM mesa
-                                WHERE numero LIKE @q
-                                LIMIT 20;";
-
-                using (var cmd = new MySqlCommand(query, conn))
-                {
-                    cmd.Parameters.AddWithValue("@q", "%" + q + "%");
-                    conn.Open();
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            lista.Add(new Mesa
-                            {
-                                IdMesa = reader.GetInt32("id_mesa"),
-                                Numero = reader.GetInt32("numero"),
-                                Capacidad = reader.GetInt32("capacidad"),
-                                Estado = reader.GetBoolean("estado"),
-                                Tipo = reader.GetString("tipo")
-                            });
-                        }
-                    }
-                }
-            }
-
-            return lista;
+            // AsEnumerable() antes del filtro: ToString() sobre un int no se puede
+            // traducir a SQL en LINQ-to-Entities. Como mesa es una tabla chica y fija
+            // (14 filas), traer todo a memoria y filtrar en C# no tiene costo real.
+            return _context.Mesas
+                .AsNoTracking()
+                .AsEnumerable()
+                .Where(m => m.Numero.ToString().Contains(q))
+                .Take(20)
+                .ToList();
         }
     }
 }

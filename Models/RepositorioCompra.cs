@@ -9,12 +9,12 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
     public class RepositorioCompra 
     {
         private readonly GastronomiaContext _context;
-                 public RepositorioCompra(GastronomiaContext context)
+                public RepositorioCompra(GastronomiaContext context)
         {
             _context = context;
         }
 
-     public int Alta(Compra compra)
+    public int Alta(Compra compra)
         {
             // Usamos una transacción para garantizar que si falla la actualización del stock, no se guarde la compra
             using var transaction = _context.Database.BeginTransaction();
@@ -71,7 +71,7 @@ public List<Compra> ObtenerLista(int pagNro = 1, int tamPagina = 10)
                 .ToList();
         }
 
-      
+    
         public Compra? ObtenerPorId(int id)
         {
             return _context.Compras
@@ -82,7 +82,7 @@ public List<Compra> ObtenerLista(int pagNro = 1, int tamPagina = 10)
                 .FirstOrDefault(c => c.IdCompra == id && c.Estado);
         }
 
-       
+    
         public bool Baja(int id)
         {
             var compra = ObtenerPorId(id);
