@@ -17,50 +17,65 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
         }
 
        
-        public int Alta(Pedido pedido)
+       public int Alta(Pedido pedido)
+{
+    // 1. Validar el stock de TODOS los platos antes de abrir la transacción o guardar algo
+    if (pedido.Detalles != null && pedido.Detalles.Count > 0)
+    {
+        foreach (var detalle in pedido.Detalles)
         {
-            using var transaction = _context.Database.BeginTransaction();
-            try
+            var plato = _context.Platos.FirstOrDefault(p => p.IdPlato == detalle.IdPlato && p.Estado);
+            if (plato == null)
             {
-                pedido.FechaHora = DateTime.Now;
-                pedido.estado = Pedido.Estado.Abierto;
-
-                if (pedido.Detalles != null && pedido.Detalles.Count > 0)
-                {
-                    // 1. Asignar precio y descontar stock por cada detalle utilizando la lógica del detalle
-                    foreach (var detalle in pedido.Detalles)
-                    {
-                        var plato = _context.Platos.FirstOrDefault(p => p.IdPlato == detalle.IdPlato && p.Estado);
-                        if (plato != null)
-                        {
-                            detalle.PrecioUnitario = plato.PrecioVenta;
-                            detalle.estado = DetallePedido.Estado.EnMarcha;
-                            detalle.FechaHora = DateTime.Now;
-                        }
-
-                        // Descontar stock a nivel de producto
-                        _repositorioDetalle.DescontarStock(detalle.IdPlato, detalle.Cantidad);
-                    }
-
-                    // 2. Calcular el total acumulado
-                    pedido.Total = pedido.Detalles.Sum(d => d.Cantidad * d.PrecioUnitario);
-                }
-
-                // 3. Guardar el pedido y sus detalles
-                _context.Pedidos.Add(pedido);
-                _context.SaveChanges();
-
-                transaction.Commit();
-                return pedido.IdPedido;
+                throw new InvalidOperationException("Uno de los platos seleccionados no existe o no está activo.");
             }
-            catch
+
+            var infoStock = _repositorioDetalle.ObtenerStockDisponiblePlato(detalle.IdPlato);
+            if (detalle.Cantidad > infoStock.CantidadDisponible)
             {
-                transaction.Rollback();
-                throw;
+                string mensajeInsumo = !string.IsNullOrEmpty(infoStock.InsumoFaltante)
+                    ? $" (Falta: {infoStock.InsumoFaltante})"
+                    : "";
+                throw new InvalidOperationException($"Stock insuficiente para '{plato.Nombre}'{mensajeInsumo}. Quedan {infoStock.CantidadDisponible} porciones.");
             }
         }
+    }
 
+    // 2. Si todos los platos tienen stock suficiente, procedemos con la transacción atómica
+    using var transaction = _context.Database.BeginTransaction();
+    try
+    {
+        pedido.FechaHora = DateTime.Now;
+        pedido.estado = Pedido.Estado.Abierto;
 
+        if (pedido.Detalles != null && pedido.Detalles.Count > 0)
+        {
+            foreach (var detalle in pedido.Detalles)
+            {
+                var plato = _context.Platos.Find(detalle.IdPlato);
+                detalle.PrecioUnitario = plato!.PrecioVenta;
+                detalle.estado = DetallePedido.Estado.EnMarcha;
+                detalle.FechaHora = DateTime.Now;
+
+                // Descontar stock de insumos
+                _repositorioDetalle.DescontarStock(detalle.IdPlato, detalle.Cantidad);
+            }
+
+            pedido.Total = pedido.Detalles.Sum(d => d.Cantidad * d.PrecioUnitario);
+        }
+
+        _context.Pedidos.Add(pedido);
+        _context.SaveChanges();
+
+        transaction.Commit();
+        return pedido.IdPedido;
+    }
+    catch
+    {
+        transaction.Rollback();
+        throw;
+    }
+}
         public bool Baja(int idPedido)
         {
             var pedido = _context.Pedidos
