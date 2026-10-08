@@ -1,0 +1,65 @@
+@model sistema_gastronomico_pascual_leyes_delahoz_clavero.Models.Plato
+@using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
+
+@{
+    ViewData["Title"] = Model.Nombre;
+    var receta = ViewBag.Receta as IEnumerable<DetalleReceta> ?? new List<DetalleReceta>();
+}
+
+<div class="container mt-4 mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0"><i class="bi bi-egg-fried me-2"></i>@Model.Nombre</h2>
+        <div>
+            <a asp-action="Editar" asp-route-id="@Model.IdPlato" class="btn btn-outline-primary">
+                <i class="bi bi-pencil"></i> Editar
+            </a>
+            <a asp-action="Index" class="btn btn-outline-secondary">Volver</a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="row g-0">
+            <div class="col-md-5">
+                <img src="/img/platos/plato_@(Model.IdPlato).jpg"
+                     onerror="this.onerror=null; this.src='/img/platos/default.svg';"
+                     class="img-fluid rounded-start h-100 w-100 object-fit-cover" style="max-height: 420px;"
+                     alt="Foto de @Model.Nombre">
+            </div>
+            <div class="col-md-7">
+                <div class="card-body d-flex flex-column h-100">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        @if (Model.Categoria != null)
+                        {
+                            <span class="badge bg-secondary">@Model.Categoria.Nombre</span>
+                        }
+                        @if (!Model.Estado)
+                        {
+                            <span class="badge bg-danger">Inactivo</span>
+                        }
+                    </div>
+
+                    <h3 class="text-success fw-bold mb-4">$ @Model.PrecioVenta.ToString("0.00")</h3>
+
+                    <h5 class="mb-3"><i class="bi bi-list-check me-2"></i>Ingredientes</h5>
+
+                    @if (receta.Any())
+                    {
+                        <ul class="list-group list-group-flush">
+                            @foreach (var d in receta)
+                            {
+                                <li class="list-group-item d-flex justify-content-between px-0">
+                                    <span>@(d.Producto?.Nombre ?? "Insumo eliminado")</span>
+                                    <span class="text-muted">@d.CantidadRequerida @(d.Producto?.Unidad_medida ?? "")</span>
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <p class="text-muted">Este plato todavía no tiene ingredientes cargados.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
