@@ -14,42 +14,52 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
             _context = context;
         }
 
-        public bool Alta(DetallePedido detalle)
+       
+       public bool Alta(DetallePedido detalle)
+{
+    using var transaction = _context.Database.BeginTransaction();
+    try
+    {
+        var plato = _context.Platos.FirstOrDefault(p => p.IdPlato == detalle.IdPlato && p.Estado);
+        if (plato == null)
         {
-            using var transaction = _context.Database.BeginTransaction();
-            try
-            {
-                // 1. Obtener plato para asignar su precio actual de venta
-                var plato = _context.Platos.FirstOrDefault(p => p.IdPlato == detalle.IdPlato && p.Estado);
-                if (plato == null) return false;
-
-                detalle.PrecioUnitario = plato.PrecioVenta;
-                detalle.estado = DetallePedido.Estado.EnMarcha;
-                detalle.FechaHora = DateTime.Now;
-
-                _context.DetallePedidos.Add(detalle);
-
-                // 2. Descontar el stock a nivel de detalle
-                DescontarStock(detalle.IdPlato, detalle.Cantidad);
-
-                _context.SaveChanges();
-
-                // 3. Recalcular el total en la cabecera del Pedido
-                RecalcularTotalPedido(detalle.IdPedido);
-
-                transaction.Commit();
-                return true;
-            }
-            catch
-            {
-                transaction.Rollback();
-                throw;
-            }
+            throw new InvalidOperationException("El plato seleccionado no existe o no está disponible.");
         }
 
-        /// <summary>
-        /// Elimina un detalle, restituye la cantidad al stock del producto y actualiza el total del pedido.
-        /// </summary>
+        // 1. VALIDACIÓN DE STOCK
+        var infoStock = ObtenerStockDisponiblePlato(detalle.IdPlato);
+        if (detalle.Cantidad > infoStock.CantidadDisponible)
+        {
+            string mensajeInsumo = !string.IsNullOrEmpty(infoStock.InsumoFaltante)
+                ? $" (Falta: {infoStock.InsumoFaltante})"
+                : "";
+            throw new InvalidOperationException($"No hay stock suficiente de '{plato.Nombre}'{mensajeInsumo}. Quedan {infoStock.CantidadDisponible} porciones.");
+        }
+
+        detalle.PrecioUnitario = plato.PrecioVenta;
+        detalle.estado = DetallePedido.Estado.EnMarcha;
+        detalle.FechaHora = DateTime.Now;
+
+        _context.DetallePedidos.Add(detalle);
+
+        // 2. Descontar insumos
+        DescontarStock(detalle.IdPlato, detalle.Cantidad);
+
+        _context.SaveChanges();
+
+
+        RecalcularTotalPedido(detalle.IdPedido);
+
+        transaction.Commit();
+        return true;
+    }
+    catch
+    {
+        transaction.Rollback();
+        throw; // Re-lanza la excepción con el mensaje de error
+    }
+}
+      
         public bool Baja(int idDetallePedido)
         {
             var detalle = _context.DetallePedidos.Find(idDetallePedido);
@@ -80,9 +90,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
             }
         }
 
-        /// <summary>
-        /// Modifica la cantidad de un ítem, ajustando únicamente la diferencia en stock.
-        /// </summary>
+        
         public bool ModificarCantidad(int idDetallePedido, int nuevaCantidad)
         {
             if (nuevaCantidad <= 0) return Baja(idDetallePedido);
@@ -122,9 +130,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
             }
         }
 
-        /// <summary>
-        /// Cambia el estado del detalle (ej: de 'EnMarcha' a 'Despachado' para la cocina).
-        /// </summary>
+      
         public bool CambiarEstadoDetalle(int idDetallePedido, DetallePedido.Estado nuevoEstado)
         {
             var detalle = _context.DetallePedidos.Find(idDetallePedido);
@@ -135,9 +141,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
             return _context.SaveChanges() > 0;
         }
 
-        /// <summary>
-        /// Obtiene un detalle con los datos cargados de su Plato.
-        /// </summary>
+
         public DetallePedido? ObtenerPorId(int idDetallePedido)
         {
             return _context.DetallePedidos
@@ -145,7 +149,6 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
                 .FirstOrDefault(d => d.IdDetallePedido == idDetallePedido);
         }
 
-        // --- MÉTODOS PRIVADOS AUXILIARES PARA MANEJO DE STOCK Y TOTALES ---
 
         public void DescontarStock(int idPlato, int cantidad)
         {
@@ -181,5 +184,45 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
                 _context.SaveChanges();
             }
         }
+                 
+        public ResultadoStockPlato ObtenerStockDisponiblePlato(int idPlato)  //TIPO agregado en DTOs
+{
+    var receta = _context.DetalleRecetas
+        .Include(dr => dr.Producto)
+        .Where(dr => dr.IdPlato == idPlato)
+        .ToList();
+  
+
+    int maxPorcionesPosibles = int.MaxValue;
+    string? insumoCritico = null;
+    decimal stockActualCritico = 0;
+    decimal requerimientoCritico = 0;
+
+    foreach (var ingrediente in receta)
+    {
+        if (ingrediente.Producto == null || ingrediente.CantidadRequerida <= 0) 
+            continue;
+
+        // Cuántas porciones completas alcanzan con este insumo específico
+        int porcionesParaEsteInsumo = (int)Math.Floor(ingrediente.Producto.Cantidad_stock / ingrediente.CantidadRequerida);
+
+        // Si este ingrediente limita más la producción que los anteriores, lo marcamos como el cuello de botella
+        if (porcionesParaEsteInsumo < maxPorcionesPosibles)
+        {
+            maxPorcionesPosibles = porcionesParaEsteInsumo;
+            insumoCritico = ingrediente.Producto.Nombre;
+            stockActualCritico = ingrediente.Producto.Cantidad_stock;
+            requerimientoCritico = ingrediente.CantidadRequerida;
+        }
+    }
+
+    return new ResultadoStockPlato
+    {
+        CantidadDisponible = Math.Max(0, maxPorcionesPosibles),
+        InsumoFaltante = insumoCritico,
+        StockActualInsumo = stockActualCritico,
+        InsumoRequeridoPorPorcion = requerimientoCritico
+    };
+}
     }
 }
