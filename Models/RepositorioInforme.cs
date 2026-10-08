@@ -1,177 +1,85 @@
-using System;
-using System.Collections.Generic;
-using MySql.Data.MySqlClient;
-
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
 {
-    public class RepositorioInforme : RepositorioBase
+    public class RepositorioInforme
     {
-        public RepositorioInforme(IConfiguration configuration) : base(configuration)
+        private readonly GastronomiaContext _context;
+
+        public RepositorioInforme(GastronomiaContext context)
         {
+            _context = context;
         }
 
-     public IList<PlatoMasVendidoDto> ObtenerPlatosMasVendidos(DateTime desde, DateTime hasta)
-    {
-        var lista = new List<PlatoMasVendidoDto>();
-        using (var conn = new MySqlConnection(connectionString))
+        // Solo cuentan como venta los pedidos cobrados
+        private IQueryable<Pedido> PedidosPagados(DateTime desde, DateTime hasta)
         {
-            string query = @"SELECT p.nombre, SUM(dp.cantidad) AS total_cant, SUM(dp.subtotal) AS total_recaudado
-                             FROM detalle_pedido dp
-                             INNER JOIN pedido pe ON dp.id_pedido = pe.id_pedido
-                             INNER JOIN plato p ON dp.id_plato = p.id_plato
-                             WHERE pe.fecha_hora BETWEEN @desde AND @hasta AND pe.estado = 1
-                             GROUP BY p.id_plato, p.nombre
-                             ORDER BY total_cant DESC
-                             LIMIT 10;";
-
-            using (var cmd = new MySqlCommand(query, conn))
-            {
-                cmd.Parameters.AddWithValue("@desde", desde);
-                cmd.Parameters.AddWithValue("@hasta", hasta);
-                conn.Open();
-                using (var reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        lista.Add(new PlatoMasVendidoDto
-                        {
-                            NombrePlato = reader.GetString("nombre"),
-                            CantidadVendida = reader.GetInt32("total_cant"),
-                            TotalRecaudado = reader.GetDecimal("total_recaudado")
-                        });
-                    }
-                }
-            }
+            return _context.Pedidos
+                .Where(p => p.estado == Pedido.Estado.Pagado
+                         && p.FechaHora >= desde
+                         && p.FechaHora <= hasta);
         }
-        return lista;
-    }
 
-
-
-    public IList<ComprasPorProveedorDto> ObtenerComprasPorProveedor(DateTime desde, DateTime hasta)
+        private IQueryable<Compra> ComprasActivas(DateTime desde, DateTime hasta)
         {
-            var lista = new List<ComprasPorProveedorDto>();
+            return _context.Compras
+                .Where(c => c.Estado
+                         && c.FechaHora >= desde
+                         && c.FechaHora <= hasta);
+        }
 
-            using (var conn = new MySqlConnection(connectionString))
-            {
-                string query = @"SELECT pr.nombre AS nombre_proveedor, 
-                                        COUNT(c.id_compra) AS cantidad_compras, 
-                                        SUM(c.total_compra) AS total_acumulado
-                                 FROM compra c
-                                 INNER JOIN proveedor pr ON c.id_proveedor = pr.id_proveedor
-                                 WHERE c.estado = 1 
-                                   AND c.fecha_hora >= @desde 
-                                   AND c.fecha_hora <= @hasta
-                                 GROUP BY pr.id_proveedor, pr.nombre
-                                 ORDER BY total_acumulado DESC;";
-
-                using (var cmd = new MySqlCommand(query, conn))
+        public IList<PlatoMasVendidoDto> ObtenerPlatosMasVendidos(DateTime desde, DateTime hasta)
+        {
+            return _context.DetallePedidos
+                .Where(dp => dp.Pedido!.estado == Pedido.Estado.Pagado
+                          && dp.Pedido.FechaHora >= desde
+                          && dp.Pedido.FechaHora <= hasta)
+                .GroupBy(dp => new { dp.IdPlato, dp.Plato!.Nombre })
+                .Select(g => new PlatoMasVendidoDto
                 {
-                    cmd.Parameters.AddWithValue("@desde", desde);
-                    cmd.Parameters.AddWithValue("@hasta", hasta);
+                    NombrePlato = g.Key.Nombre ?? string.Empty,
+                    CantidadVendida = g.Sum(dp => dp.Cantidad),
+                    TotalRecaudado = g.Sum(dp => dp.Cantidad * dp.PrecioUnitario)
+                })
+                .OrderByDescending(x => x.CantidadVendida)
+                .Take(10)
+                .ToList();
+        }
 
-                    conn.Open();
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            lista.Add(new ComprasPorProveedorDto
-                            {
-                                NombreProveedor = reader.GetString("nombre_proveedor"),
-                                CantidadCompras = reader.GetInt32("cantidad_compras"),
-                                TotalAcumulado = reader.GetDecimal("total_acumulado")
-                            });
-                        }
-                    }
-                }
-            }
-
-            return lista;
+        public IList<ComprasPorProveedorDto> ObtenerComprasPorProveedor(DateTime desde, DateTime hasta)
+        {
+            return ComprasActivas(desde, hasta)
+                .GroupBy(c => new { c.IdProveedor, c.Proveedor!.Nombre })
+                .Select(g => new ComprasPorProveedorDto
+                {
+                    NombreProveedor = g.Key.Nombre ?? string.Empty,
+                    CantidadCompras = g.Count(),
+                    TotalAcumulado = g.Sum(c => c.TotalCompra)
+                })
+                .OrderByDescending(x => x.TotalAcumulado)
+                .ToList();
         }
 
         public BalanceGeneralDto ObtenerBalanceGeneral(DateTime desde, DateTime hasta)
         {
-            var balance = new BalanceGeneralDto();
-
-            using (var conn = new MySqlConnection(connectionString))
+            // Sum devuelve 0 si no hay registros (reemplaza al COALESCE del SQL anterior)
+            return new BalanceGeneralDto
             {
-                string query = @"SELECT 
-                                    COALESCE((SELECT SUM(pe.total) 
-                                              FROM pedido pe 
-                                              WHERE pe.estado = 1 
-                                                AND pe.fecha_hora >= @desde 
-                                                AND pe.fecha_hora <= @hasta), 0) AS total_ventas,
-                                    
-                                    COALESCE((SELECT SUM(c.total_compra) 
-                                              FROM compra c 
-                                              WHERE c.estado = 1 
-                                                AND c.fecha_hora >= @desde 
-                                                AND c.fecha_hora <= @hasta), 0) AS total_compras;";
-
-                using (var cmd = new MySqlCommand(query, conn))
-                {
-                    cmd.Parameters.AddWithValue("@desde", desde);
-                    cmd.Parameters.AddWithValue("@hasta", hasta);
-
-                    conn.Open();
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        if (reader.Read())
-                        {
-                            balance.TotalVentas = reader.GetDecimal("total_ventas");
-                            balance.TotalCompras = reader.GetDecimal("total_compras");
-                        }
-                    }
-                }
-            }
-
-            return balance;
+                TotalVentas = PedidosPagados(desde, hasta).Sum(p => p.Total),
+                TotalCompras = ComprasActivas(desde, hasta).Sum(c => c.TotalCompra)
+            };
         }
-
 
         public IList<VentasPorMozoDto> ObtenerVentasPorMozo(DateTime desde, DateTime hasta)
-{
-    var lista = new List<VentasPorMozoDto>();
-
-    using (var conn = new MySqlConnection(connectionString))
-    {
-        string query = @"SELECT CONCAT(e.apellido, ', ', e.nombre) AS nombre_empleado,
-                                COUNT(p.id_pedido) AS cantidad_pedidos,
-                                SUM(p.total) AS total_ventas
-                         FROM pedido p
-                         INNER JOIN empleado e ON p.id_empleado = e.id_empleado
-                         WHERE p.estado = 1 
-                           AND p.fecha_hora >= @desde 
-                           AND p.fecha_hora <= @hasta
-                         GROUP BY e.id_empleado, e.apellido, e.nombre
-                         ORDER BY total_ventas DESC;";
-
-        using (var cmd = new MySqlCommand(query, conn))
         {
-            cmd.Parameters.AddWithValue("@desde", desde);
-            cmd.Parameters.AddWithValue("@hasta", hasta);
-
-            conn.Open();
-            using (var reader = cmd.ExecuteReader())
-            {
-                while (reader.Read())
+            return PedidosPagados(desde, hasta)
+                .GroupBy(p => new { p.IdEmpleado, p.Empleado!.Apellido, p.Empleado.Nombre })
+                .Select(g => new VentasPorMozoDto
                 {
-                    lista.Add(new VentasPorMozoDto
-                    {
-                        NombreEmpleado = reader.GetString("nombre_empleado"),
-                        CantidadPedidos = reader.GetInt32("cantidad_pedidos"),
-                        TotalVentas = reader.GetDecimal("total_ventas")
-                    });
-                }
-            }
+                    NombreEmpleado = g.Key.Apellido + ", " + g.Key.Nombre,
+                    CantidadPedidos = g.Count(),
+                    TotalVentas = g.Sum(p => p.Total)
+                })
+                .OrderByDescending(x => x.TotalVentas)
+                .ToList();
         }
     }
-
-    return lista;
 }
-    }
-}
-
-     
-
-    
