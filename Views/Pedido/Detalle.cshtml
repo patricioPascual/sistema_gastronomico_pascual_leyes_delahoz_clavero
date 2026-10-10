@@ -4,6 +4,7 @@
 @{
     ViewData["Title"] = "Pedido #" + Model.IdPedido;
     bool abierto = Model.estado == Pedido.Estado.Abierto;
+    bool pagado = ViewBag.MostrarAccionesLiberar ?? false;
 }
 
 <div class="container mt-4 mb-5">
@@ -18,7 +19,7 @@
                       onsubmit="return confirm('¿Confirmar cobro y cerrar el pedido #@Model.IdPedido por $@Model.Total.ToString("N2")?');">
                     <input type="hidden" name="idPedido" value="@Model.IdPedido" />
                     <button type="submit" class="btn btn-success me-2">
-                        <i class="bi bi-cash-coin"></i> Pagar y Cerrar Mesa
+                        <i class="bi bi-cash-coin"></i> Pagar y Cerrar Pedido
                     </button>
                 </form>
 
@@ -33,10 +34,32 @@
                     </button>
                 </form>
             }
+            @if (pagado)
+            {
+                <form asp-action="LiberarMesa" method="post" class="d-inline"
+                      onsubmit="return confirm('¿Liberar la mesa @Model.Mesa?.Numero? Quedará disponible para un pedido nuevo.');">
+                    <input type="hidden" name="idMesa" value="@Model.IdMesa" />
+                    <button type="submit" class="btn btn-success me-2">
+                        <i class="bi bi-unlock"></i> Liberar mesa
+                    </button>
+                </form>
+
+                <a asp-action="Alta" asp-route-idMesa="@Model.IdMesa" class="btn btn-outline-primary">
+                    <i class="bi bi-plus-lg"></i> Abrir nuevo pedido
+                </a>
+            }
         </div>
     </div>
 
     <partial name="_Mensajes" />
+
+    @if (pagado)
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle me-1"></i>
+            Este pedido ya fue cobrado. La mesa <strong>@Model.Mesa?.Numero</strong> sigue marcada como ocupada hasta que la liberes o abras un pedido nuevo ahí.
+        </div>
+    }
 
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-body row">

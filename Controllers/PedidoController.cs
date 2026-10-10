@@ -48,6 +48,18 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             if (pedido == null)
                 return NotFound();
 
+            // Las acciones de "Liberar mesa" / "Abrir nuevo pedido" solo se
+            // muestran si ESTE pedido es el último pagado de la mesa (y la mesa
+            // sigue con el flag de pendiente de liberar prendido). Si ya se abrió
+            // un pedido nuevo en esa mesa, este pedido quedó viejo y no debe
+            // ofrecer liberar nada.
+            bool mostrarAccionesLiberar = pedido.estado == Pedido.Estado.Pagado
+                && pedido.Mesa != null
+                && pedido.Mesa.Estado
+                && repoPedido.ObtenerUltimoPedidoPagadoId(pedido.IdMesa) == pedido.IdPedido;
+
+            ViewBag.MostrarAccionesLiberar = mostrarAccionesLiberar;
+
             return View(pedido);
         }
 
@@ -276,6 +288,19 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             }
 
             return RedirectToAction("Index");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult LiberarMesa(int idMesa)
+        {
+            bool exito = repoMesa.LiberarMesa(idMesa);
+
+            TempData[exito ? "Mensaje" : "Error"] = exito
+                ? "La mesa fue liberada y está disponible para un nuevo pedido."
+                : "No se pudo liberar la mesa.";
+
+            return RedirectToAction("Salon", "Mesa");
         }
     }
 }

@@ -3,7 +3,6 @@
     ViewData["Title"] = "Salón";
 }
 
-<!-- 1. Envolvemos todo en el ID que Vue va a controlar -->
 <div id="app-salon" class="container mt-4 mb-5" v-cloak>
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="mb-0"><i class="bi bi-grid-3x3-gap me-2"></i>Salón</h2>
@@ -15,9 +14,8 @@
                     data-bs-target="#offcanvasPendientes">
                 <i class="bi bi-clock-history me-1"></i> Pedidos pendientes
 
-                <!-- Vue evalua la longitud del arreglo dinamicamente -->
                 <span v-if="pendientes.length > 0"
-                    class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle">
+                      class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle">
                     {{ pendientes.length }}
                 </span>
             </button>
@@ -30,16 +28,17 @@
 
         <div class="col" v-for="m in mesas" :key="m.idMesa">
 
-            <a v-if="m.idPedidoAbierto" :href="'/Pedido/Detalle/' + m.idPedidoAbierto"
-            class="d-flex align-items-center justify-content-center text-decoration-none text-white bg-danger rounded-3 shadow-sm"
-            style="aspect-ratio: 1; font-size: 1.5rem; font-weight: 600;"
-            :title="'Mesa ' + m.numero + ' — ocupada'">
+            <a v-if="m.idPedidoAbierto || m.idPedidoPendienteLiberar"
+               :href="'/Pedido/Detalle/' + (m.idPedidoAbierto || m.idPedidoPendienteLiberar)"
+               class="d-flex align-items-center justify-content-center text-decoration-none text-white bg-danger rounded-3 shadow-sm"
+               style="aspect-ratio: 1; font-size: 1.5rem; font-weight: 600;"
+               :title="'Mesa ' + m.numero + (m.idPedidoAbierto ? ' — ocupada' : ' — pendiente de liberar')">
                 {{ m.numero }}
             </a>
 
             <a v-else :href="'/Pedido/Alta?idMesa=' + m.idMesa"
-            class="d-flex align-items-center justify-content-center text-decoration-none text-white bg-success rounded-3 shadow-sm"
-            style="aspect-ratio: 1; font-size: 1.5rem; font-weight: 600;" :title="'Mesa ' + m.numero + ' — libre'">
+               class="d-flex align-items-center justify-content-center text-decoration-none text-white bg-success rounded-3 shadow-sm"
+               style="aspect-ratio: 1; font-size: 1.5rem; font-weight: 600;" :title="'Mesa ' + m.numero + ' — libre'">
                 {{ m.numero }}
             </a>
         </div>
@@ -52,15 +51,17 @@
 
 
         <template v-for="b in barra" :key="b.idMesa">
-            <a v-if="b.idPedidoAbierto" :href="'/Pedido/Detalle/' + b.idPedidoAbierto"
-            class="d-flex align-items-center justify-content-center text-decoration-none text-white bg-danger rounded-circle shadow-sm"
-            style="width: 52px; height: 52px; font-weight: 600;" :title="'Barra ' + b.numero + ' — ocupada'">
+            <a v-if="b.idPedidoAbierto || b.idPedidoPendienteLiberar"
+               :href="'/Pedido/Detalle/' + (b.idPedidoAbierto || b.idPedidoPendienteLiberar)"
+               class="d-flex align-items-center justify-content-center text-decoration-none text-white bg-danger rounded-circle shadow-sm"
+               style="width: 52px; height: 52px; font-weight: 600;"
+               :title="'Barra ' + b.numero + (b.idPedidoAbierto ? ' — ocupada' : ' — pendiente de liberar')">
                 {{ b.numero }}
             </a>
 
             <a v-else :href="'/Pedido/Alta?idMesa=' + b.idMesa"
-            class="d-flex align-items-center justify-content-center text-decoration-none text-white bg-success rounded-circle shadow-sm"
-            style="width: 52px; height: 52px; font-weight: 600;" :title="'Barra ' + b.numero + ' — libre'">
+               class="d-flex align-items-center justify-content-center text-decoration-none text-white bg-success rounded-circle shadow-sm"
+               style="width: 52px; height: 52px; font-weight: 600;" :title="'Barra ' + b.numero + ' — libre'">
                 {{ b.numero }}
             </a>
         </template>
@@ -68,9 +69,8 @@
         <span v-if="barra.length === 0" class="text-muted">No hay posiciones de barra cargadas.</span>
     </div>
 
-    <!-- Menú lateral de Pedidos Pendientes -->
     <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasPendientes"
-        aria-labelledby="offcanvasPendientesLabel">
+         aria-labelledby="offcanvasPendientesLabel">
         <div class="offcanvas-header">
             <h5 class="offcanvas-title" id="offcanvasPendientesLabel"><i class="bi bi-clock-history me-2"></i>Pedidos
                 pendientes</h5>
@@ -79,130 +79,122 @@
             <div class="offcanvas-body">
 
                 <p v-if="pendientes.length === 0" class="text-muted">No hay pedidos abiertos.</p>
-            <ul v-else class="list-group">
-    <li class="list-group-item" v-for="p in pendientes" :key="p.idPedido">
-        <!-- Cabecera del pedido (Mesa y Empleado) -->
-        <div class="d-flex justify-content-between align-items-center mb-1">
-            <a :href="'/Pedido/Detalle/' + p.idPedido" class="text-decoration-none text-dark fw-bold">
-                Mesa {{ p.mesaNumero }}
-            </a>
-            <!-- Tiempo de la MESA (contexto), ya no es el tiempo de espera de los platos -->
-            <small class="text-muted">
-                <i class="bi bi-door-open me-1"></i>Mesa abierta hace {{ calcularMinutos(p.fechaHora) }} min
-            </small>
-        </div>
-        <small class="text-muted d-block mb-2"><i class="bi bi-person me-1"></i>{{ p.empleadoNombre }}</small>
+                <ul v-else class="list-group">
+                    <li class="list-group-item" :class="{ 'border-start border-warning border-3': p.cerrado }"
+                        v-for="p in pendientes" :key="p.idPedido">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <a :href="'/Pedido/Detalle/' + p.idPedido" class="text-decoration-none text-dark fw-bold">
+                                Mesa {{ p.mesaNumero }}
+                            </a>
+                            <small class="text-muted" v-if="!p.cerrado">
+                                <i class="bi bi-door-open me-1"></i>Mesa abierta hace {{ calcularMinutos(p.fechaHora) }} min
+                            </small>
+                            <small class="text-warning fw-semibold" v-else>
+                                <i class="bi bi-exclamation-triangle me-1"></i>Cobrada — falta despachar
+                            </small>
+                        </div>
+                        <small class="text-muted d-block mb-2"><i class="bi bi-person me-1"></i>{{ p.empleadoNombre
+                            }}</small>
 
-        <!-- Lista de Platos/Detalles del Pedido -->
-        <div class="list-group list-group-flush border-top pt-2">
-            <div v-for="d in p.detalles" :key="d.idDetallePedido"
-                class="d-flex justify-content-between align-items-center py-1">
-                <div>
-                    <span class="badge bg-primary me-1">{{ d.cantidad }}x</span>
-                    <span class="small">{{ d.nombrePlato }}</span>
-                </div>
+                            <div class="list-group list-group-flush border-top pt-2">
+                                <div v-for="d in p.detalles" :key="d.idDetallePedido"
+                                     class="d-flex justify-content-between align-items-center py-1">
+                                    <div>
+                                        <span class="badge bg-primary me-1">{{ d.cantidad }}x</span>
+                                        <span class="small">{{ d.nombrePlato }}</span>
+                                    </div>
 
-                <div class="d-flex align-items-center gap-2">
-                    <!-- Tiempo de ESTE plato puntual, calculado con su propio fechaHora -->
-                    <span class="badge" :class="calcularMinutos(d.fechaHora) >= 15 ? 'bg-danger' : 'bg-secondary'">
-                        <span v-if="calcularMinutos(d.fechaHora) < 1">recién</span>
-                        <span v-else>hace {{ calcularMinutos(d.fechaHora) }} min</span>
-                    </span>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge"
+                                              :class="calcularMinutos(d.fechaHora) >= 15 ? 'bg-danger' : 'bg-secondary'">
+                                            <span v-if="calcularMinutos(d.fechaHora) < 1">recién</span>
+                                            <span v-else>hace {{ calcularMinutos(d.fechaHora) }} min</span>
+                                        </span>
 
-                    <!-- Botón para despachar EL DETALLE individual -->
-                    <button type="button"
-                            class="btn btn-sm btn-outline-success border-0 px-2 py-0"
-                            title="Despachar este plato"
-                            v-on:click="despacharDetalle(d.idDetallePedido, p.idPedido)">
-                        <i class="bi bi-check-circle-fill fs-5"></i>
-                    </button>
+                                        <button type="button" class="btn btn-sm btn-outline-success border-0 px-2 py-0"
+                                                title="Despachar este plato"
+                                                v-on:click="despacharDetalle(d.idDetallePedido, p.idPedido)">
+                                            <i class="bi bi-check-circle-fill fs-5"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
                 </div>
             </div>
         </div>
-    </li>
-</ul>
-            </div>
-        </div>
-    </div>
 
         <partial name="_Notificaciones" />
-@section Scripts {
-    <!-- Importamos Vue 3 -->
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+        @section Scripts {
+            <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
-    <script>
-        const { createApp } = Vue;
+            <script>
+                const { createApp } = Vue;
 
-        createApp({
-            data() {
-                return {
-                    mesas: [],
-                    barra: [],
-                    pendientes: [],
-                    ahora: Date.now()
-                }
-            },
-            methods: {
-                // 1. Cargar el estado del salón y pedidos abiertos
-                async cargarDatos() {
-                    try {
-                        const respuesta = await fetch('/Mesa/ObtenerEstadoSalonAjax');
-                        if (respuesta.ok) {
-                            const datos = await respuesta.json();
-                            this.mesas = datos.mesas;
-                            this.barra = datos.barra;
-                            this.pendientes = datos.pendientes;
+                createApp({
+                    data() {
+                        return {
+                            mesas: [],
+                            barra: [],
+                            pendientes: [],
+                            ahora: Date.now()
                         }
-                    } catch (error) {
-                        console.error("Error al cargar el salón:", error);
-                    }
-                },
+                    },
+                    methods: {
+                        async cargarDatos() {
+                            try {
+                                const respuesta = await fetch('/Mesa/ObtenerEstadoSalonAjax');
+                                if (respuesta.ok) {
+                                    const datos = await respuesta.json();
+                                    this.mesas = datos.mesas;
+                                    this.barra = datos.barra;
+                                    this.pendientes = datos.pendientes;
+                                }
+                            } catch (error) {
+                                console.error("Error al cargar el salón:", error);
+                            }
+                        },
 
-                // 2. Calcular minutos transcurridos desde una fecha dada
-                // (se usa tanto con p.fechaHora -mesa- como con d.fechaHora -plato-)
-                calcularMinutos(fechaString) {
-                    if (!fechaString) return 0;
-                    const inicio = new Date(fechaString).getTime();
-                    const minutos = Math.floor((this.ahora - inicio) / 60000);
-                    return Math.max(0, minutos);
-                },
+                        calcularMinutos(fechaString) {
+                            if (!fechaString) return 0;
+                            const inicio = new Date(fechaString).getTime();
+                            const minutos = Math.floor((this.ahora - inicio) / 60000);
+                            return Math.max(0, minutos);
+                        },
 
-                // 3. Despachar un plato/detalle individual
-                async despacharDetalle(idDetallePedido, idPedido) {
-                    try {
-                        const respuesta = await fetch('/Pedido/DespacharPedido', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/x-www-form-urlencoded'
-                            },
-                            body: new URLSearchParams({
-                                idDetallePedido: idDetallePedido,
-                                idPedido: idPedido
-                            })
-                        });
+                        async despacharDetalle(idDetallePedido, idPedido) {
+                            try {
+                                const respuesta = await fetch('/Pedido/DespacharPedido', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/x-www-form-urlencoded'
+                                    },
+                                    body: new URLSearchParams({
+                                        idDetallePedido: idDetallePedido,
+                                        idPedido: idPedido
+                                    })
+                                });
 
-                        if (respuesta.ok) {
-                            // Recargamos el estado para refrescar la lista
-                            await this.cargarDatos();
-                        } else {
-                            alert('No se pudo marcar el plato como despachado.');
+                                if (respuesta.ok) {
+                                    await this.cargarDatos();
+                                } else {
+                                    alert('No se pudo marcar el plato como despachado.');
+                                }
+                            } catch (error) {
+                                console.error("Error al despachar plato:", error);
+                                alert('Ocurrió un error en la conexión.');
+                            }
                         }
-                    } catch (error) {
-                        console.error("Error al despachar plato:", error);
-                        alert('Ocurrió un error en la conexión.');
-                    }
-                }
-            },
-            mounted() {
-                // Carga inicial
-                this.cargarDatos();
+                    },
+                    mounted() {
+                        this.cargarDatos();
 
-                // Actualización automática cada 10 segundos
-                setInterval(() => {
-                    this.ahora = Date.now();
-                    this.cargarDatos();
-                }, 10000);
-            }
-        }).mount('#app-salon');
-    </script>
-}
+                        setInterval(() => {
+                            this.ahora = Date.now();
+                            this.cargarDatos();
+                        }, 10000);
+                    }
+                }).mount('#app-salon');
+            </script>
+        }

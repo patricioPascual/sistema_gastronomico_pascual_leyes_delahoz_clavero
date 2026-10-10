@@ -136,8 +136,8 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 
             return RedirectToAction(nameof(Index));
         }
-
-        //Metodo agregado para implementar Vue en la vista de Salon
+        
+        // Metodo agregado para implementar VUE en Salon
         [HttpGet]
         public IActionResult ObtenerEstadoSalonAjax()
         {
@@ -151,13 +151,14 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
                 idPedido = p.IdPedido,
                 mesaNumero = p.Mesa != null ? p.Mesa.Numero : 0,
                 empleadoNombre = p.Empleado != null ? $"{p.Empleado.Apellido}, {p.Empleado.Nombre}" : "Sin asignar",
-                fechaHora = p.FechaHora.ToString("o"), // hace cuánto está abierta la MESA (contexto, no el tiempo de espera del plato)
+                fechaHora = p.FechaHora.ToString("o"),
+                cerrado = p.estado == Pedido.Estado.Pagado, // la mesa ya se cobró, pero este plato sigue en marcha
                 detalles = p.Detalles.Select(d => new
                 {
                     idDetallePedido = d.IdDetallePedido,
                     cantidad = d.Cantidad,
                     nombrePlato = d.Plato != null ? d.Plato.Nombre : "Plato",
-                    fechaHora = d.FechaHora.ToString("o") // hace cuánto se pidió ESTE plato puntual
+                    fechaHora = d.FechaHora.ToString("o")
                 }).ToList()
             }).ToList();
 
