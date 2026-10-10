@@ -22,102 +22,112 @@
     </ul>
 
     <div v-cloak class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4">
-        
+
         <div class="col" v-for="plato in platosFiltrados" :key="plato.idPlato">
             <div class="card h-100 shadow-sm border-0" :class="{ 'opacity-50': !plato.estado }">
-                
-                <img :src="'/img/platos/plato_' + plato.idPlato + '.jpg'"
-                     onerror="this.onerror=null; this.src='/img/platos/default.svg';"
-                     class="card-img-top object-fit-cover" style="height: 200px;" alt="Foto del plato">
+
+                <a :href="'/Plato/Detalle/' + plato.idPlato">
+                    <img :src="'/img/platos/plato_' + plato.idPlato + '.jpg'"
+                         onerror="this.onerror=null; this.src='/img/platos/default.svg';"
+                         class="card-img-top object-fit-cover" style="height: 200px;" alt="Foto del plato">
+                </a>
 
                 <div class="card-body d-flex flex-column">
                     <div class="d-flex justify-content-between align-items-start mb-2">
-                        <h5 class="card-title text-truncate mb-0" :title="plato.nombre">{{ plato.nombre }}</h5>
-                        <span v-if="!plato.estado" class="badge bg-secondary ms-2">Inactivo</span>
-                    </div>
-                    
-                    <h4 class="text-success fw-bold mt-auto">$ {{ plato.precioVenta.toFixed(2) }}</h4>
-                </div>
-                
-                <div class="card-footer bg-white border-top-0 pb-3">
-                    <div class="d-flex justify-content-between">
-                        <a :href="'/Plato/Editar/' + plato.idPlato" class="btn btn-outline-primary btn-sm w-100 me-2">
-                            <i class="bi bi-pencil"></i> Editar
-                        </a>
+                        <h5 class="card-title text-truncate mb-0" :title="plato.nombre">
+                            <a :href="'/Plato/Detalle/' + plato.idPlato" class="text-decoration-none text-dark">{{
+                                plato.nombre }}</a>
+                            </h5>
+                            <span v-if="!plato.estado" class="badge bg-secondary ms-2">Inactivo</span>
+                        </div>
 
-                        <button class="btn btn-outline-danger btn-sm" :disabled="!plato.estado"
-                            @@click="confirmarBaja(plato)">
-                            <i class="bi bi-trash"></i>
-                        </button>
+                        <h4 class="text-success fw-bold mt-auto">$ {{ plato.precioVenta.toFixed(2) }}</h4>
+                    </div>
+
+                    <div class="card-footer bg-white border-top-0 pb-3">
+                        <div class="d-flex justify-content-between">
+                            <a :href="'/Plato/Detalle/' + plato.idPlato" class="btn btn-outline-secondary btn-sm w-100 me-2"
+                               title="Ver">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a :href="'/Plato/Editar/' + plato.idPlato" class="btn btn-outline-primary btn-sm w-100 me-2"
+                               title="Editar">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+
+                            <button class="btn btn-outline-danger btn-sm" :disabled="!plato.estado"
+                                @@click="confirmarBaja(plato)">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div v-if="platosFiltrados.length === 0" class="col-12 text-center py-5 text-muted">
-            <i class="bi bi-search fs-1"></i>
-            <p class="mt-2">No hay platos registrados en esta categoría.</p>
-        </div>
+            <div v-if="platosFiltrados.length === 0" class="col-12 text-center py-5 text-muted">
+                <i class="bi bi-search fs-1"></i>
+                <p class="mt-2">No hay platos registrados en esta categoría.</p>
+            </div>
 
+        </div>
     </div>
-</div>
 
-<partial name="_ModalEliminar" />
+    <partial name="_ModalEliminar" />
 
-@section Scripts {
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    @section Scripts {
+        <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
-    <script>
-        const datosPlatos = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Select(p => new
-            {
-                                                                                                                                                    idPlato = p.IdPlato,
-                                                                                                                                                    nombre = p.Nombre,
-                                                                                                                                                    precioVenta = p.PrecioVenta,
-                                                                                                                                                    estado = p.Estado,
-                                                                                                                                                    categoriaNombre = p.Categoria != null ? p.Categoria.Nombre : "Sin Categoría"
-                                                                            })));
+        <script>
+            const datosPlatos = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Select(p => new
+                {
+                                                                                                                                                                            idPlato = p.IdPlato,
+                                                                                                                                                                            nombre = p.Nombre,
+                                                                                                                                                                            precioVenta = p.PrecioVenta,
+                                                                                                                                                                            estado = p.Estado,
+                                                                                                                                                                            categoriaNombre = p.Categoria != null ? p.Categoria.Nombre : "Sin Categoría"
+                                                                                            })));
 
-        const { createApp } = Vue;
+            const { createApp } = Vue;
 
-        createApp({
-            data() {
-                const categoriasUnicas = ['Todas', ...new Set(datosPlatos.map(p => p.categoriaNombre))];
+            createApp({
+                data() {
+                    const categoriasUnicas = ['Todas', ...new Set(datosPlatos.map(p => p.categoriaNombre))];
 
-                return {
-                    platos: datosPlatos,
-                    categorias: categoriasUnicas,
-                    categoriaActiva: 'Todas'
-                };
-            },
-            computed: {
-                platosFiltrados() {
-                    if (this.categoriaActiva === 'Todas') {
-                        return this.platos;
-                    }
-                    return this.platos.filter(p => p.categoriaNombre === this.categoriaActiva);
-                }
-            },
-            methods: {
-                cambiarCategoria(cat) {
-                    this.categoriaActiva = cat;
-                },
-                confirmarBaja(plato) {
-                    abrirModalEliminar(plato.idPlato, plato.nombre, '/Plato/Eliminar');
-                },
-                obtenerIcono(categoria) {
-                    const iconos = {
-                        'Todas': 'bi-grid-fill',
-                        'Entrada': 'bi-egg-fried',
-                        'Plato Principal': 'bi-fork-knife',
-                        'Pizzas': 'bi-pie-chart',
-                        'Bebidas': 'bi-cup-straw',
-                        'Postres': 'bi-cake',
-                        'Cafetería': 'bi-cup-hot'
+                    return {
+                        platos: datosPlatos,
+                        categorias: categoriasUnicas,
+                        categoriaActiva: 'Todas'
                     };
-    
-                    return iconos[categoria] || 'bi-tag';
+                },
+                computed: {
+                    platosFiltrados() {
+                        if (this.categoriaActiva === 'Todas') {
+                            return this.platos;
+                        }
+                        return this.platos.filter(p => p.categoriaNombre === this.categoriaActiva);
+                    }
+                },
+                methods: {
+                    cambiarCategoria(cat) {
+                        this.categoriaActiva = cat;
+                    },
+                    confirmarBaja(plato) {
+                        abrirModalEliminar(plato.idPlato, plato.nombre, '/Plato/Eliminar');
+                    },
+                    obtenerIcono(categoria) {
+                        const iconos = {
+                            'Todas': 'bi-grid-fill',
+                            'Entrada': 'bi-egg-fried',
+                            'Plato Principal': 'bi-fork-knife',
+                            'Pizzas': 'bi-pie-chart',
+                            'Bebidas': 'bi-cup-straw',
+                            'Postres': 'bi-cake',
+                            'Cafetería': 'bi-cup-hot'
+                        };
+
+                        return iconos[categoria] || 'bi-tag';
+                    }
                 }
-            }
-        }).mount('#appMenu');
-    </script>
-}
+            }).mount('#appMenu');
+        </script>
+    }

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using MySql.Data.MySqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models

@@ -36,6 +36,18 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             return View(platos);
         }
 
+        public IActionResult Detalle(int id)
+        {
+            var plato = _repositorioPlato.ObtenerPorId(id);
+            if (plato == null)
+            {
+                TempData["Error"] = "El plato que intenta ver no existe.";
+                return RedirectToAction(nameof(Index));
+            }
+            ViewBag.Receta = _repositorioDetalleReceta.ObtenerPorPlato(id);
+            return View(plato);
+        }
+
         public IActionResult Crear()
         {
             var vm = new PlatoFormViewModel

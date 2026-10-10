@@ -48,7 +48,6 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             if (pedido == null)
                 return NotFound();
 
-            ViewBag.Platos = repoPlato.ObtenerTodos();
             return View(pedido);
         }
 
