@@ -5,6 +5,7 @@
     ViewData["Title"] = "Nuevo Pedido";
     var mesas = ViewBag.Mesas as IEnumerable<Mesa> ?? new List<Mesa>();
     var empleados = ViewBag.Empleados as IEnumerable<Empleado> ?? new List<Empleado>();
+    var mesaSeleccionada = ViewBag.MesaSeleccionada as Mesa;
     var detallesJson = System.Text.Json.JsonSerializer.Serialize(
         Model.Detalles.Select(d => new
         {
@@ -26,16 +27,29 @@
 
                 <div class="row g-3 mb-4">
                     <div class="col-md-6">
-                        <label asp-for="IdMesa" class="form-label fw-bold">Mesa</label>
-                        <select asp-for="IdMesa" class="form-select" required>
-                            <option value="">Seleccione una mesa...</option>
-                            @foreach (var m in mesas)
-                            {
-                                <option value="@m.IdMesa">
-                                    @(m.Tipo == "Barra" ? "Barra" : "Mesa") @m.Numero (@m.Capacidad personas)
-                                </option>
-                            }
-                        </select>
+                        <label class="form-label fw-bold">Mesa</label>
+                        @if (mesaSeleccionada != null)
+                        {
+                            <!-- Vino preseleccionada desde el Salón: se informa, no se elige de nuevo -->
+                            <div class="form-control-plaintext fw-bold fs-5">
+                                <i class="bi bi-door-closed-fill me-1"></i>
+                                @(mesaSeleccionada.Tipo == "Barra" ? "Barra" : "Mesa") @mesaSeleccionada.Numero
+                                <span class="text-muted fs-6">(@mesaSeleccionada.Capacidad personas)</span>
+                            </div>
+                            <input type="hidden" asp-for="IdMesa" />
+                        }
+                        else
+                        {
+                            <select asp-for="IdMesa" class="form-select" required>
+                                <option value="">Seleccione una mesa...</option>
+                                @foreach (var m in mesas)
+                                {
+                                    <option value="@m.IdMesa">
+                                        @(m.Tipo == "Barra" ? "Barra" : "Mesa") @m.Numero (@m.Capacidad personas)
+                                    </option>
+                                }
+                            </select>
+                        }
                     </div>
                     <div class="col-md-6">
                         <label asp-for="IdEmpleado" class="form-label fw-bold">Empleado</label>
@@ -70,8 +84,8 @@
                         <tbody>
                             <tr v-for="(item, index) in detalles" :key="item.uid">
                                 <td>
-                                    <select :data-uid="item.uid" :name="`Detalles[${index}].IdPlato`"
-                                            class="form-select plato-ajax" required>
+                                    <select :data-uid="item.uid" data-manual="true" :data-url="urlBuscarPlato"
+                                            :name="`Detalles[${index}].IdPlato`" class="form-select plato-ajax" required>
                                         <option value="" disabled selected hidden>Seleccione un plato...</option>
                                     </select>
                                 </td>
@@ -111,6 +125,7 @@
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="~/js/buscarPlato.js" asp-append-version="true"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
     <script>
@@ -121,6 +136,7 @@
             data() {
                 const detallesIniciales = @Html.Raw(detallesJson);
                 return {
+                    urlBuscarPlato: '@Url.Action("BuscarPlato", "Plato")',
                     detalles: detallesIniciales.length
                         ? detallesIniciales.map(d => ({
                             uid: nextUid++,
@@ -152,45 +168,17 @@
                     }
                     this.detalles.splice(index, 1);
                 },
-                seleccionarPlato(uid, data) {
-                    const item = this.detalles.find(d => d.uid === uid);
-                    if (!item) return;
-                    item.idPlato = data.id;
-                    item.precio = data.precioCosto ?? 0;
-                },
                 inicializarSelect2Pendientes() {
                     $('.plato-ajax').each((_, el) => {
                         const $el = $(el);
                         if ($el.data('select2')) return;
 
-                        $el.select2({
-                            theme: 'bootstrap-5',
-                            placeholder: 'Escriba para buscar un plato...',
-                            minimumInputLength: 2,
-                            ajax: {
-                                url: '@Url.Action("BuscarPlato", "Plato")',
-                                dataType: 'json',
-                                delay: 300,
-                                data: (params) => ({ q: params.term }),
-                                processResults: (data) => ({
-                                    results: data.map(p => ({
-                                        id: p.id,
-                                        text: p.texto,
-                                        precioCosto: p.precioCosto,
-                                    })),
-                                }),
-                                cache: true,
-                            },
-                        });
-
                         const uid = Number($el.data('uid'));
-
-                        $el.on('select2:select', (e) => {
-                            this.seleccionarPlato(uid, e.params.data);
-                        });
-
-                        $el.on('select2:clear', () => {
-                            this.seleccionarPlato(uid, { id: '', texto: '', precioCosto: 0 });
+                        inicializarSelect2Plato($el, (data) => {
+                            const item = this.detalles.find(d => d.uid === uid);
+                            if (!item) return;
+                            item.idPlato = data.id;
+                            item.precio = data.precioCosto ?? 0;
                         });
                     });
                 },

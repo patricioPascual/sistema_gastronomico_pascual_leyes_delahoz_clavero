@@ -59,8 +59,17 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
         {
             CargarCombos();
             var pedido = new Pedido();
+
             if (idMesa.HasValue)
-                pedido.IdMesa = idMesa.Value;
+            {
+                var mesa = repoMesa.ObtenerPorId(idMesa.Value);
+                if (mesa != null)
+                {
+                    pedido.IdMesa = mesa.IdMesa;
+                    ViewBag.MesaSeleccionada = mesa; // la vista la muestra como texto, sin <select>
+                }
+                // si el id no existe más (mesa borrada, link viejo), se cae al <select> normal
+            }
 
             return View(pedido);
         }
@@ -93,6 +102,8 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             }
 
             CargarCombos();
+            if (pedido.IdMesa > 0)
+                ViewBag.MesaSeleccionada = repoMesa.ObtenerPorId(pedido.IdMesa); // para que, si falla la validación, no se pierda el texto fijo
             return View(pedido);
         }
 
