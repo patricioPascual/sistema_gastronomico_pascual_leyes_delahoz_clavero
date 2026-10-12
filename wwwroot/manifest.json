@@ -1,0 +1,16 @@
+{
+  "name": "Foodly",
+  "short_name": "Gastronomía",
+  "description": "Gestión de pedidos, mesas y comandas.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "##E3787D", 
+  "icons": [
+    {
+      "src": "/logo-svg.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
