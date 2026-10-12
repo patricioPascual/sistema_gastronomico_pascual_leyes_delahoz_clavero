@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models;
 using MySqlConnector;
 
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 {
+    [Authorize(Roles = "1,2,3")]
     public class MesaController : Controller
     {
         private readonly IConfiguration config;
@@ -136,7 +138,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 
             return RedirectToAction(nameof(Index));
         }
-        
+
         // Metodo agregado para implementar VUE en Salon
         [HttpGet]
         public IActionResult ObtenerEstadoSalonAjax()

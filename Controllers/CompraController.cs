@@ -1,8 +1,10 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models;
 
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 {
+    [Authorize(Roles = "1")]
     public class CompraController : Controller
     {
         private readonly RepositorioCompra _repositorioCompra;
@@ -10,8 +12,8 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
         private readonly RepositorioProveedor _repositorioProveedor;
 
         public CompraController(
-            RepositorioCompra repositorioCompra, 
-            RepositorioProducto repositorioProducto, 
+            RepositorioCompra repositorioCompra,
+            RepositorioProducto repositorioProducto,
             RepositorioProveedor repositorioProveedor)
         {
             _repositorioCompra = repositorioCompra;
@@ -44,7 +46,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
         [HttpGet]
         public IActionResult Alta()
         {
-            ViewBag.Productos = _repositorioProducto.Buscar(""); 
+            ViewBag.Productos = _repositorioProducto.Buscar("");
             ViewBag.Proveedores = _repositorioProveedor.ObtenerTodos();
             return View();
         }
@@ -54,13 +56,13 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
         public IActionResult Alta(Compra compra)
         {
             try
-            {    
+            {
                 // Empleado de prueba
                 compra.IdEmpleado = 1;
 
                 // AJUSTE CLAVE ORM: Ignoramos la validación de objetos de navegación 
                 // que no vienen en el formulario POST
-              //  ModelState.Remove(nameof(compra.Proveedor));
+                //  ModelState.Remove(nameof(compra.Proveedor));
                 //ModelState.Remove(nameof(compra.Empleado));
 
                 if (compra.Detalles == null || compra.Detalles.Count == 0)
@@ -69,7 +71,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
                 }
 
                 if (ModelState.IsValid)
-                {   
+                {
                     compra.TotalCompra = compra.Detalles?.Sum(d => d.CantidadIngresada * d.PrecioCostoUnitario) ?? 0;
                     int idCreado = _repositorioCompra.Alta(compra);
 
@@ -162,7 +164,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
                     TempData["Error"] = "La compra que intenta eliminar no existe.";
                     return RedirectToAction(nameof(Index));
                 }
-                
+
                 bool exito = _repositorioCompra.Baja(id);
 
                 if (exito)

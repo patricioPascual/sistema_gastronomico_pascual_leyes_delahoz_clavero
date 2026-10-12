@@ -1,8 +1,10 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models;
 
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 {
+    [Authorize(Roles = "1")]
     public class InformeController : Controller
     {
         private readonly RepositorioInforme _repositorioInforme;
@@ -12,14 +14,14 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             _repositorioInforme = repositorioInforme;
         }
 
-     
+
         [HttpGet]
         public IActionResult Index()
         {
             return View();
         }
 
-       
+
         [HttpGet]
         public IActionResult GetBalance(DateTime desde, DateTime hasta)
         {
@@ -35,7 +37,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             return Json(data);
         }
 
-    
+
         [HttpGet]
         public IActionResult GetComprasPorProveedor(DateTime desde, DateTime hasta)
         {

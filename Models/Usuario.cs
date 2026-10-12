@@ -19,6 +19,10 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
         [ForeignKey("IdEmpleado")]
         public Empleado? Empleado { get; set; }
 
+        [Display(Name = "Avatar")]
+        [Column("avatar")]
+        public String? AvatarPath { get; set; }
+
         [Display(Name = "Rol")]
         [Column("id_rol")]
         public int IdRol { get; set; }

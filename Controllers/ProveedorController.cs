@@ -1,8 +1,10 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models;
 
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 {
+    [Authorize(Roles = "1")]
     public class ProveedorController : Controller
     {
         private readonly RepositorioProveedor repoProveedor;
@@ -23,7 +25,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             return View();
         }
 
-        
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Alta(Proveedor proveedor)
@@ -55,25 +57,25 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
         public IActionResult Baja(int id)
         {
             try
-    {
-        bool exito = repoProveedor.Baja(id) ;
+            {
+                bool exito = repoProveedor.Baja(id);
 
-        if (exito)
-        {
-            TempData["Mensaje"] = "El proveedor se dio de baja correctamente.";
-        }
-        else
-        {
-            TempData["Error"] = "No se pudo realizar la baja del proveedor.";
+                if (exito)
+                {
+                    TempData["Mensaje"] = "El proveedor se dio de baja correctamente.";
+                }
+                else
+                {
+                    TempData["Error"] = "No se pudo realizar la baja del proveedor.";
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = "Error al intentar eliminar el proveedor: " + ex.Message;
+            }
+
+            return RedirectToAction(nameof(Index));
         }
     }
-    catch (Exception ex)
-    {
-        TempData["Error"] = "Error al intentar eliminar el proveedor: " + ex.Message;
-    }
 
-    return RedirectToAction(nameof(Index));
-}
-        }
-    
 }

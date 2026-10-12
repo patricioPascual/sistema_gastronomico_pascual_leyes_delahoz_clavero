@@ -6,14 +6,10 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 {
     public class EmpleadoController : Controller
     {
-        private readonly IConfiguration config;
-        private readonly ILogger<EmpleadoController> logger;
         private readonly RepositorioEmpleado repoEmpleado;
 
-        public EmpleadoController(IConfiguration config, ILogger<EmpleadoController> logger, RepositorioEmpleado repoEmpleado)
+        public EmpleadoController(RepositorioEmpleado repoEmpleado)
         {
-            this.config = config;
-            this.logger = logger;
             this.repoEmpleado = repoEmpleado;
         }
 
@@ -73,7 +69,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
                 TempData["Mensaje"] = "Empleado registrado correctamente.";
                 return RedirectToAction(nameof(Index));
             }
-           catch (DbUpdateException ex) when (ex.InnerException is MySqlException mysqlEx && mysqlEx.Number == 1062)
+            catch (DbUpdateException ex) when (ex.InnerException is MySqlException mysqlEx && mysqlEx.Number == 1062)
 
             {
                 ModelState.AddModelError("", "Ya existe un empleado con ese legajo o DNI.");

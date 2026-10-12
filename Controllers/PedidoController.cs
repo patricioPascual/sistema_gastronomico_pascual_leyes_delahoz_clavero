@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models;
 
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 {
+    [Authorize(Roles = "1,2,3")]
     public class PedidoController : Controller
     {
         private readonly RepositorioPedido repoPedido;

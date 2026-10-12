@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Authorization;
 
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 {
+    [Authorize]
     public class PlatoController : Controller
     {
         private readonly RepositorioPlato _repositorioPlato;
@@ -23,6 +25,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             _host = host;
         }
 
+        [Authorize(Roles = "1,2,3")]
         public IActionResult Index(int pagina = 1)
         {
             int tamPagina = 10;
@@ -36,6 +39,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             return View(platos);
         }
 
+        [Authorize(Roles = "1,2,3")]
         public IActionResult Detalle(int id)
         {
             var plato = _repositorioPlato.ObtenerPorId(id);
@@ -48,6 +52,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             return View(plato);
         }
 
+        [Authorize(Roles = "1")]
         public IActionResult Crear()
         {
             var vm = new PlatoFormViewModel
@@ -57,6 +62,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             return View(vm);
         }
 
+        [Authorize(Roles = "1")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Crear(PlatoFormViewModel vm)
@@ -92,6 +98,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             }
         }
 
+        [Authorize(Roles = "1")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Editar(int id, PlatoFormViewModel vm)
@@ -131,6 +138,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             }
         }
 
+        [Authorize(Roles = "1")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Eliminar(int id)
@@ -163,6 +171,8 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        [Authorize(Roles = "1")]
+        [HttpGet]
         public IActionResult Editar(int id)
         {
             var plato = _repositorioPlato.ObtenerPorId(id);
@@ -219,6 +229,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             }
         }
 
+        [Authorize(Roles = "1,2,3")]
         [HttpGet]
         public IActionResult BuscarPlato(string q)
         {

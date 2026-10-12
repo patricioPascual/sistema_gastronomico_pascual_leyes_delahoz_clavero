@@ -1,18 +1,18 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models;
 
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 {
+    [Authorize(Roles = "1")]
     public class ProductoController : Controller
     {
         private readonly RepositorioProducto _repositorioProducto;
-        private readonly ILogger<ProductoController> _logger;
 
-        public ProductoController(RepositorioProducto repositorioProducto, ILogger<ProductoController> logger)
+        public ProductoController(RepositorioProducto repositorioProducto)
         {
             _repositorioProducto = repositorioProducto;
-            _logger = logger;
         }
 
         public IActionResult Index(int pagina = 1)

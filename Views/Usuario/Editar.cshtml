@@ -1,0 +1,114 @@
+@model sistema_gastronomico_pascual_leyes_delahoz_clavero.Models.EditarUsuarioViewModel
+
+@{
+    ViewData["Title"] = "Editar Usuario";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-header bg-primary text-white py-3">
+                    <h4 class="card-title mb-0">
+                        <i class="bi bi-pencil-square me-2"></i>Editar Usuario
+                    </h4>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="Editar" method="post">
+                        <input type="hidden" asp-for="IdUsuario" />
+                        <input type="hidden" asp-for="IdEmpleado" />
+
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <h6 class="text-muted text-uppercase small fw-bold mb-3">Datos del empleado</h6>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Legajo" class="form-label fw-bold"></label>
+                                <input asp-for="Legajo" class="form-control" />
+                                <span asp-validation-for="Legajo" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Dni" class="form-label fw-bold"></label>
+                                <input asp-for="Dni" class="form-control" />
+                                <span asp-validation-for="Dni" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Nombre" class="form-label fw-bold"></label>
+                                <input asp-for="Nombre" class="form-control" />
+                                <span asp-validation-for="Nombre" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Apellido" class="form-label fw-bold"></label>
+                                <input asp-for="Apellido" class="form-control" />
+                                <span asp-validation-for="Apellido" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Telefono" class="form-label fw-bold"></label>
+                            <input asp-for="Telefono" class="form-control" />
+                        </div>
+
+                        <hr class="my-4" />
+
+                        <h6 class="text-muted text-uppercase small fw-bold mb-3">Acceso al sistema</h6>
+
+                        <div class="mb-3">
+                            <label asp-for="IdRol" class="form-label fw-bold"></label>
+                            <select asp-for="IdRol" class="form-select">
+                                @foreach (var r in Model.RolesDisponibles)
+                                {
+                                    <option value="@r.IdRol">@r.Nombre</option>
+                                }
+                            </select>
+                            <span asp-validation-for="IdRol" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Username" class="form-label fw-bold"></label>
+                            <input asp-for="Username" class="form-control" autocomplete="off" />
+                            <span asp-validation-for="Username" class="text-danger small"></span>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="NuevaPassword" class="form-label fw-bold"></label>
+                                <input asp-for="NuevaPassword" type="password" class="form-control"
+                                       autocomplete="new-password" />
+                                <div class="form-text">Dejar en blanco para no cambiarla.</div>
+                                <span asp-validation-for="NuevaPassword" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="ConfirmarNuevaPassword" class="form-label fw-bold"></label>
+                                <input asp-for="ConfirmarNuevaPassword" type="password" class="form-control"
+                                       autocomplete="new-password" />
+                                <span asp-validation-for="ConfirmarNuevaPassword" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <hr class="my-4" />
+
+                        <div class="d-flex justify-content-between">
+                            <a asp-action="Index" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Volver al Listado
+                            </a>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="bi bi-check-lg me-1"></i> Guardar Cambios
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

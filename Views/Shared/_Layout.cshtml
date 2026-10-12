@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -18,6 +18,28 @@
           asp-append-version="true" />
 
 </head>
+
+@{
+    var usuarioAutenticado = User.Identity != null && User.Identity.IsAuthenticated;
+    sistema_gastronomico_pascual_leyes_delahoz_clavero.Models.AvatarViewModel? avatarNavVm = null;
+    string? nombreMostrarNav = null;
+    bool esAdminNav = false;
+
+    if (usuarioAutenticado)
+    {
+        avatarNavVm = new sistema_gastronomico_pascual_leyes_delahoz_clavero.Models.AvatarViewModel
+        {
+            AvatarPath = User.FindFirst("AvatarPath")?.Value,
+            Nombre = User.FindFirst("Nombre")?.Value,
+            Apellido = User.FindFirst("Apellido")?.Value,
+            Tamanio = 32
+        };
+
+        var nombreCompletoClaim = User.FindFirst("NombreCompleto")?.Value;
+        nombreMostrarNav = !string.IsNullOrWhiteSpace(nombreCompletoClaim) ? nombreCompletoClaim : User.Identity!.Name;
+        esAdminNav = User.IsInRole("1");
+    }
+}
 
 <body>
     <header>
@@ -83,35 +105,51 @@
                     </ul>
 
                     <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
-                        <li class="nav-item dropdown">
-                            <a class="nav-link d-flex align-items-center" href="#" id="userDropdown" role="button"
-                               data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-person-circle fs-5 me-2 text-danger"></i>
-                                <span class="fw-semibold">Mi Cuenta</span>
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2"
-                                aria-labelledby="userDropdown">
-                                <li>
-                                    <a class="dropdown-item py-2" asp-controller="Usuario" asp-action="Perfil">
-                                        <i class="bi bi-person me-2 text-muted"></i> Mi Perfil
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item py-2" asp-controller="Usuario" asp-action="Index">
-                                        <i class="bi bi-people me-2 text-muted"></i> Gestión de Usuarios
-                                    </a>
-                                </li>
-                                <li>
-                                    <hr class="dropdown-divider">
-                                </li>
-                                <li>
-                                    <a class="dropdown-item py-2 text-danger fw-semibold" asp-controller="Usuario"
-                                       asp-action="Login">
-                                        <i class="bi bi-box-arrow-right me-2"></i> Cerrar Sesión
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
+                        @if (usuarioAutenticado)
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link d-flex align-items-center" href="#" id="userDropdown" role="button"
+                                   data-bs-toggle="dropdown" aria-expanded="false">
+                                    <partial name="_Avatar" model="avatarNavVm" />
+                                    <span class="fw-semibold ms-2 p-1">@nombreMostrarNav</span>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2"
+                                    aria-labelledby="userDropdown">
+                                    <li>
+                                        <a class="dropdown-item py-2" asp-controller="Usuario" asp-action="Perfil">
+                                            <i class="bi bi-person me-2 text-muted"></i> Mi Perfil
+                                        </a>
+                                    </li>
+                                    @if (esAdminNav)
+                                    {
+                                        <li>
+                                            <a class="dropdown-item py-2" asp-controller="Usuario" asp-action="Index">
+                                                <i class="bi bi-people me-2 text-muted"></i> Gestión de Usuarios
+                                            </a>
+                                        </li>
+                                    }
+                                    <li>
+                                        <hr class="dropdown-divider">
+                                    </li>
+                                    <li>
+                                        <form asp-controller="Login" asp-action="Logout" method="post" class="m-0">
+                                            <button type="submit" class="dropdown-item py-2 text-danger fw-semibold">
+                                                <i class="bi bi-box-arrow-right me-2"></i> Cerrar Sesión
+                                            </button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link d-flex align-items-center" asp-controller="Login" asp-action="Index">
+                                    <i class="bi bi-box-arrow-in-right fs-5 me-2 text-danger"></i>
+                                    <span class="fw-semibold">Iniciar Sesión</span>
+                                </a>
+                            </li>
+                        }
                     </ul>
 
                 </div>
@@ -147,7 +185,7 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
-    
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 
