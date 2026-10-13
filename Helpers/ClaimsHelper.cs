@@ -3,11 +3,6 @@ using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models;
 
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Helpers
 {
-    /// <summary>
-    /// Arma la lista de claims de la cookie de autenticación a partir de un Usuario.
-    /// La usan LoginController (al iniciar sesión) y UsuarioController (para refrescar
-    /// la cookie cuando el usuario cambia su avatar, sin tener que volver a loguearse).
-    /// </summary>
     public static class ClaimsHelper
     {
         public static List<Claim> ConstruirClaims(Usuario usuario)
