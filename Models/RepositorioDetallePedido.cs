@@ -150,26 +150,49 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
         }
 
 
-        public void DescontarStock(int idPlato, int cantidad)
-        {
-            var producto = _context.Productos.Find(idPlato);
-            if (producto != null)
-            {
-                producto.Cantidad_stock -= cantidad;
-                if (producto.Cantidad_stock < 0) producto.Cantidad_stock = 0;
-                _context.Productos.Update(producto);
-            }
-        }
+        public void DescontarStock(int idPlato, int cantidadPlatos)
+{
 
-        public void RestituirStock(int idPlato, int cantidad)
+    var receta = _context.DetalleRecetas
+        .Include(dr => dr.Producto)
+        .Where(dr => dr.IdPlato == idPlato)
+        .ToList();
+
+    foreach (var ingrediente in receta)
+    {
+        if (ingrediente.Producto != null)
         {
-            var producto = _context.Productos.Find(idPlato);
-            if (producto != null)
+            decimal insumoTotalUsado = ingrediente.CantidadRequerida * cantidadPlatos;
+            ingrediente.Producto.Cantidad_stock -= insumoTotalUsado;
+
+            if (ingrediente.Producto.Cantidad_stock < 0) 
             {
-                producto.Cantidad_stock += cantidad;
-                _context.Productos.Update(producto);
+                ingrediente.Producto.Cantidad_stock = 0;
             }
+
+            _context.Productos.Update(ingrediente.Producto);
         }
+    }
+}
+
+       public void RestituirStock(int idPlato, int cantidadPlatos)
+{
+    var receta = _context.DetalleRecetas
+        .Include(dr => dr.Producto)
+        .Where(dr => dr.IdPlato == idPlato)
+        .ToList();
+
+    foreach (var ingrediente in receta)
+    {
+        if (ingrediente.Producto != null)
+        {
+            decimal insumoTotalARestituir = ingrediente.CantidadRequerida * cantidadPlatos;
+            ingrediente.Producto.Cantidad_stock += insumoTotalARestituir;
+
+            _context.Productos.Update(ingrediente.Producto);
+        }
+    }
+}
 
         private void RecalcularTotalPedido(int idPedido)
         {
