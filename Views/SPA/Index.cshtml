@@ -1,0 +1,153 @@
+@{
+    ViewData["Title"] = "Punto de Venta";
+    // Este archivo usará automáticamente tu _Layout.cshtml con la barra lateral
+}
+
+<div id="spa-mozo" class="container-fluid py-3" v-cloak>
+    <div class="row">
+        
+        <!-- COLUMNA IZQUIERDA: MENÚ DE PLATOS -->
+        <div class="col-md-7 col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3 class="fw-bold mb-0">Catálogo del Menú</h3>
+            </div>
+
+            <!-- Loader de carga visual -->
+            <div v-if="cargandoMenu" class="text-center my-5">
+                <div class="spinner-border text-danger" role="status"></div>
+                <p class="mt-2 text-muted">Cargando platos desde la API...</p>
+            </div>
+
+            <!-- Grilla iterada con v-for -->
+            <div v-else class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
+                <div class="col" v-for="plato in menu" :key="plato.idPlato">
+                    <!-- Al hacer clic, disparamos el método verDetalle -->
+                    <div class="card h-100 shadow-sm border-0 hover-elevate cursor-pointer"
+                        @@click="verDetalle(plato.idPlato)">
+                        <div class="card-body text-center d-flex flex-column justify-content-center">
+                            <h6 class="fw-bold text-dark">{{ plato.nombre }}</h6>
+                            <span class="badge bg-success fs-6 mt-2">${{ plato.precioVenta }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- COLUMNA DERECHA: PANEL DE DETALLE -->
+        <div class="col-md-5 col-lg-4">
+            <div class="card shadow-sm border-0 sticky-top" style="top: 20px;">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Detalle del Plato</h5>
+                </div>
+                
+                <!-- Estado 1: Ningún plato seleccionado -->
+                <div v-if="!platoSeleccionado && !cargandoDetalle" class="card-body text-center text-muted p-5">
+                    <i class="bi bi-hand-index-thumb fs-1 mb-3 d-block"></i>
+                    <p>Selecciona un plato de la izquierda para consultar su receta.</p>
+                </div>
+
+                <!-- Estado 2: Esperando la respuesta de la API -->
+                <div v-if="cargandoDetalle" class="card-body text-center p-5">
+                    <div class="spinner-border text-danger" role="status"></div>
+                </div>
+
+                <!-- Estado 3: Mostramos la respuesta de la API -->
+                <div v-if="platoSeleccionado && !cargandoDetalle" class="card-body">
+                    <h3 class="fw-bold mb-1">{{ platoSeleccionado.nombre }}</h3>
+                    <h4 class="text-success mb-4">${{ platoSeleccionado.precioVenta }}</h4>
+
+                    <h6 class="fw-bold border-bottom pb-2">Composición / Receta</h6>
+                    
+                    <!-- Iteramos los ingredientes que vinieron en el JSON -->
+                    <ul class="list-group list-group-flush mb-3"
+                        v-if="platoSeleccionado.ingredientes && platoSeleccionado.ingredientes.length > 0">
+                        <li class="list-group-item px-0 d-flex justify-content-between align-items-center"
+                            v-for="ing in platoSeleccionado.ingredientes">
+                            <span><i class="bi bi-dot"></i> {{ ing.nombreIngrediente }}</span>
+                            <span class="text-muted small">{{ ing.cantidad }} {{ ing.unidad }}</span>
+                        </li>
+                    </ul>
+                    <div v-else class="alert alert-light text-muted border">
+                        <i class="bi bi-exclamation-circle me-1"></i> Este plato no tiene ingredientes configurados.
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+</div>
+
+@section Scripts {
+    <!-- 1. Importamos Vue.js -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    menu: [], // Arreglo vacío que se llenará con el JSON de la API
+                    platoSeleccionado: null, // Objeto que guardará el detalle de un plato
+                    cargandoMenu: true,
+                    cargandoDetalle: false
+                }
+            },
+            methods: {
+                // PETICIÓN A: Traer todos los platos (GET /api/plato)
+                async cargarMenu() {
+                    this.cargandoMenu = true;
+                    try {
+                        const respuesta = await fetch('/api/plato');
+                        if (respuesta.ok) {
+                            this.menu = await respuesta.json(); // Transformamos la respuesta en objeto JavaScript
+                        }
+                    } catch (error) {
+                        console.error("Error al conectar con la API:", error);
+                    } finally {
+                        this.cargandoMenu = false;
+                    }
+                },
+
+                // PETICIÓN B: Traer detalle de un plato específico (GET /api/plato/{id})
+                async verDetalle(idPlato) {
+                    this.cargandoDetalle = true;
+                    this.platoSeleccionado = null; // Limpiamos la vista anterior
+                    
+                    try {
+                        const respuesta = await fetch(`/api/plato/${idPlato}`);
+                        if (respuesta.ok) {
+                            this.platoSeleccionado = await respuesta.json();
+                        }
+                    } catch (error) {
+                        console.error("Error al conectar con la API:", error);
+                    } finally {
+                        this.cargandoDetalle = false;
+                    }
+                }
+            },
+            mounted() {
+                // El ciclo 'mounted' de Vue se ejecuta apenas la pantalla carga.
+                // Disparamos la carga inicial del menú automáticamente.
+                this.cargarMenu();
+            }
+        }).mount('#spa-mozo');
+    </script>
+    
+    <!-- Un poco de estilo extra para que se vea profesional -->
+    <style>
+        .cursor-pointer {
+            cursor: pointer;
+        }
+
+        .hover-elevate {
+            transition: all 0.2s ease-in-out;
+        }
+
+        .hover-elevate:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15) !important;
+            border-color: #dc3545 !important;
+        }
+    </style>
+}
