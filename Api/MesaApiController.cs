@@ -19,7 +19,7 @@ namespace sistema_gastronomico.Api
         }
 
         [HttpGet("estado-salon")]
-        public async Task<IActionResult> ObtenerEstadoSalon()
+        public IActionResult ObtenerEstadoSalon()
         {
             var todas = _repoMesa.ObtenerTodosConOcupacion();
 
