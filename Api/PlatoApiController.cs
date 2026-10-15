@@ -33,6 +33,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers.Api
                                 nombre = p.Nombre,
                                 precioVenta = p.PrecioVenta,
                                 idCategoria = p.IdCategoria,
+                                categoria = p.Categoria != null ? p.Categoria.Nombre : "Sin Categoría",
                                 imagenUrl = $"/img/platos/plato_{p.IdPlato}.jpg"
                             })
                             .ToList();
