@@ -1,7 +1,7 @@
 <div class="modal fade" id="modalMesa" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content" v-if="posicionSeleccionada">
-            
+
             <!-- ENCABEZADO DEL MODAL CON ESTADO Y ACCIONES -->
             <div class="modal-header bg-dark text-white d-flex justify-content-between align-items-center py-2">
                 <div class="d-flex align-items-center gap-2">
@@ -14,17 +14,19 @@
                 </div>
 
                 <div class="d-flex align-items-center gap-2">
-                    <!-- Botón Pagar y Cerrar -->
-                    <button v-if="posicionSeleccionada.idPedidoAbierto" 
-                            type="button" 
+                    <!-- Botón Pagar y Cerrar: el total es el del PEDIDO abierto, no el del carrito -->
+                    <button v-if="posicionSeleccionada.idPedidoAbierto"
+                            type="button"
                             class="btn btn-sm btn-success shadow-sm"
+                            :disabled="!pedidoActual"
                             @@click="cerrarMesa(posicionSeleccionada.idPedidoAbierto)">
-                        <i class="bi bi-cash-coin me-1"></i> Pagar y Cerrar ($ {{ calcularTotal().toFixed(2) }})
+                        <i class="bi bi-cash-coin me-1"></i> Pagar y Cerrar
+                        <span v-if="pedidoActual">($ {{ Number(pedidoActual.total).toFixed(2) }})</span>
                     </button>
 
                     <!-- Botón Liberar Mesa -->
-                    <button v-if="posicionSeleccionada.idPedidoPendienteLiberar" 
-                            type="button" 
+                    <button v-if="posicionSeleccionada.idPedidoPendienteLiberar"
+                            type="button"
                             class="btn btn-sm btn-warning shadow-sm fw-bold"
                             @@click="liberarMesa(posicionSeleccionada.idMesa)">
                         <i class="bi bi-unlock me-1"></i> Liberar Mesa
@@ -37,12 +39,12 @@
             <!-- CUERPO DEL MODAL (CARTA Y DETALLE) -->
             <div class="modal-body p-3">
                 <div class="row g-3">
-                    
+
                     <!-- COLUMNA IZQUIERDA: CARTA EN PESTAÑAS -->
                     <div class="col-lg-7 border-end pe-lg-3">
                         <ul class="nav nav-pills nav-fill mb-3 bg-light p-1 rounded border" role="tablist">
                             <li class="nav-item" v-for="cat in categorias" :key="cat">
-                                <button class="nav-link py-1 px-2 small fw-bold" 
+                                <button class="nav-link py-1 px-2 small fw-bold"
                                         :class="{ 'active bg-danger': categoriaActiva === cat }"
                                         @@click="categoriaActiva = cat">
                                     <i class="bi me-1" :class="obtenerIconoCategoria(cat)"></i> {{ cat }}
@@ -62,7 +64,7 @@
                                     <div class="fw-bold text-dark fs-6 text-truncate" :title="plato.nombre">
                                         {{ plato.nombre }}
                                     </div>
-                                    <div class="text-success fw-bold mt-1">$ {{ (plato.precioVenta ?? plato.precio ?? 0).toFixed(2) }}</div>
+                                    <div class="text-success fw-bold mt-1">$ {{ Number(plato.precioVenta ?? plato.precio ?? 0).toFixed(2) }}</div>
                                     <button class="btn btn-sm btn-outline-danger mt-2 py-0 fs-7">
                                         <i class="bi bi-plus-lg me-1"></i>Pedir
                                     </button>
@@ -76,24 +78,50 @@
                         </div>
                     </div>
 
-                    <!-- COLUMNA DERECHA: CARRITO DE LA MESA -->
+                    <!-- COLUMNA DERECHA: LO YA PEDIDO + COMANDA NUEVA -->
                     <div class="col-lg-5 d-flex flex-column">
+
+                        <!-- Lo que la mesa ya pidió (solo si está ocupada) -->
+                        <div v-if="posicionSeleccionada.idPedidoAbierto" class="border rounded p-2 mb-3 bg-white shadow-sm">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <h6 class="fw-bold text-dark mb-0">
+                                    <i class="bi bi-receipt-cutoff me-1"></i> Ya pedido
+                                </h6>
+                                <span v-if="pedidoActual" class="fw-bold text-success">$ {{ Number(pedidoActual.total).toFixed(2) }}</span>
+                            </div>
+
+                            <div v-if="!pedidoActual" class="text-muted small">Cargando pedido...</div>
+
+                            <ul v-else class="list-unstyled mb-0 small overflow-auto" style="max-height: 130px;">
+                                <li v-for="d in pedidoActual.detalles" :key="d.idDetallePedido"
+                                    class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                                    <span class="text-truncate me-2">
+                                        <span class="badge bg-secondary me-1">{{ d.cantidad }}x</span>{{ d.nombrePlato }}
+                                        <i v-if="d.despachado" class="bi bi-check-circle-fill text-success ms-1" title="Despachado"></i>
+                                        <i v-else class="bi bi-hourglass-split text-warning ms-1" title="En marcha"></i>
+                                    </span>
+                                    <span class="text-nowrap">$ {{ Number(d.subtotal).toFixed(2) }}</span>
+                                </li>
+                            </ul>
+                        </div>
+
                         <h6 class="fw-bold text-dark mb-2">
-                            <i class="bi bi-cart3 me-1"></i> Detalle de la Comanda
+                            <i class="bi bi-cart3 me-1"></i>
+                            {{ posicionSeleccionada.idPedidoAbierto ? 'Agregar a la mesa' : 'Detalle de la Comanda' }}
                         </h6>
 
-                        <div class="flex-grow-1 border rounded p-2 mb-2 bg-light overflow-auto" style="min-height: 260px; max-height: 330px;">
-                            <div v-if="comanda.length === 0" class="text-center text-muted py-5">
+                        <div class="flex-grow-1 border rounded p-2 mb-2 bg-light overflow-auto" style="min-height: 160px; max-height: 330px;">
+                            <div v-if="comanda.length === 0" class="text-center text-muted py-4">
                                 <i class="bi bi-basket fs-1 d-block mb-1 text-secondary"></i>
                                 Tocá un plato de la izquierda para sumarlo al pedido.
                             </div>
 
                             <ul v-else class="list-group list-group-flush">
-                                <li v-for="(item, idx) in comanda" :key="idx" 
+                                <li v-for="(item, idx) in comanda" :key="item.idPlato"
                                     class="list-group-item bg-transparent d-flex justify-content-between align-items-center px-0 py-2">
                                     <div class="me-2 text-truncate">
                                         <div class="fw-bold text-dark text-truncate">{{ item.nombre }}</div>
-                                        <small class="text-muted">$ {{ item.precioVenta.toFixed(2) }} c/u</small>
+                                        <small class="text-muted">$ {{ Number(item.precioVenta).toFixed(2) }} c/u</small>
                                     </div>
 
                                     <div class="d-flex align-items-center gap-2">
@@ -116,17 +144,17 @@
 
                         <div class="border-top pt-2 mt-auto">
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="fw-bold fs-5">Total Pedido:</span>
-                                <span class="fw-bold fs-4 text-success">$ {{ calcularTotal().toFixed(2) }}</span>
+                                <span class="fw-bold fs-5">{{ posicionSeleccionada.idPedidoAbierto ? 'A agregar:' : 'Total Pedido:' }}</span>
+                                <span class="fw-bold fs-4 text-success">$ {{ totalComanda.toFixed(2) }}</span>
                             </div>
 
-                            <button type="button" 
+                            <button type="button"
                                     class="btn btn-success btn-lg w-100 shadow-sm fw-bold"
                                     :disabled="comanda.length === 0 || enviandoPedido"
                                     @@click="enviarComanda">
                                 <span v-if="enviandoPedido" class="spinner-border spinner-border-sm me-1"></span>
                                 <i v-else class="bi bi-send me-1"></i>
-                                {{ enviandoPedido ? 'Guardando...' : 'Confirmar y Enviar Comanda' }}
+                                {{ enviandoPedido ? 'Guardando...' : (posicionSeleccionada.idPedidoAbierto ? 'Agregar al Pedido' : 'Confirmar y Enviar Comanda') }}
                             </button>
                         </div>
 

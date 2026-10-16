@@ -1,23 +1,10 @@
 @using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
 @{
-    Layout = "_Layout"; 
+    Layout = "_Layout";
     ViewData["Title"] = "Terminal de Salón";
 }
 
 <div id="app-salon" class="container-fluid py-3" v-cloak>
-
-    <!-- CABECERA DE LA SPA -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0 fw-bold text-dark"><i class="bi bi-grid-3x3-gap me-2"></i>Salón</h2>
-        <div>
-            <button class="btn btn-outline-primary position-relative shadow-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasPendientes">
-                <i class="bi bi-clock-history me-1"></i> Pedidos pendientes
-                <span v-if="pendientes.length > 0" class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle">
-                    {{ pendientes.length }}
-                </span>
-            </button>
-        </div>
-    </div>
 
     <!-- SECCIÓN MESAS -->
     <h5 class="text-secondary mb-3 fw-semibold">Mesas</h5>
@@ -59,11 +46,14 @@
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
         </div>
         <div class="offcanvas-body">
-            <p v-if="pendientes.length === 0" class="text-muted">No hay pedidos abiertos.</p>
+            <p v-if="pendientes.length === 0" class="text-muted">No hay platos pendientes.</p>
             <ul v-else class="list-group">
                 <li class="list-group-item shadow-sm mb-2 rounded border" v-for="p in pendientes" :key="p.idPedido">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="fw-bold text-dark fs-6">Mesa {{ p.mesaNumero }}</span>
+                        <span class="fw-bold text-dark fs-6">
+                            Mesa {{ p.mesaNumero }}
+                            <span v-if="p.cerrado" class="badge bg-success ms-1">Cobrado</span>
+                        </span>
                         <span class="badge bg-secondary">
                             <span v-if="calcularMinutos(p.fechaHora) < 1">recién</span>
                             <span v-else>hace {{ calcularMinutos(p.fechaHora) }} min</span>
@@ -78,7 +68,7 @@
                                 <span class="small">{{ d.nombrePlato }}</span>
                             </div>
                             <button type="button" class="btn btn-sm btn-outline-success border-0 px-2 py-0" title="Despachar este plato"
-                                    @@click="despacharDetalle(d.idDetallePedido, p.idPedido)">
+                                    @@click="despacharDetalle(d.idDetallePedido)">
                                 <i class="bi bi-check-circle-fill fs-5"></i>
                             </button>
                         </div>
@@ -106,9 +96,11 @@
                     pendientes: [],
                     menu: [],
                     comanda: [],
+                    pedidoActual: null,          // pedido abierto de la mesa seleccionada (lo ya pedido)
                     posicionSeleccionada: null,
                     tipoPosicion: '',
                     ahora: Date.now(),
+                    cargandoSalon: false,
                     cargandoMenu: false,
                     enviandoPedido: false,
                     mensajeError: '',
@@ -116,58 +108,105 @@
                     categoriaActiva: 'Todas'
                 }
             },
-           computed: {
-    // 1. Extrae dinámicamente las categorías únicas para las pestañas
-    categorias() {
-        if (!this.menu || this.menu.length === 0) return ['Todas'];
-        return ['Todas', ...new Set(this.menu.map(p => p.categoria))];
-    },
-    // 2. Filtra los platos según la pestaña seleccionada
-    platosFiltrados() {
-        if (this.categoriaActiva === 'Todas') return this.menu;
-        return this.menu.filter(p => p.categoria === this.categoriaActiva);
-    }
-},
+            computed: {
+                // Categorías únicas para las pestañas
+                categorias() {
+                    if (!this.menu || this.menu.length === 0) return ['Todas'];
+                    return ['Todas', ...new Set(this.menu.map(p => p.categoria))];
+                },
+                // Platos según la pestaña seleccionada
+                platosFiltrados() {
+                    if (this.categoriaActiva === 'Todas') return this.menu;
+                    return this.menu.filter(p => p.categoria === this.categoriaActiva);
+                },
+                // Total de la comanda que se está armando (todavía sin enviar)
+                totalComanda() {
+                    return this.comanda.reduce((sum, item) => sum + (item.precioVenta * item.cantidad), 0);
+                }
+            },
             methods: {
-                //  Obtener estado del salon vía API
+                // Llamada a la API con manejo único de sesión vencida y de errores.
+                // Si la cookie venció, el servidor redirige al login y fetch lo sigue en silencio:
+                // se detecta con res.redirected y se lleva al usuario a esa página.
+                async api(url, opciones = {}) {
+                    const res = await fetch(url, { credentials: 'same-origin', ...opciones });
+
+                    if (res.redirected || res.status === 401) {
+                        window.location.href = res.redirected ? res.url : '/Login/Index';
+                        return { ok: false, status: res.status, data: null };
+                    }
+
+                    let data = null;
+                    try { data = await res.json(); } catch (e) { /* respuesta sin cuerpo JSON */ }
+                    return { ok: res.ok, status: res.status, data };
+                },
+
+                // Estado del salón vía API
                 async cargarDatos() {
+                    if (this.cargandoSalon) return; // evita pedidos superpuestos si el servidor tarda más de 10 s
+                    this.cargandoSalon = true;
                     try {
-                        const res = await fetch('/api/salon/estado-salon');
-                        if (res.ok) {
-                            const datos = await res.json();
-                            this.mesas = datos.mesas;
-                            this.barra = datos.barra;
-                            this.pendientes = datos.pendientes;
+                        const r = await this.api('/api/salon/estado-salon');
+                        if (r.ok && r.data) {
+                            this.mesas = r.data.mesas;
+                            this.barra = r.data.barra;
+                            this.pendientes = r.data.pendientes;
+
+                            // El modal guarda una referencia a la mesa: si no se la actualiza con los
+                            // datos nuevos, el estado Libre/Ocupada y el botón de cobro quedan viejos.
+                            if (this.posicionSeleccionada) {
+                                const actual = [...this.mesas, ...this.barra]
+                                    .find(x => x.idMesa === this.posicionSeleccionada.idMesa);
+                                if (actual) this.posicionSeleccionada = actual;
+                            }
                         }
                     } catch (e) {
                         console.error("Error al cargar datos del salón:", e);
+                    } finally {
+                        this.cargandoSalon = false;
                     }
                 },
 
-                //  CArGAR MENU VIA API
+                // Carta vía API. Se recarga cada vez que se abre una mesa (precios y platos activos
+                // pueden cambiar); el spinner solo se muestra la primera vez.
                 async cargarMenu() {
-                    if (this.menu.length > 0) return;
-                    this.cargandoMenu = true;
+                    if (this.menu.length === 0) this.cargandoMenu = true;
                     try {
-                        const res = await fetch('/api/plato');
-                        if (res.ok) {
-                            this.menu = await res.json();
+                        const r = await this.api('/api/plato');
+                        if (r.ok && Array.isArray(r.data)) {
+                            this.menu = r.data;
+                        } else if (this.menu.length === 0) {
+                            this.mensajeError = (r.data && r.data.mensaje) || 'No se pudo cargar la carta.';
                         }
                     } catch (e) {
                         console.error("Error al cargar platos:", e);
+                        if (this.menu.length === 0) this.mensajeError = 'No se pudo cargar la carta.';
                     } finally {
                         this.cargandoMenu = false;
                     }
                 },
 
-                // ABRIR MODAL 
+                // Lo ya pedido en una mesa ocupada (platos, estado y total del pedido)
+                async cargarPedidoActual(idPedido) {
+                    try {
+                        const r = await this.api(`/api/pedidos/${idPedido}`);
+                        if (r.ok) this.pedidoActual = r.data;
+                    } catch (e) {
+                        console.error("Error al cargar el pedido:", e);
+                    }
+                },
+
+                // ABRIR MODAL
                 abrirComanda(posicion, tipo) {
                     this.posicionSeleccionada = posicion;
                     this.tipoPosicion = tipo;
                     this.comanda = [];
+                    this.pedidoActual = null;
                     this.mensajeError = '';
+                    this.categoriaActiva = 'Todas';
 
                     this.cargarMenu();
+                    if (posicion.idPedidoAbierto) this.cargarPedidoActual(posicion.idPedidoAbierto);
 
                     if (!this.modalInstance) {
                         const modalEl = document.getElementById('modalMesa');
@@ -185,7 +224,7 @@
                     this.mensajeError = '';
                     const precioVal = plato.precioVenta ?? plato.precio ?? 0;
                     const existe = this.comanda.find(item => item.idPlato === plato.idPlato);
-                    
+
                     if (existe) {
                         existe.cantidad++;
                     } else {
@@ -209,12 +248,10 @@
                         this.comanda.splice(idx, 1);
                     }
                 },
-                calcularTotal() {
-                    return this.comanda.reduce((sum, item) => sum + ((item.precioVenta ?? item.precio ?? 0) * item.cantidad), 0);
-                },
 
-                // AMNDAR PEDIDO
+                // MANDAR PEDIDO (mesa libre: crea el pedido; mesa ocupada: agrega al pedido abierto)
                 async enviarComanda() {
+                    if (this.comanda.length === 0 || this.enviandoPedido) return;
                     this.enviandoPedido = true;
                     this.mensajeError = '';
 
@@ -227,19 +264,17 @@
                     };
 
                     try {
-                        const res = await fetch('/api/pedidos/alta', {
+                        const r = await this.api('/api/pedidos/alta', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(payload)
                         });
 
-                        const data = await res.json();
-
-                        if (res.ok) {
+                        if (r.ok) {
                             if (this.modalInstance) this.modalInstance.hide();
                             await this.cargarDatos();
                         } else {
-                            this.mensajeError = data.mensaje || 'No se pudo guardar la comanda.';
+                            this.mensajeError = (r.data && r.data.mensaje) || 'No se pudo guardar la comanda.';
                         }
                     } catch (e) {
                         this.mensajeError = 'Error de conexión con la API.';
@@ -249,67 +284,71 @@
                 },
 
                 // DESPACHAR PLATO
-                async despacharDetalle(idDetallePedido, idPedido) {
+                async despacharDetalle(idDetallePedido) {
                     try {
-                        const res = await fetch('/Pedido/DespacharPedido', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                            body: new URLSearchParams({ idDetallePedido, idPedido })
-                        });
+                        const r = await this.api(`/api/pedidos/detalle/${idDetallePedido}/despachar`, { method: 'POST' });
 
-                        if (res.ok) {
+                        if (r.ok) {
                             await this.cargarDatos();
+                            if (this.pedidoActual) await this.cargarPedidoActual(this.pedidoActual.idPedido);
                         } else {
-                            alert('No se pudo despachar el plato.');
+                            alert((r.data && r.data.mensaje) || 'No se pudo despachar el plato.');
                         }
                     } catch (e) {
                         console.error("Error al despachar:", e);
+                        alert('Error de conexión con la API.');
                     }
                 },
 
-                // 7. Acciones directas de la Mesa (Pagar/Cerrar y Liberar)
+                // PAGAR Y CERRAR
                 async cerrarMesa(idPedido) {
-                    if (!confirm('¿Confirmar cobro y cerrar este pedido?')) return;
+                    const aviso = this.comanda.length > 0
+                        ? 'Hay platos en la comanda que todavía NO se enviaron y se van a descartar.\n\n'
+                        : '';
+                    if (!confirm(aviso + '¿Confirmar cobro y cerrar este pedido?')) return;
+
                     try {
-                        const res = await fetch('/Pedido/CerrarMesa', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                            body: new URLSearchParams({ idPedido })
-                        });
-                        if (res.ok) {
+                        const r = await this.api(`/api/pedidos/${idPedido}/cerrar`, { method: 'POST' });
+
+                        if (r.ok) {
                             if (this.modalInstance) this.modalInstance.hide();
                             await this.cargarDatos();
+                        } else {
+                            this.mensajeError = (r.data && r.data.mensaje) || 'No se pudo cerrar el pedido.';
                         }
                     } catch (e) {
                         console.error("Error al cerrar mesa:", e);
-                    }
-                },
-                async liberarMesa(idMesa) {
-                    if (!confirm('¿Liberar la mesa? Quedará disponible para un nuevo pedido.')) return;
-                    try {
-                        const res = await fetch('/Pedido/LiberarMesa', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                            body: new URLSearchParams({ idMesa })
-                        });
-                        if (res.ok) {
-                            if (this.modalInstance) this.modalInstance.hide();
-                            await this.cargarDatos();
-                        }
-                    } catch (e) {
-                        console.error("Error al liberar mesa:", e);
+                        this.mensajeError = 'Error de conexión con la API.';
                     }
                 },
 
-                // 8. Auxiliares visuales e íconos
+                // LIBERAR MESA (pedido ya cobrado)
+                async liberarMesa(idMesa) {
+                    if (!confirm('¿Liberar la mesa? Quedará disponible para un nuevo pedido.')) return;
+
+                    try {
+                        const r = await this.api(`/api/pedidos/mesa/${idMesa}/liberar`, { method: 'POST' });
+
+                        if (r.ok) {
+                            if (this.modalInstance) this.modalInstance.hide();
+                            await this.cargarDatos();
+                        } else {
+                            this.mensajeError = (r.data && r.data.mensaje) || 'No se pudo liberar la mesa.';
+                        }
+                    } catch (e) {
+                        console.error("Error al liberar mesa:", e);
+                        this.mensajeError = 'Error de conexión con la API.';
+                    }
+                },
+
+                // Auxiliares visuales e íconos
                 obtenerIconoCategoria(categoria) {
                     const iconos = {
                         'Todas': 'bi-grid-fill',
                         'Entrada': 'bi-egg-fried',
-                        'Plato Principal': 'bi-fork-knife',                     
+                        'Plato Principal': 'bi-fork-knife',
                         'Bebidas': 'bi-cup-straw',
-                        'Postres': 'bi-cake',
-                        
+                        'Postres': 'bi-cake'
                     };
                     return iconos[categoria] || 'bi-tag';
                 },
