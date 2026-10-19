@@ -3,13 +3,13 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace sistema_gastronomico.Controllers
 {
-    [Authorize] 
+    [Authorize(Roles = "2")]
     public class SPAController : Controller
     {
         public IActionResult Index()
         {
-           
-            return View(); 
+
+            return View();
         }
     }
 }

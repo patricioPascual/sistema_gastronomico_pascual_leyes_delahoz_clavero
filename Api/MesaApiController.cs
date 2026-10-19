@@ -1,10 +1,12 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models;
 
-namespace sistema_gastronomico.Api
+namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers.Api
 {
+    [Route("api/salon")]
     [ApiController]
-    [Route("api/salon")] 
+    [Authorize(Roles = "1,2")]
     public class MesaApiController : ControllerBase
     {
         private readonly RepositorioMesa _repoMesa;
@@ -12,7 +14,7 @@ namespace sistema_gastronomico.Api
 
         public MesaApiController(RepositorioMesa repoMesa, RepositorioPedido repoPedido)
         {
-           
+
             _repoMesa = repoMesa;
             _repoPedido = repoPedido;
 
@@ -42,10 +44,10 @@ namespace sistema_gastronomico.Api
                 }).ToList()
             }).ToList();
 
-           
+
             return Ok(new { mesas, barra, pendientes });
         }
     }
 }
 
-    
+

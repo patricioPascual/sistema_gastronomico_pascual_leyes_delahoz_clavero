@@ -1,5 +1,15 @@
 ﻿@{
     ViewData["Title"] = "Política de Privacidad";
+
+    if (User.IsInRole("2"))
+    {
+        Layout = "~/Views/Shared/_LayoutSPA.cshtml";
+    }
+    else
+    {
+        Layout = "~/Views/Shared/_Layout.cshtml";
+    }
+
 }
 
 <div class="container-fluid py-3 max-w-75">

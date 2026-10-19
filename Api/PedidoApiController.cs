@@ -9,7 +9,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers.Api
     // lee la SPA (data.mensaje).
     [Route("api/pedidos")]
     [ApiController]
-    [Authorize(Roles = "1,2,3")]
+    [Authorize(Roles = "1,2")]
     public class PedidoApiController : ControllerBase
     {
         private readonly RepositorioPedido _repoPedido;

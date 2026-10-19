@@ -7,8 +7,15 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers;
 
 public class HomeController : Controller
 {
+    [Authorize]
     public IActionResult Index()
     {
+
+        if (User.Identity != null && User.Identity.IsAuthenticated && User.IsInRole("2"))
+        {
+            return RedirectToAction("Index", "SPA");
+        }
+
         return View();
     }
 

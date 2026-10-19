@@ -8,7 +8,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers.Api
     [Route("api/plato")]
     [ApiController]
 
-    [Authorize(Roles = "2")]
+    [Authorize(Roles = "1,2")]
     public class PlatoApiController : ControllerBase
     {
         private readonly RepositorioPlato _repositorioPlato;
