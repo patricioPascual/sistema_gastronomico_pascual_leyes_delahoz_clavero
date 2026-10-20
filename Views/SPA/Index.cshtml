@@ -6,63 +6,57 @@
 
 <div id="app-salon" class="container-fluid py-3" v-cloak>
 
-    <div v-show="vistaActual === 'salon'">
-        <!-- SECCIÓN MESAS -->
-        <h5 class="text-secondary mb-3 fw-semibold">Mesas</h5>
-        <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-6 g-3 mb-4">
-            <div class="col" v-for="m in mesas" :key="m.idMesa">
-                <button type="button"
-                        class="btn d-flex flex-column align-items-center justify-content-center text-white rounded-3 shadow-sm w-100 border-0 hover-elevate"
-                        :class="m.idPedidoAbierto ? 'bg-danger' : 'bg-success'"
-                        style="aspect-ratio: 1; font-size: 1.5rem; font-weight: 600;"
-                        :title="'Mesa ' + m.numero + (m.idPedidoAbierto ? ' — Ocupada' : ' — Libre')"
-                    @@click="abrirComanda(m, 'Mesa')">
-                    <span>{{ m.numero }}</span>
-                    <small class="fs-6 fw-normal text-white-50">{{ m.idPedidoAbierto ? 'Ocupada' : 'Libre' }}</small>
-                </button>
-            </div>
-            <p v-if="mesas.length === 0" class="text-muted col-12">No hay mesas cargadas.</p>
-        </div>
-
-        <!-- SECCIÓN BARRA -->
-        <h5 class="text-secondary mb-3 fw-semibold">Barra</h5>
-        <div class="bg-light rounded-3 p-3 d-flex flex-wrap justify-content-start gap-3 mb-4 shadow-sm">
-            <template v-for="b in barra" :key="b.idMesa">
-                <button type="button"
-                        class="btn d-flex align-items-center justify-content-center text-white rounded-circle shadow-sm border-0 hover-elevate"
-                        :class="b.idPedidoAbierto ? 'bg-danger' : 'bg-success'"
-                        style="width: 55px; height: 55px; font-weight: 600; font-size: 1.2rem;"
-                        :title="'Barra ' + b.numero + (b.idPedidoAbierto ? ' — Ocupada' : ' — Libre')"
-                    @@click="abrirComanda(b, 'Barra')">
-                    {{ b.numero }}
-                </button>
-            </template>
-            <span v-if="barra.length === 0" class="text-muted">No hay posiciones de barra cargadas.</span>
+    <!-- CABECERA DE LA SPA -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0 fw-bold text-dark"><i class="bi bi-grid-3x3-gap me-2"></i>Salón</h2>
+        <div>
+            <button class="btn btn-outline-primary position-relative shadow-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasPendientes">
+                <i class="bi bi-clock-history me-1"></i> Pedidos pendientes
+                <span v-if="pendientes.length > 0" class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle">
+                    {{ pendientes.length }}
+                </span>
+            </button>
         </div>
     </div>
 
-    <div v-show="vistaActual === 'mis-pedidos'">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="text-secondary mb-0 fw-semibold">Historial de Mis Pedidos</h5>
-            <button class="btn btn-outline-secondary btn-sm" @@click="cargarDatos()">
-                <i class="bi bi-arrow-clockwise me-1"></i> Actualizar
+    <!-- SECCIÓN MESAS -->
+    <h5 class="text-secondary mb-3 fw-semibold">Mesas</h5>
+    <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-6 g-3 mb-4">
+        <div class="col" v-for="m in mesas" :key="m.idMesa">
+            <button type="button"
+                    class="btn d-flex flex-column align-items-center justify-content-center text-white rounded-3 shadow-sm w-100 border-0 hover-elevate"
+                    :class="m.idPedidoAbierto ? 'bg-danger' : 'bg-success'"
+                    style="aspect-ratio: 1; font-size: 1.5rem; font-weight: 600;"
+                    :title="'Mesa ' + m.numero + (m.idPedidoAbierto ? ' — Ocupada' : ' — Libre')"
+                    @@click="abrirComanda(m, 'Mesa')">
+                <span>{{ m.numero }}</span>
+                <small class="fs-6 fw-normal text-white-50">{{ m.idPedidoAbierto ? 'Ocupada' : 'Libre' }}</small>
             </button>
         </div>
-        <div class="bg-white rounded-3 shadow-sm p-5 text-center text-muted border">
-            <i class="bi bi-clock-history fs-1 mb-2 d-block text-secondary"></i>
-            <h5 class="fw-bold text-dark">Próximamente</h5>
-            <p class="mb-0">Aquí construiremos la tabla con los pedidos que despachaste hoy.</p>
-        </div>
+        <p v-if="mesas.length === 0" class="text-muted col-12">No hay mesas cargadas.</p>
+    </div>
+
+    <!-- SECCIÓN BARRA -->
+    <h5 class="text-secondary mb-3 fw-semibold">Barra</h5>
+    <div class="bg-light rounded-3 p-3 d-flex flex-wrap justify-content-start gap-3 mb-4 shadow-sm">
+        <template v-for="b in barra" :key="b.idMesa">
+            <button type="button"
+                    class="btn d-flex align-items-center justify-content-center text-white rounded-circle shadow-sm border-0 hover-elevate"
+                    :class="b.idPedidoAbierto ? 'bg-danger' : 'bg-success'"
+                    style="width: 55px; height: 55px; font-weight: 600; font-size: 1.2rem;"
+                    :title="'Barra ' + b.numero + (b.idPedidoAbierto ? ' — Ocupada' : ' — Libre')"
+                    @@click="abrirComanda(b, 'Barra')">
+                {{ b.numero }}
+            </button>
+        </template>
+        <span v-if="barra.length === 0" class="text-muted">No hay posiciones de barra cargadas.</span>
     </div>
 
     <!-- OFFCANVAS: PEDIDOS PENDIENTES EN COCINA / MARCHA -->
-    <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasPendientes"
-         aria-labelledby="offcanvasPendientesLabel">
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasPendientes" aria-labelledby="offcanvasPendientesLabel">
         <div class="offcanvas-header bg-dark text-white">
-            <h5 class="offcanvas-title" id="offcanvasPendientesLabel"><i class="bi bi-clock-history me-2"></i>Pedidos
-                pendientes</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"
-                    aria-label="Cerrar"></button>
+            <h5 class="offcanvas-title" id="offcanvasPendientesLabel"><i class="bi bi-clock-history me-2"></i>Pedidos pendientes</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
         </div>
         <div class="offcanvas-body">
             <p v-if="pendientes.length === 0" class="text-muted">No hay platos pendientes.</p>
@@ -81,14 +75,13 @@
                     <small class="text-muted d-block mb-2"><i class="bi bi-person me-1"></i>{{ p.empleadoNombre }}</small>
 
                     <div class="list-group list-group-flush border-top pt-2">
-                        <div v-for="d in p.detalles" :key="d.idDetallePedido"
-                             class="d-flex justify-content-between align-items-center py-1">
+                        <div v-for="d in p.detalles" :key="d.idDetallePedido" class="d-flex justify-content-between align-items-center py-1">
                             <div>
                                 <span class="badge bg-primary me-1">{{ d.cantidad }}x</span>
                                 <span class="small">{{ d.nombrePlato }}</span>
                             </div>
-                            <button type="button" class="btn btn-sm btn-outline-success border-0 px-2 py-0"
-                                    title="Despachar este plato" @@click="despacharDetalle(d.idDetallePedido)">
+                            <button type="button" class="btn btn-sm btn-outline-success border-0 px-2 py-0" title="Despachar este plato"
+                                    @@click="despacharDetalle(d.idDetallePedido)">
                                 <i class="bi bi-check-circle-fill fs-5"></i>
                             </button>
                         </div>
@@ -98,12 +91,11 @@
         </div>
     </div>
 
-    <!-- VISTA PARCIAL DE LOS MODALES -->
+    <!-- VISTA PARCIAL DEL MODAL (Modularizado) -->
     <partial name="modalMesa" />
     <partial name="perfilModal" />
 
 </div>
-
 @section Scripts {
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
@@ -113,13 +105,12 @@
         createApp({
             data() {
                 return {
-                    vistaActual: 'salon', // Controla qué pantalla se muestra ('salon' o 'mis-pedidos')
                     mesas: [],
                     barra: [],
                     pendientes: [],
                     menu: [],
                     comanda: [],
-                    pedidoActual: null,          
+                    pedidoActual: null,          // pedido abierto de la mesa seleccionada (lo ya pedido)
                     posicionSeleccionada: null,
                     tipoPosicion: '',
                     ahora: Date.now(),
@@ -132,19 +123,25 @@
                 }
             },
             computed: {
+                // Categorías únicas para las pestañas
                 categorias() {
                     if (!this.menu || this.menu.length === 0) return ['Todas'];
                     return ['Todas', ...new Set(this.menu.map(p => p.categoria))];
                 },
+                // Platos según la pestaña seleccionada
                 platosFiltrados() {
                     if (this.categoriaActiva === 'Todas') return this.menu;
                     return this.menu.filter(p => p.categoria === this.categoriaActiva);
                 },
+                // Total de la comanda que se está armando (todavía sin enviar)
                 totalComanda() {
                     return this.comanda.reduce((sum, item) => sum + (item.precioVenta * item.cantidad), 0);
                 }
             },
             methods: {
+                // Llamada a la API con manejo único de sesión vencida y de errores.
+                // Si la cookie venció, el servidor redirige al login y fetch lo sigue en silencio:
+                // se detecta con res.redirected y se lleva al usuario a esa página.
                 async api(url, opciones = {}) {
                     const res = await fetch(url, { credentials: 'same-origin', ...opciones });
 
@@ -154,12 +151,13 @@
                     }
 
                     let data = null;
-                    try { data = await res.json(); } catch (e) { }
+                    try { data = await res.json(); } catch (e) { /* respuesta sin cuerpo JSON */ }
                     return { ok: res.ok, status: res.status, data };
                 },
 
+                // Estado del salón vía API
                 async cargarDatos() {
-                    if (this.cargandoSalon) return; 
+                    if (this.cargandoSalon) return; // evita pedidos superpuestos si el servidor tarda más de 10 s
                     this.cargandoSalon = true;
                     try {
                         const r = await this.api('/api/salon/estado-salon');
@@ -168,6 +166,8 @@
                             this.barra = r.data.barra;
                             this.pendientes = r.data.pendientes;
 
+                            // El modal guarda una referencia a la mesa: si no se la actualiza con los
+                            // datos nuevos, el estado Libre/Ocupada y el botón de cobro quedan viejos.
                             if (this.posicionSeleccionada) {
                                 const actual = [...this.mesas, ...this.barra]
                                     .find(x => x.idMesa === this.posicionSeleccionada.idMesa);
@@ -181,6 +181,8 @@
                     }
                 },
 
+                // Carta vía API. Se recarga cada vez que se abre una mesa (precios y platos activos
+                // pueden cambiar); el spinner solo se muestra la primera vez.
                 async cargarMenu() {
                     if (this.menu.length === 0) this.cargandoMenu = true;
                     try {
@@ -198,6 +200,7 @@
                     }
                 },
 
+                // Lo ya pedido en una mesa ocupada (platos, estado y total del pedido)
                 async cargarPedidoActual(idPedido) {
                     try {
                         const r = await this.api(`/api/pedidos/${idPedido}`);
@@ -207,6 +210,7 @@
                     }
                 },
 
+                // ABRIR MODAL
                 abrirComanda(posicion, tipo) {
                     this.posicionSeleccionada = posicion;
                     this.tipoPosicion = tipo;
@@ -229,6 +233,7 @@
                     }
                 },
 
+                // AGREGAR PLATOS
                 agregarAlCarrito(plato) {
                     this.mensajeError = '';
                     const precioVal = plato.precioVenta ?? plato.precio ?? 0;
@@ -258,6 +263,7 @@
                     }
                 },
 
+                // MANDAR PEDIDO (mesa libre: crea el pedido; mesa ocupada: agrega al pedido abierto)
                 async enviarComanda() {
                     if (this.comanda.length === 0 || this.enviandoPedido) return;
                     this.enviandoPedido = true;
@@ -291,6 +297,7 @@
                     }
                 },
 
+                // DESPACHAR PLATO
                 async despacharDetalle(idDetallePedido) {
                     try {
                         const r = await this.api(`/api/pedidos/detalle/${idDetallePedido}/despachar`, { method: 'POST' });
@@ -307,6 +314,7 @@
                     }
                 },
 
+                // PAGAR Y CERRAR
                 async cerrarMesa(idPedido) {
                     const aviso = this.comanda.length > 0
                         ? 'Hay platos en la comanda que todavía NO se enviaron y se van a descartar.\n\n'
@@ -328,6 +336,7 @@
                     }
                 },
 
+                // LIBERAR MESA (pedido ya cobrado)
                 async liberarMesa(idMesa) {
                     if (!confirm('¿Liberar la mesa? Quedará disponible para un nuevo pedido.')) return;
 
@@ -346,6 +355,7 @@
                     }
                 },
 
+                // Auxiliares visuales e íconos
                 obtenerIconoCategoria(categoria) {
                     const iconos = {
                         'Todas': 'bi-grid-fill',
@@ -364,11 +374,6 @@
                 }
             },
             mounted() {
-                // Escuchamos los eventos del menú superior para cambiar entre vistas
-                window.addEventListener('cambiar-vista', (e) => {
-                    this.vistaActual = e.detail; 
-                });
-
                 this.cargarDatos();
 
                 setInterval(() => {
@@ -380,25 +385,9 @@
     </script>
 
     <style>
-        [v-cloak] {
-            display: none;
-        }
-        
-        .cursor-pointer {
-            cursor: pointer;
-        }
-
-        .hover-elevate {
-            transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-        }
-
-        .hover-elevate:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 .4rem .8rem rgba(0, 0, 0, .15) !important;
-        }
-
-        .fs-7 {
-            font-size: 0.85rem;
-        }
+        .cursor-pointer { cursor: pointer; }
+        .hover-elevate { transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out; }
+        .hover-elevate:hover { transform: translateY(-3px); box-shadow: 0 .4rem .8rem rgba(0,0,0,.15)!important; }
+        .fs-7 { font-size: 0.85rem; }
     </style>
 }
