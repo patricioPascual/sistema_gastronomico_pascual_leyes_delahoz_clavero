@@ -40,7 +40,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Services
                 issuer: config["TokenAuthentication:Issuer"],
                 audience: config["TokenAuthentication:Audience"],
                 claims: claims,
-                expires: DateTime.Now.AddHours(8),
+                expires: DateTime.UtcNow.AddHours(8),
                 signingCredentials: credenciales
             );
 
