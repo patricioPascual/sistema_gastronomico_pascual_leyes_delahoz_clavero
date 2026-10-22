@@ -12,8 +12,5 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
         [DataType(DataType.Password)]
         [Display(Name = "Contraseña")]
         public string? Password { get; set; }
-
-        [Display(Name = "Recordarme")]
-        public bool Recordarme { get; set; }
     }
 }

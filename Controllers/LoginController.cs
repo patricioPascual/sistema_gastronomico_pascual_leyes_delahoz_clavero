@@ -81,7 +81,6 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
                 principal,
                 new AuthenticationProperties
                 {
-                    IsPersistent = vm.Recordarme,
                     ExpiresUtc = DateTimeOffset.UtcNow.AddHours(8)
                 });
 
