@@ -63,7 +63,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             producto.Estado = true;
 
             if (!ModelState.IsValid)
-                return View(producto);
+                return View("Alta",producto);
 
             try
             {
@@ -74,7 +74,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             catch (DbUpdateException)
             {
                 ModelState.AddModelError("Nombre", "El insumo '" + producto.Nombre + "' ya existe en la base de datos.");
-                return View(producto);
+                return View("Alta",producto);
             }
         }
 
