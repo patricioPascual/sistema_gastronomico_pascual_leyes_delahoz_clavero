@@ -73,9 +73,16 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
                 return View(vm);
             }
 
+            if (vm.ArchivoImagen != null && !ValidarImagen(vm.ArchivoImagen))
+            {
+                vm.Categorias = _repositorioCategoria.ObtenerTodos().Where(c => c.Estado).ToList();
+                return View(vm);
+            }
+
             try
             {
                 vm.Plato.Estado = true;
+
                 int idPlato = _repositorioPlato.Alta(vm.Plato);
 
                 if (vm.Receta != null && idPlato > 0)
@@ -85,7 +92,17 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
                     _repositorioDetalleReceta.GuardarReceta(idPlato, detalles);
                 }
 
-                await ProcesarImagenLocal(idPlato, vm.ArchivoImagen, false);
+                if (vm.ArchivoImagen != null)
+                {
+                    await ProcesarImagenLocal(idPlato, vm.ArchivoImagen, false);
+
+                    var platoCreado = _repositorioPlato.ObtenerPorId(idPlato);
+                    if (platoCreado != null)
+                    {
+                        platoCreado.Imagen = $"/img/platos/plato_{idPlato}.jpg";
+                        _repositorioPlato.Modificar(platoCreado);
+                    }
+                }
 
                 TempData["Exito"] = "El plato se registró correctamente.";
                 return RedirectToAction(nameof(Index));
@@ -109,6 +126,12 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
                 return View(vm);
             }
 
+            if (vm.ArchivoImagen != null && !ValidarImagen(vm.ArchivoImagen))
+            {
+                vm.Categorias = _repositorioCategoria.ObtenerTodos().Where(c => c.Estado).ToList();
+                return View(vm);
+            }
+
             try
             {
                 var platoExistente = _repositorioPlato.ObtenerPorId(id);
@@ -117,6 +140,15 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
                 platoExistente.Nombre = vm.Plato.Nombre;
                 platoExistente.PrecioVenta = vm.Plato.PrecioVenta;
                 platoExistente.IdCategoria = vm.Plato.IdCategoria;
+
+                if (vm.EliminarImagen)
+                {
+                    platoExistente.Imagen = null;
+                }
+                else if (vm.ArchivoImagen != null)
+                {
+                    platoExistente.Imagen = $"/img/platos/plato_{id}.jpg";
+                }
 
                 _repositorioPlato.Modificar(platoExistente);
 
@@ -249,6 +281,40 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 
             return Json(resultado);
         }
+
+        private bool ValidarImagen(IFormFile? archivo)
+        {
+            if (archivo == null)
+            {
+                return true;
+            }
+
+            long maxSizeBytes = 2 * 1024 * 1024;
+            if (archivo.Length > maxSizeBytes)
+            {
+                TempData["Error"] = "La imagen no debe superar los 2 MB de peso.";
+                return false;
+            }
+
+            var extensionesPermitidas = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+            var extension = Path.GetExtension(archivo.FileName).ToLowerInvariant();
+
+            if (string.IsNullOrEmpty(extension) || !extensionesPermitidas.Contains(extension))
+            {
+                TempData["Error"] = "Solo se permiten imágenes con extensión .jpg, .jpeg, .png o .webp.";
+                return false;
+            }
+
+            var mimeTypesPermitidos = new[] { "image/jpeg", "image/png", "image/webp" };
+            if (!mimeTypesPermitidos.Contains(archivo.ContentType.ToLower()))
+            {
+                TempData["Error"] = "El archivo subido no es una imagen válida.";
+                return false;
+            }
+
+            return true;
+        }
+
     }
 
 }
