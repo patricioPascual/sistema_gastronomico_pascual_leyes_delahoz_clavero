@@ -42,6 +42,24 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
             return _context.SaveChanges() > 0;
         }
 
+
+        public List<Proveedor> ObtenerLista(int pagNro, int tamPagina)
+        {
+            int offset = (pagNro - 1) * tamPagina;
+            return _context.Proveedores
+                .Where(p => p.Estado)
+                .OrderBy(p => p.Nombre)
+                .Skip(offset)
+                .Take(tamPagina)
+                .ToList();
+        }
+
+        public int ObtenerCantidad()
+        {
+            return _context.Proveedores.Count(p => p.Estado);
+        }
+
+
         public Proveedor? ObtenerPorId(int idProveedor)
         {
             return _context.Proveedores
