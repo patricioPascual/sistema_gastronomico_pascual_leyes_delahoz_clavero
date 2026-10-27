@@ -317,5 +317,22 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 
             return repoUsuario.ObtenerPorId(idUsuario);
         }
+
+        [HttpPost]
+[ValidateAntiForgeryToken]
+public IActionResult Reactivar(int id)
+{
+    bool exito = repoUsuario.Reactivar(id);
+    if (!exito)
+    {
+        TempData["Error"] = "No se pudo reactivar el usuario.";
+    }
+    else
+    {
+        TempData["Exito"] = "Usuario reactivado correctamente.";
+    }
+
+    return RedirectToAction(nameof(Index));
+}
     }
 }

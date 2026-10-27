@@ -75,5 +75,15 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
         {
             return _context.Usuarios.Count();
         }
+
+        public bool Reactivar(int idUsuario)
+{
+    var usuario = _context.Usuarios.FirstOrDefault(u => u.IdUsuario == idUsuario);
+    if (usuario == null) return false;
+
+    usuario.Estado = true; 
+    _context.SaveChanges();
+    return true;
+}
     }
 }
