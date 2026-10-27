@@ -2,12 +2,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models;
+using sistema_gastronomico_pascual_leyes_delahoz_clavero.Constantes;
 
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers.Api
 {
     [Route("api/salon")]
     [ApiController]
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "2")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = RolesSistema.Mozo)]
     public class MesaApiController : ControllerBase
     {
         private readonly RepositorioMesa _repoMesa;

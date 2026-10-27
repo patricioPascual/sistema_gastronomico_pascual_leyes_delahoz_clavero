@@ -1,9 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models;
 using MySqlConnector;  // en lugar de MySql.Data.MySqlClient
-using Microsoft.EntityFrameworkCore;   // para DbUpdateException
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
+using sistema_gastronomico_pascual_leyes_delahoz_clavero.Constantes;   // para DbUpdateException
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 {
+    [Authorize(Roles =RolesSistema.Administrador)]
     public class EmpleadoController : Controller
     {
         private readonly RepositorioEmpleado repoEmpleado;

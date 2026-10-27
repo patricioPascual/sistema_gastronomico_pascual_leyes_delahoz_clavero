@@ -3,10 +3,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models;
 using MySqlConnector;
+using sistema_gastronomico_pascual_leyes_delahoz_clavero.Constantes;
 
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 {
-    [Authorize(Roles = "1,2,3")]
+    [Authorize(Roles = RolesSistema.Todos)]
     public class MesaController : Controller
     {
         private readonly IConfiguration config;

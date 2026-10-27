@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models;
+using sistema_gastronomico_pascual_leyes_delahoz_clavero.Constantes;
 
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers.Api
 {
@@ -10,7 +11,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers.Api
     // lee la SPA (data.mensaje).
     [Route("api/pedidos")]
     [ApiController]
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = "2")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = RolesSistema.Mozo)]
     public class PedidoApiController : ControllerBase
     {
         private readonly RepositorioPedido _repoPedido;

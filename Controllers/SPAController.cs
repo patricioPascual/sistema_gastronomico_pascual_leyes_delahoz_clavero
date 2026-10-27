@@ -1,12 +1,13 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using sistema_gastronomico_pascual_leyes_delahoz_clavero.Constantes;
 using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models;
 using sistema_gastronomico_pascual_leyes_delahoz_clavero.Services;
 
 namespace sistema_gastronomico.Controllers
 {
-    [Authorize(Roles = "2")]
+    [Authorize(Roles = RolesSistema.Mozo)]
     public class SPAController : Controller
     {
         private readonly RepositorioUsuario _repoUsuario;

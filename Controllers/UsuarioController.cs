@@ -7,13 +7,12 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MySqlConnector;
+using sistema_gastronomico_pascual_leyes_delahoz_clavero.Constantes;
 using sistema_gastronomico_pascual_leyes_delahoz_clavero.Helpers;
 using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models;
 
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 {
-    // Cualquier usuario logueado puede entrar al controller (lo necesita para Perfil).
-    // Las acciones de administración de empleados/usuarios se restringen una por una abajo.
     [Authorize]
     public class UsuarioController : Controller
     {
@@ -43,16 +42,14 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             this.entorno = entorno;
         }
 
-        // TODO: confirmar que el rol Administrador sea realmente IdRol == 1 en el seed de la tabla rol.
-        // Si usan otro número, cambiarlo acá (y en las vistas que lo necesiten).
-        [Authorize(Roles = "1")]
+        [Authorize(Roles = RolesSistema.Administrador)]
         public IActionResult Index()
         {
             var usuarios = repoUsuario.ObtenerTodos();
             return View(usuarios);
         }
 
-        [Authorize(Roles = "1")]
+        [Authorize(Roles = RolesSistema.Administrador)]
         public IActionResult Registrar()
         {
             var vm = new RegistrarUsuarioViewModel
@@ -62,7 +59,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             return View(vm);
         }
 
-        [Authorize(Roles = "1")]
+        [Authorize(Roles = RolesSistema.Administrador)]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Registrar(RegistrarUsuarioViewModel vm)
@@ -116,7 +113,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             }
         }
 
-        [Authorize(Roles = "1")]
+        [Authorize(Roles = RolesSistema.Administrador)]
         [HttpGet]
         public IActionResult Editar(int id)
         {
@@ -143,7 +140,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             return View(vm);
         }
 
-        [Authorize(Roles = "1")]
+        [Authorize(Roles = RolesSistema.Administrador)]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Editar(EditarUsuarioViewModel vm)
@@ -210,7 +207,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             }
         }
 
-        [Authorize(Roles = "1")]
+        [Authorize(Roles = RolesSistema.Administrador)]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Baja(int id)

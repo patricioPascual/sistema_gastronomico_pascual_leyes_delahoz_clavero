@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Authorization;
+using sistema_gastronomico_pascual_leyes_delahoz_clavero.Constantes;
 
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 {
@@ -25,7 +26,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             _host = host;
         }
 
-        [Authorize(Roles = "1,2,3")]
+        [Authorize(Roles = RolesSistema.Todos)]
         public IActionResult Index(int pagina = 1)
         {
             int tamPagina = 10;
@@ -39,7 +40,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             return View(platos);
         }
 
-        [Authorize(Roles = "1,2,3")]
+        [Authorize(Roles = RolesSistema.Todos)]
         public IActionResult Detalle(int id)
         {
             var plato = _repositorioPlato.ObtenerPorId(id);
@@ -52,7 +53,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             return View(plato);
         }
 
-        [Authorize(Roles = "1")]
+        [Authorize(Roles = RolesSistema.Administrador)]
         public IActionResult Crear()
         {
             var vm = new PlatoFormViewModel
@@ -62,7 +63,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             return View(vm);
         }
 
-        [Authorize(Roles = "1")]
+        [Authorize(Roles = RolesSistema.Administrador)]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Crear(PlatoFormViewModel vm)
@@ -115,7 +116,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             }
         }
 
-        [Authorize(Roles = "1")]
+        [Authorize(Roles = RolesSistema.Administrador)]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Editar(int id, PlatoFormViewModel vm)
@@ -170,7 +171,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             }
         }
 
-        [Authorize(Roles = "1")]
+        [Authorize(Roles = RolesSistema.Administrador)]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Eliminar(int id)
@@ -203,7 +204,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        [Authorize(Roles = "1")]
+        [Authorize(Roles = RolesSistema.Administrador)]
         [HttpGet]
         public IActionResult Editar(int id)
         {
@@ -261,7 +262,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             }
         }
 
-        [Authorize(Roles = "1,2,3")]
+        [Authorize(Roles = RolesSistema.Todos)]
         [HttpGet]
         public IActionResult BuscarPlato(string q)
         {
