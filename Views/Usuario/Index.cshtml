@@ -25,14 +25,6 @@
         </a>
     </div>
 
-    <ul class="nav nav-tabs nav-fill mb-4" role="tablist">
-        <li class="nav-item" v-for="rol in roles" :key="rol">
-            <button class="nav-link fw-bold" :class="{ 'active': rolActivo === rol }" @@click="cambiarRol(rol)">
-                {{ rol }}
-            </button>
-        </li>
-    </ul>
-
     <div v-cloak class="table-responsive shadow-sm rounded">
         <table class="table table-hover table-striped align-middle mb-0">
             <thead class="table-dark">
@@ -47,7 +39,7 @@
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="u in usuariosFiltrados" :key="u.idUsuario">
+                <tr v-for="u in usuarios" :key="u.idUsuario">
                     <td>{{ u.legajo }}</td>
                     <td><strong>{{ u.nombreCompleto }}</strong></td>
                     <td>{{ u.dni }}</td>
@@ -69,19 +61,15 @@
                         </button>
                     </td>
                 </tr>
-                <tr v-if="usuariosFiltrados.length === 0">
+                <tr v-if="usuarios.length === 0">
                     <td colspan="7" class="text-center text-muted py-4">
-                        <em>No hay usuarios en esta categoría.</em>
+                        <em>No hay usuarios registrados.</em>
                     </td>
                 </tr>
             </tbody>
         </table>
     </div>
 
-
-    <partial name="_ModalEliminar" />
-</div>
-  <div v-if="rolActivo === 'Todos'">
     @if (ViewBag.TotalPaginas > 1)
     {
         int paginaActual = ViewBag.PaginaActual ?? 1;
@@ -110,6 +98,8 @@
             </ul>
         </nav>
     }
+
+    <partial name="_ModalEliminar" />
 </div>
 
 @section Scripts {
@@ -122,26 +112,11 @@
 
         createApp({
             data() {
-                const rolesUnicos = ['Todos', ...new Set(datosUsuarios.map(u => u.rolNombre))];
-
                 return {
-                    usuarios: datosUsuarios,
-                    roles: rolesUnicos,
-                    rolActivo: 'Todos'
+                    usuarios: datosUsuarios
                 };
             },
-            computed: {
-                usuariosFiltrados() {
-                    if (this.rolActivo === 'Todos') {
-                        return this.usuarios;
-                    }
-                    return this.usuarios.filter(u => u.rolNombre === this.rolActivo);
-                }
-            },
             methods: {
-                cambiarRol(rol) {
-                    this.rolActivo = rol;
-                },
                 confirmarBaja(usuario) {
                     abrirModalEliminar(usuario.idUsuario, usuario.nombreCompleto, '/Usuario/Baja');
                 }
