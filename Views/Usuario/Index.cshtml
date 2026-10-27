@@ -51,15 +51,33 @@
                         </span>
                     </td>
                     <td class="text-center">
-                        <a :href="'/Usuario/Editar/' + u.idUsuario" class="btn btn-sm btn-outline-primary me-1" title="Editar">
-                            <i class="bi bi-pencil"></i>
-                        </a>
-                        <button type="button" class="btn btn-sm btn-outline-danger" title="Dar de baja"
-                                :disabled="!u.estado"
-                                @@click="confirmarBaja(u)">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </td>
+   
+    <a :href="'/Usuario/Editar/' + u.idUsuario" class="btn btn-sm btn-outline-primary me-1" title="Editar">
+        <i class="bi bi-pencil"></i>
+    </a>
+
+    
+    <button type="button" 
+            class="btn btn-sm btn-outline-danger" 
+            title="Dar de baja"
+            v-if="u.estado"
+            @@click="confirmarBaja(u)">
+        <i class="bi bi-trash"></i>
+    </button>
+
+   
+    <form :action="'/Usuario/Reactivar/' + u.idUsuario" 
+          method="post" 
+          class="d-inline" 
+          v-else>
+        @Html.AntiForgeryToken()
+        <button type="submit" 
+                class="btn btn-sm btn-outline-success" 
+                title="Reactivar usuario">
+            <i class="bi bi-arrow-counterclockwise"></i>
+        </button>
+    </form>
+</td>
                 </tr>
                 <tr v-if="usuarios.length === 0">
                     <td colspan="7" class="text-center text-muted py-4">
