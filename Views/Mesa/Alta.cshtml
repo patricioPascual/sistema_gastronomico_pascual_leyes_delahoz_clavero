@@ -19,14 +19,14 @@
 
                         <div class="mb-3">
                             <label asp-for="Numero" class="form-label fw-bold">Número</label>
-                            <input asp-for="Numero" type="number" min="1" class="form-control" placeholder="Ej: 1" required />
+                            <input asp-for="Numero" type="number" min="1" max="999"class="form-control" placeholder="Ej: 1" required />
                             <span asp-validation-for="Numero" class="text-danger small"></span>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label asp-for="Capacidad" class="form-label fw-bold">Capacidad</label>
-                                <input asp-for="Capacidad" type="number" min="1" class="form-control" placeholder="Ej: 4" required />
+                                <input asp-for="Capacidad" type="number" min="1" max="12"class="form-control" placeholder="Ej: 4" required />
                                 <span asp-validation-for="Capacidad" class="text-danger small"></span>
                             </div>
                             <div class="col-md-6 mb-3">

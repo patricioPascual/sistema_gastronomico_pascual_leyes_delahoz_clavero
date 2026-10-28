@@ -105,8 +105,8 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 
             if (pedido.Detalles == null || pedido.Detalles.Count == 0)
                 ModelState.AddModelError("", "Debe agregar al menos un plato al pedido.");
-            else if (pedido.Detalles.Any(d => d.Cantidad < 1))
-                ModelState.AddModelError("", "La cantidad de cada plato debe ser mayor a cero.");
+            else if (pedido.Detalles.Any(d => d.Cantidad < 1 || d.Cantidad > 99))
+                ModelState.AddModelError("", "La cantidad de cada plato debe estar entre 1 y 99.");
 
             if (ModelState.IsValid)
             {
@@ -186,9 +186,9 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             if (!PedidoAbierto(detalle.IdPedido))
                 return RedirectToAction(nameof(Detalle), new { id = detalle.IdPedido });
 
-            if (detalle.Cantidad < 1)
+            if (detalle.Cantidad < 1 || detalle.Cantidad > 99)
             {
-                TempData["Error"] = "La cantidad debe ser mayor a cero.";
+                TempData["Error"] = "La cantidad debe estar entre 1 y 99.";
                 return RedirectToAction(nameof(Detalle), new { id = detalle.IdPedido });
             }
 
@@ -212,9 +212,9 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             if (!PedidoAbierto(idPedido))
                 return RedirectToAction(nameof(Detalle), new { id = idPedido });
 
-            if (cantidad < 1)
+            if (cantidad < 1 || cantidad > 99)
             {
-                TempData["Error"] = "La cantidad debe ser mayor a cero.";
+                TempData["Error"] = "La cantidad debe estar entre 1 y 99.";
                 return RedirectToAction(nameof(Detalle), new { id = idPedido });
             }
 

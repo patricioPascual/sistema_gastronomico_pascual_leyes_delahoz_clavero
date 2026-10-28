@@ -12,6 +12,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
         public int IdMesa { get; set; }
 
         [Required(ErrorMessage = "El número de mesa es obligatorio")]
+        [Range(1, 999, ErrorMessage = "El número de mesa debe estar entre 1 y 999")]
         [Column("numero")]
         public int Numero { get; set; }
 
@@ -29,6 +30,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
         public bool Estado { get; set; }
 
         [Required(ErrorMessage = "El tipo es obligatorio")]
+        [RegularExpression("^(Mesa|Barra)$", ErrorMessage = "El tipo debe ser Mesa o Barra")]
         [Column("tipo")]
         public string Tipo { get; set; } = "Mesa";
 

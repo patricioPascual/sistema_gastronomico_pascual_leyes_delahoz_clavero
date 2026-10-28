@@ -73,13 +73,13 @@
                                     </select>
                                 </td>
                                 <td>
-                                    <input type="number" step="0.001" min="0.001" 
+                                    <input type="number" step="0.001" min="0.001" max="100000"
                                            :name="`Detalles[${index}].CantidadIngresada`" 
                                            v-model.number="item.cantidad" 
                                            class="form-control" required />
                                 </td>
                                 <td>
-                                    <input type="number" step="0.01" min="0" 
+                                    <input type="number" step="0.01" min="0.01" max="10000000"
                                            :name="`Detalles[${index}].PrecioCostoUnitario`" 
                                            v-model.number="item.precioCosto" 
                                            class="form-control" required />

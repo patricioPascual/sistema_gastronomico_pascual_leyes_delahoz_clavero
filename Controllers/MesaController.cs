@@ -100,35 +100,6 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             }
         }
 
-        public IActionResult Editar(int id)
-        {
-            var mesa = repoMesa.ObtenerPorId(id);
-            if (mesa == null)
-                return NotFound();
-
-            return View("Modificar", mesa); // el archivo es Modificar.cshtml, no Editar.cshtml
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult Modificar(Mesa mesa)
-        {
-            if (!ModelState.IsValid)
-                return View("Modificar", mesa);
-
-            try
-            {
-                repoMesa.Modificar(mesa);
-                TempData["Mensaje"] = "Mesa actualizada correctamente.";
-                return RedirectToAction(nameof(Index));
-            }
-            catch (DbUpdateException ex) when (ex.InnerException is MySqlException mysqlEx && mysqlEx.Number == 1062)
-            {
-                ModelState.AddModelError("Numero", "Ya existe una mesa con el número " + mesa.Numero + ".");
-                return View("Modificar", mesa);
-            }
-        }
-
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Baja(int id)

@@ -15,6 +15,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
         [Column("nombre")]
         public string? Nombre { get; set; }
 
+        [Range(0.01, 1000000, ErrorMessage = "El precio de venta debe estar entre 0,01 y 1.000.000")]
         [Column("precio_venta")]
         public decimal PrecioVenta { get; set; }
 

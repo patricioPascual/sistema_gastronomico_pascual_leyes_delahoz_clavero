@@ -85,7 +85,7 @@
                                     </select>
                                 </td>
                                 <td>
-                                    <input type="number" min="1" :name="`Detalles[${index}].Cantidad`"
+                                    <input type="number" min="1" max="99" :name="`Detalles[${index}].Cantidad`"
                                            v-model.number="item.cantidad" class="form-control" required />
                                 </td>
                                 <td>{{ (item.precio || 0).toFixed(2) }}</td>

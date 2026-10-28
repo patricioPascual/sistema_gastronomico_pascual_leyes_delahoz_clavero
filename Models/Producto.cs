@@ -19,6 +19,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
 
         [Column("cantidad_stock")]
         [Required(ErrorMessage = "La Cantidad de Stock es Obligatoria")]
+        [Range(0, 1000000, ErrorMessage = "El stock debe estar entre 0 y 1.000.000")]
         public decimal Cantidad_stock { get; set; }
 
         [Column("unidad_medida")]
@@ -27,6 +28,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
 
         [Column("precio_costo")]
         [Required(ErrorMessage = "El Precio es Obligatorio")]
+        [Range(0.01, 10000000, ErrorMessage = "El precio de costo debe estar entre 0,01 y 10.000.000")]
         public decimal Precio_costo { get; set; }
 
         [Column("estado")]

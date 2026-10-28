@@ -80,8 +80,8 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers.Api
             if (request.Detalles == null || request.Detalles.Count == 0)
                 return BadRequest(new { mensaje = "Debe agregar al menos un plato al pedido." });
 
-            if (request.Detalles.Any(d => d.IdPlato <= 0 || d.Cantidad < 1))
-                return BadRequest(new { mensaje = "La cantidad de cada plato debe ser mayor a cero." });
+            if (request.Detalles.Any(d => d.IdPlato <= 0 || d.Cantidad < 1 || d.Cantidad > 99))
+                return BadRequest(new { mensaje = "La cantidad de cada plato debe estar entre 1 y 99." });
 
             int? idEmpleado = ObtenerIdEmpleado();
             if (idEmpleado == null)
@@ -143,7 +143,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers.Api
         [HttpPut("detalle/{idDetallePedido:int}")]
         public IActionResult ModificarCantidadDetalle(int idDetallePedido, [FromBody] ModificarCantidadRequest request)
         {
-            if (request.Cantidad < 1)
+            if (request.Cantidad < 1 || request.Cantidad > 99)
                 return BadRequest(new { mensaje = "La cantidad debe ser mayor a cero." });
 
             var detalle = _repoDetalle.ObtenerPorId(idDetallePedido);

@@ -23,6 +23,34 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             _repositorioProveedor = repositorioProveedor;
         }
 
+        // Validaciones de servidor que no cubre el HTML: detalles vacíos, productos repetidos,
+        // proveedor/productos inexistentes o dados de baja.
+        private void ValidarCompra(Compra compra)
+        {
+            if (compra.Detalles == null || compra.Detalles.Count == 0)
+            {
+                ModelState.AddModelError("", "Debe agregar al menos un insumo o producto a la compra.");
+                return;
+            }
+
+            var proveedor = _repositorioProveedor.ObtenerPorId(compra.IdProveedor);
+            if (proveedor == null || !proveedor.Estado)
+                ModelState.AddModelError("", "El proveedor seleccionado no existe o está dado de baja.");
+
+            if (compra.Detalles.GroupBy(d => d.IdProducto).Any(g => g.Count() > 1))
+                ModelState.AddModelError("", "No se puede repetir un mismo producto en la compra. Unifique las cantidades en una sola línea.");
+
+            foreach (var detalle in compra.Detalles)
+            {
+                var producto = _repositorioProducto.ObtenerPorId(detalle.IdProducto);
+                if (producto == null || !producto.Estado)
+                {
+                    ModelState.AddModelError("", "Uno de los productos seleccionados no existe o está dado de baja.");
+                    break;
+                }
+            }
+        }
+
         [HttpGet]
         public IActionResult Index(int pagNro = 1, int tamPagina = 10)
         {
@@ -62,10 +90,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
                 // Empleado de prueba
                 compra.IdEmpleado = int.Parse(User.FindFirst("IdEmpleado")?.Value);
 
-                if (compra.Detalles == null || compra.Detalles.Count == 0)
-                {
-                    ModelState.AddModelError("", "Debe agregar al menos un insumo o producto a la compra.");
-                }
+                ValidarCompra(compra);
 
                 if (ModelState.IsValid)
                 {   
@@ -115,12 +140,9 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
         public IActionResult Modificar(Compra compra)
         {
             try
-            {            
+            {
 
-                if (compra.Detalles == null || compra.Detalles.Count == 0)
-                {
-                    ModelState.AddModelError("", "Debe agregar al menos un insumo o producto a la compra.");
-                }
+                ValidarCompra(compra);
 
                 if (ModelState.IsValid)
                 {
