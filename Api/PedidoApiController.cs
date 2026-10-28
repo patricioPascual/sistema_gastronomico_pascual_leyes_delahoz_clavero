@@ -139,6 +139,99 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers.Api
             }
         }
 
+        // PUT api/pedidos/detalle/{idDetallePedido}
+        [HttpPut("detalle/{idDetallePedido:int}")]
+        public IActionResult ModificarCantidadDetalle(int idDetallePedido, [FromBody] ModificarCantidadRequest request)
+        {
+            if (request.Cantidad < 1)
+                return BadRequest(new { mensaje = "La cantidad debe ser mayor a cero." });
+
+            var detalle = _repoDetalle.ObtenerPorId(idDetallePedido);
+            if (detalle == null)
+                return NotFound(new { mensaje = "El plato del pedido no existe." });
+
+            // Bloquear si ya esta despachado
+            if (detalle.estado == DetallePedido.Estado.Despachado)
+                return Conflict(new { mensaje = "No se puede modificar la cantidad de un plato que ya fue despachado." });
+
+            var pedido = _repoPedido.ObtenerPorId(detalle.IdPedido);
+            if (pedido == null || pedido.estado != Pedido.Estado.Abierto)
+                return Conflict(new { mensaje = "El pedido no existe o ya no está abierto." });
+
+            try
+            {
+                _repoDetalle.ModificarCantidad(idDetallePedido, request.Cantidad);
+
+                return Ok(new
+                {
+                    mensaje = "Cantidad actualizada.",
+                    idPedido = detalle.IdPedido,
+                    total = _repoPedido.ObtenerPorId(detalle.IdPedido)?.Total ?? 0
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { mensaje = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al modificar la cantidad del detalle {IdDetallePedido}", idDetallePedido);
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { mensaje = "Ocurrió un error al modificar la cantidad." });
+            }
+        }
+
+        // DELETE api/pedidos/detalle/{idDetallePedido}
+        [HttpDelete("detalle/{idDetallePedido:int}")]
+        public IActionResult EliminarDetalle(int idDetallePedido)
+        {
+            var detalle = _repoDetalle.ObtenerPorId(idDetallePedido);
+            if (detalle == null)
+                return NotFound(new { mensaje = "El plato del pedido no existe." });
+
+            // Bloquear si ya esta despachado
+            if (detalle.estado == DetallePedido.Estado.Despachado)
+                return Conflict(new { mensaje = "No se puede quitar un plato que ya fue despachado o consumido." });
+
+            var pedido = _repoPedido.ObtenerPorId(detalle.IdPedido);
+            if (pedido == null || pedido.estado != Pedido.Estado.Abierto)
+                return Conflict(new { mensaje = "El pedido no existe o ya no está abierto." });
+
+            try
+            {
+                _repoDetalle.Baja(idDetallePedido);
+
+                return Ok(new
+                {
+                    mensaje = "Plato quitado del pedido.",
+                    idPedido = detalle.IdPedido,
+                    total = _repoPedido.ObtenerPorId(detalle.IdPedido)?.Total ?? 0
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { mensaje = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al quitar el detalle {IdDetallePedido}", idDetallePedido);
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { mensaje = "Ocurrió un error al quitar el plato." });
+            }
+        }
+
+        // DELETE api/pedidos/{idPedido}
+        [HttpDelete("{idPedido:int}")]
+        public IActionResult Baja(int idPedido)
+        {
+            bool exito = _repoPedido.Baja(idPedido);
+
+            if (!exito)
+                return Conflict(new { mensaje = "No se pudo cancelar el pedido: no existe o ya no está abierto." });
+
+            return Ok(new { mensaje = "Pedido cancelado correctamente." });
+        }
+
         // POST api/pedidos/detalle/{idDetallePedido}/despachar
         [HttpPost("detalle/{idDetallePedido:int}/despachar")]
         public IActionResult DespacharDetalle(int idDetallePedido)
@@ -285,6 +378,11 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers.Api
     public class DetallePedidoRequest
     {
         public int IdPlato { get; set; }
+        public int Cantidad { get; set; }
+    }
+
+    public class ModificarCantidadRequest
+    {
         public int Cantidad { get; set; }
     }
 }

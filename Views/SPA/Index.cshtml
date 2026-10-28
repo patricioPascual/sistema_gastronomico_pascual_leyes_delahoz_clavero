@@ -6,6 +6,13 @@
 
 <div id="app-salon" class="container-fluid py-3" v-cloak>
 
+    <!-- Mensaje de error "global" -->
+    <div v-if="mensajeGlobal" class="alert alert-danger alert-dismissible shadow-sm position-fixed top-0 start-50 translate-middle-x mt-3"
+         style="z-index: 2000; min-width: 320px;">
+        <i class="bi bi-exclamation-triangle-fill me-1"></i> {{ mensajeGlobal }}
+        <button type="button" class="btn-close" @@click="mensajeGlobal = ''"></button>
+    </div>
+
     <!-- CABECERA DE LA SPA -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="mb-0 fw-bold text-dark"><i class="bi bi-grid-3x3-gap me-2"></i>Salón</h2>
@@ -105,7 +112,7 @@
         @section Scripts {
             <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
             <script>
-                const TOKEN_API = '@ViewBag.TokenApi'; 
+                const TOKEN_API = '@ViewBag.TokenApi';
             </script>
 
             <script>
@@ -127,8 +134,12 @@
                             cargandoMenu: false,
                             enviandoPedido: false,
                             mensajeError: '',
+                            mensajeGlobal: '',
                             modalInstance: null,
-                            categoriaActiva: 'Todas'
+                            categoriaActiva: 'Todas',
+                            // Reemplaza al confirm() nativo: se muestra como banner dentro
+                            // del modal en vez de un cartel del navegador (ver modalMesa.cshtml).
+                            confirmando: { mensaje: '', accion: null }
                         }
                     },
                     computed: {
@@ -234,6 +245,7 @@
                             this.pedidoActual = null;
                             this.mensajeError = '';
                             this.categoriaActiva = 'Todas';
+                            this.confirmando = { mensaje: '', accion: null };
 
                             this.cargarMenu();
                             if (posicion.idPedidoAbierto) this.cargarPedidoActual(posicion.idPedidoAbierto);
@@ -313,7 +325,86 @@
                             }
                         },
 
-                        // DESPACHAR PLATO
+                        pedirConfirmacion(mensaje, accion) {
+                            this.confirmando = { mensaje, accion };
+                        },
+                        confirmarSi() {
+                            const accion = this.confirmando.accion;
+                            this.confirmando = { mensaje: '', accion: null };
+                            if (accion) accion();
+                        },
+
+                        // MODIFICAR cantidad de un plato ya pedido 
+                        async modificarCantidadPedido(detalle, nuevaCantidad) {
+                            if (nuevaCantidad < 1) {
+                                return this.eliminarDetallePedido(detalle.idDetallePedido);
+                            }
+
+                            this.mensajeError = '';
+                            try {
+                                const r = await this.api(`/api/pedidos/detalle/${detalle.idDetallePedido}`, {
+                                    method: 'PUT',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ cantidad: nuevaCantidad })
+                                });
+
+                                if (r.ok) {
+                                    await this.cargarDatos();
+                                    if (this.pedidoActual) await this.cargarPedidoActual(this.pedidoActual.idPedido);
+                                } else {
+                                    this.mensajeError = (r.data && r.data.mensaje) || 'No se pudo modificar la cantidad.';
+                                }
+                            } catch (e) {
+                                console.error("Error al modificar la cantidad:", e);
+                                this.mensajeError = 'Error de conexión con la API.';
+                            }
+                        },
+
+                        // QUITAR un plato del pedido (Baja de una línea, parte del ABM).
+                        eliminarDetallePedido(idDetallePedido) {
+                            this.pedirConfirmacion('¿Quitar este plato del pedido?',
+                                () => this.ejecutarEliminarDetalle(idDetallePedido));
+                        },
+                        async ejecutarEliminarDetalle(idDetallePedido) {
+                            this.mensajeError = '';
+                            try {
+                                const r = await this.api(`/api/pedidos/detalle/${idDetallePedido}`, { method: 'DELETE' });
+
+                                if (r.ok) {
+                                    await this.cargarDatos();
+                                    if (this.pedidoActual) await this.cargarPedidoActual(this.pedidoActual.idPedido);
+                                } else {
+                                    this.mensajeError = (r.data && r.data.mensaje) || 'No se pudo quitar el plato.';
+                                }
+                            } catch (e) {
+                                console.error("Error al quitar el plato:", e);
+                                this.mensajeError = 'Error de conexión con la API.';
+                            }
+                        },
+
+                        // CANCELAR pedido completo (Baja del ABM de Pedido).
+                        cancelarPedido(idPedido) {
+                            this.pedirConfirmacion('¿Cancelar este pedido? Esta acción no se puede deshacer.',
+                                () => this.ejecutarCancelarPedido(idPedido));
+                        },
+                        async ejecutarCancelarPedido(idPedido) {
+                            this.mensajeError = '';
+                            try {
+                                const r = await this.api(`/api/pedidos/${idPedido}`, { method: 'DELETE' });
+
+                                if (r.ok) {
+                                    if (this.modalInstance) this.modalInstance.hide();
+                                    await this.cargarDatos();
+                                } else {
+                                    this.mensajeError = (r.data && r.data.mensaje) || 'No se pudo cancelar el pedido.';
+                                }
+                            } catch (e) {
+                                console.error("Error al cancelar el pedido:", e);
+                                this.mensajeError = 'Error de conexión con la API.';
+                            }
+                        },
+
+                        // DESPACHAR PLATO 
                         async despacharDetalle(idDetallePedido) {
                             try {
                                 const r = await this.api(`/api/pedidos/detalle/${idDetallePedido}/despachar`, { method: 'POST' });
@@ -322,21 +413,23 @@
                                     await this.cargarDatos();
                                     if (this.pedidoActual) await this.cargarPedidoActual(this.pedidoActual.idPedido);
                                 } else {
-                                    alert((r.data && r.data.mensaje) || 'No se pudo despachar el plato.');
+                                    this.mensajeGlobal = (r.data && r.data.mensaje) || 'No se pudo despachar el plato.';
                                 }
                             } catch (e) {
                                 console.error("Error al despachar:", e);
-                                alert('Error de conexión con la API.');
+                                this.mensajeGlobal = 'Error de conexión con la API.';
                             }
                         },
 
                         // PAGAR Y CERRAR
-                        async cerrarMesa(idPedido) {
+                        cerrarMesa(idPedido) {
                             const aviso = this.comanda.length > 0
-                                ? 'Hay platos en la comanda que todavía NO se enviaron y se van a descartar.\n\n'
+                                ? 'Hay platos en la comanda que todavía NO se enviaron y se van a descartar. '
                                 : '';
-                            if (!confirm(aviso + '¿Confirmar cobro y cerrar este pedido?')) return;
-
+                            this.pedirConfirmacion(aviso + '¿Confirmar cobro y cerrar este pedido?',
+                                () => this.ejecutarCerrarMesa(idPedido));
+                        },
+                        async ejecutarCerrarMesa(idPedido) {
                             try {
                                 const r = await this.api(`/api/pedidos/${idPedido}/cerrar`, { method: 'POST' });
 
@@ -353,9 +446,11 @@
                         },
 
                         // LIBERAR MESA (pedido ya cobrado)
-                        async liberarMesa(idMesa) {
-                            if (!confirm('¿Liberar la mesa? Quedará disponible para un nuevo pedido.')) return;
-
+                        liberarMesa(idMesa) {
+                            this.pedirConfirmacion('¿Liberar la mesa? Quedará disponible para un nuevo pedido.',
+                                () => this.ejecutarLiberarMesa(idMesa));
+                        },
+                        async ejecutarLiberarMesa(idMesa) {
                             try {
                                 const r = await this.api(`/api/pedidos/mesa/${idMesa}/liberar`, { method: 'POST' });
 
