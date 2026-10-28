@@ -78,6 +78,12 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Crear(Mesa mesa)
         {
+            int tamanoMax = 12;
+            if(mesa.Capacidad > tamanoMax)
+            {
+                TempData["Error"] = "La capacidad no debe ser mayor a 12";
+                return View("Alta", mesa);
+            }
             if (!ModelState.IsValid)
                 return View("Alta", mesa);
 

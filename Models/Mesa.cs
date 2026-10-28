@@ -15,8 +15,11 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
         [Column("numero")]
         public int Numero { get; set; }
 
+        [Required(ErrorMessage = "La capacidad es obligatoria y debe ser al menos 1")]
+        [Range(1, 12, ErrorMessage = "La capacidad debe ser como maximo 12")]
+        [RegularExpression(@"^[1-9]\d*$", ErrorMessage = "La capacidad debe ser un número entero positivo.")]
         [Column("capacidad")]
-        public int Capacidad { get; set; }
+        public int? Capacidad { get; set; }
 
         // Ya NO es "legado sin uso": ahora significa "tiene un pedido pagado
         // pendiente de liberar" (true) o "sin pendientes" (false). Una mesa
