@@ -20,13 +20,4 @@
     
   </ItemGroup>
 
-    <!-- El proyecto de pruebas vive en Tests/ y se compila aparte.
-      Sin esto, el proyecto web incluiría esos .cs (y su carpeta obj) y no compilaría. -->
-  <ItemGroup>
-    <Compile Remove="Tests\**" />
-    <Content Remove="Tests\**" />
-    <EmbeddedResource Remove="Tests\**" />
-    <None Remove="Tests\**" />
-  </ItemGroup>
-
 </Project>
