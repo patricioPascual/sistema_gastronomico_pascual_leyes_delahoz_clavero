@@ -5,6 +5,19 @@ using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models;
 
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Helpers
 {
+    // Arma el ValidationResult indicando a qué propiedad pertenece el error (MemberNames),
+    // igual que hacen los atributos de .NET. Así el error queda asociado al campo
+    // y se puede verificar en las pruebas unitarias.
+    internal static class ResultadoValidacion
+    {
+        public static ValidationResult Error(string mensaje, ValidationContext contexto)
+        {
+            return contexto.MemberName is null
+                ? new ValidationResult(mensaje)
+                : new ValidationResult(mensaje, new[] { contexto.MemberName });
+        }
+    }
+
     // Fecha entre un mínimo fijo y "ahora" (más una tolerancia opcional en minutos).
     // Se usa en Fecha de ingreso del empleado y en Fecha/hora de la compra.
     // Es un atributo propio porque [Range] solo admite límites constantes y "hoy" cambia todos los días.
@@ -32,10 +45,10 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Helpers
             DateTime aComparar = soloFecha ? fecha.Date : fecha;
 
             if (aComparar < fechaMinima)
-                return new ValidationResult(ErrorMessage ?? $"La fecha no puede ser anterior al {fechaMinima:dd/MM/yyyy}.");
+                return ResultadoValidacion.Error(ErrorMessage ?? $"La fecha no puede ser anterior al {fechaMinima:dd/MM/yyyy}.", validationContext);
 
             if (aComparar > maxima)
-                return new ValidationResult(ErrorMessage ?? "La fecha no puede ser futura.");
+                return ResultadoValidacion.Error(ErrorMessage ?? "La fecha no puede ser futura.", validationContext);
 
             return ValidationResult.Success;
         }
@@ -59,7 +72,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Helpers
                 return ValidationResult.Success;
 
             if (!EsCuitValido(cuit))
-                return new ValidationResult("El CUIT no es válido: el dígito verificador no coincide.");
+                return ResultadoValidacion.Error("El CUIT no es válido: el dígito verificador no coincide.", validationContext);
 
             return ValidationResult.Success;
         }
@@ -96,7 +109,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Helpers
                 return ValidationResult.Success; // lo resuelve [Required]
 
             if (!UnidadesMedida.EsValida(unidad))
-                return new ValidationResult("Unidad de medida inválida. Elegí una de la lista: " + string.Join(", ", UnidadesMedida.Todas.Keys) + ".");
+                return ResultadoValidacion.Error("Unidad de medida inválida. Elegí una de la lista: " + string.Join(", ", UnidadesMedida.Todas.Keys) + ".", validationContext);
 
             return ValidationResult.Success;
         }

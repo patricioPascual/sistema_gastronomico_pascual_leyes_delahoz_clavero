@@ -73,7 +73,6 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
         }
 
         [Authorize(Roles = RolesSistema.Administrador)]
-        [Authorize(Roles = RolesSistema.Administrador)]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Crear(PlatoFormViewModel vm)
@@ -172,15 +171,6 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
                     platoExistente.Imagen = $"/img/platos/plato_{id}.jpg";
                 }
 
-                if (vm.EliminarImagen)
-                {
-                    platoExistente.Imagen = null;
-                }
-                else if (vm.ArchivoImagen != null)
-                {
-                    platoExistente.Imagen = $"/img/platos/plato_{id}.jpg";
-                }
-
                 _repositorioPlato.Modificar(platoExistente);
                 _repositorioDetalleReceta.GuardarReceta(id, nuevosDetalles);
                 transaccion.Commit();
@@ -208,7 +198,6 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        [Authorize(Roles = RolesSistema.Administrador)]
         [Authorize(Roles = RolesSistema.Administrador)]
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -243,7 +232,6 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        [Authorize(Roles = RolesSistema.Administrador)]
         [Authorize(Roles = RolesSistema.Administrador)]
         [HttpGet]
         public IActionResult Editar(int id)
@@ -387,7 +375,6 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             }
         }
 
-        [Authorize(Roles = RolesSistema.Todos)]
         [Authorize(Roles = RolesSistema.Todos)]
         [HttpGet]
         public IActionResult BuscarPlato(string q)
