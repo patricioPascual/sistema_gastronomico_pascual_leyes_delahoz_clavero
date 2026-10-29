@@ -2,8 +2,12 @@ using Microsoft.AspNetCore.Mvc;
 using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models;
 using MySqlConnector;  // en lugar de MySql.Data.MySqlClient
 using Microsoft.EntityFrameworkCore;   // para DbUpdateException
+using Microsoft.AspNetCore.Authorization;
+using sistema_gastronomico_pascual_leyes_delahoz_clavero.Constantes;
+
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 {
+    [Authorize(Roles = RolesSistema.Administrador)]
     public class EmpleadoController : Controller
     {
         private readonly RepositorioEmpleado repoEmpleado;
@@ -52,13 +56,10 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Crear(Empleado empleado)
         {
-            if (!string.IsNullOrWhiteSpace(empleado.Nombre))
-                empleado.Nombre = empleado.Nombre.Trim();
-
-            if (!string.IsNullOrWhiteSpace(empleado.Apellido))
-                empleado.Apellido = empleado.Apellido.Trim();
-
+            NormalizarTextos(empleado);
             empleado.Activo = true;
+
+            ValidarDuplicados(empleado, excluirId: 0);
 
             if (!ModelState.IsValid)
                 return View("Alta", empleado);
@@ -70,7 +71,6 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
                 return RedirectToAction(nameof(Index));
             }
             catch (DbUpdateException ex) when (ex.InnerException is MySqlException mysqlEx && mysqlEx.Number == 1062)
-
             {
                 ModelState.AddModelError("", "Ya existe un empleado con ese legajo o DNI.");
                 return View("Alta", empleado);
@@ -90,6 +90,10 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Modificar(Empleado empleado)
         {
+            NormalizarTextos(empleado);
+
+            ValidarDuplicados(empleado, excluirId: empleado.IdEmpleado);
+
             if (!ModelState.IsValid)
                 return View("Editar", empleado);
 
@@ -99,7 +103,8 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
                 TempData["Mensaje"] = "Empleado actualizado correctamente.";
                 return RedirectToAction(nameof(Index));
             }
-            catch (MySqlException ex) when (ex.Number == 1062)
+            // EF Core envuelve la MySqlException en DbUpdateException: atrapar MySqlException directo no funcionaba.
+            catch (DbUpdateException ex) when (ex.InnerException is MySqlException mysqlEx && mysqlEx.Number == 1062)
             {
                 ModelState.AddModelError("", "Ya existe un empleado con ese legajo o DNI.");
                 return View("Editar", empleado);
@@ -113,6 +118,22 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             repoEmpleado.Baja(id);
             TempData["Mensaje"] = "Empleado dado de baja correctamente.";
             return RedirectToAction(nameof(Index));
+        }
+
+        private static void NormalizarTextos(Empleado empleado)
+        {
+            empleado.Nombre = empleado.Nombre?.Trim();
+            empleado.Apellido = empleado.Apellido?.Trim();
+            empleado.Telefono = string.IsNullOrWhiteSpace(empleado.Telefono) ? null : empleado.Telefono.Trim();
+        }
+
+        private void ValidarDuplicados(Empleado empleado, int excluirId)
+        {
+            if (!string.IsNullOrEmpty(empleado.Legajo) && repoEmpleado.ExisteLegajo(empleado.Legajo, excluirId))
+                ModelState.AddModelError(nameof(Empleado.Legajo), "Ya existe un empleado con ese legajo.");
+
+            if (!string.IsNullOrEmpty(empleado.Dni) && repoEmpleado.ExisteDni(empleado.Dni, excluirId))
+                ModelState.AddModelError(nameof(Empleado.Dni), "Ya existe un empleado con ese DNI.");
         }
     }
 }

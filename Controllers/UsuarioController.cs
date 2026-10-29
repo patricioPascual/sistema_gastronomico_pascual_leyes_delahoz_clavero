@@ -7,13 +7,12 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MySqlConnector;
+using sistema_gastronomico_pascual_leyes_delahoz_clavero.Constantes;
 using sistema_gastronomico_pascual_leyes_delahoz_clavero.Helpers;
 using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models;
 
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 {
-    // Cualquier usuario logueado puede entrar al controller (lo necesita para Perfil).
-    // Las acciones de administración de empleados/usuarios se restringen una por una abajo.
     [Authorize]
     public class UsuarioController : Controller
     {
@@ -43,16 +42,19 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             this.entorno = entorno;
         }
 
-        // TODO: confirmar que el rol Administrador sea realmente IdRol == 1 en el seed de la tabla rol.
-        // Si usan otro número, cambiarlo acá (y en las vistas que lo necesiten).
-        [Authorize(Roles = "1")]
-        public IActionResult Index()
+        [Authorize(Roles = RolesSistema.Administrador)]
+       public IActionResult Index(int pagina = 1)
         {
-            var usuarios = repoUsuario.ObtenerTodos();
-            return View(usuarios);
+            int tamPagina = 10;
+            var empleados = repoUsuario.ObtenerLista(pagNro: pagina, tamPagina: tamPagina);
+            int totalRegistros = repoUsuario.ObtenerCantidad();
+
+            ViewBag.PaginaActual = pagina;
+            ViewBag.TotalPaginas = (int)Math.Ceiling((double)totalRegistros / tamPagina);
+            return View(empleados);
         }
 
-        [Authorize(Roles = "1")]
+        [Authorize(Roles = RolesSistema.Administrador)]
         public IActionResult Registrar()
         {
             var vm = new RegistrarUsuarioViewModel
@@ -62,11 +64,26 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             return View(vm);
         }
 
-        [Authorize(Roles = "1")]
+        [Authorize(Roles = RolesSistema.Administrador)]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Registrar(RegistrarUsuarioViewModel vm)
         {
+            vm.Nombre = vm.Nombre?.Trim();
+            vm.Apellido = vm.Apellido?.Trim();
+            vm.Telefono = string.IsNullOrWhiteSpace(vm.Telefono) ? null : vm.Telefono.Trim();
+
+            // Chequeo previo de duplicados para mostrar el error en el campo exacto.
+            // El catch de MySQL 1062 de abajo queda como red de seguridad (dos altas simultáneas).
+            if (!string.IsNullOrEmpty(vm.Legajo) && repoEmpleado.ExisteLegajo(vm.Legajo))
+                ModelState.AddModelError(nameof(vm.Legajo), "Ya existe un empleado con ese legajo.");
+
+            if (!string.IsNullOrEmpty(vm.Dni) && repoEmpleado.ExisteDni(vm.Dni))
+                ModelState.AddModelError(nameof(vm.Dni), "Ya existe un empleado con ese DNI.");
+
+            if (!string.IsNullOrEmpty(vm.Username) && repoUsuario.ExisteUsername(vm.Username))
+                ModelState.AddModelError(nameof(vm.Username), "Ese nombre de usuario ya está en uso.");
+
             if (!ModelState.IsValid)
             {
                 vm.RolesDisponibles = repoRol.ObtenerTodos().ToList();
@@ -116,7 +133,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             }
         }
 
-        [Authorize(Roles = "1")]
+        [Authorize(Roles = RolesSistema.Administrador)]
         [HttpGet]
         public IActionResult Editar(int id)
         {
@@ -143,26 +160,37 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             return View(vm);
         }
 
-        [Authorize(Roles = "1")]
+        [Authorize(Roles = RolesSistema.Administrador)]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Editar(EditarUsuarioViewModel vm)
         {
-            if (!string.IsNullOrEmpty(vm.NuevaPassword) && vm.NuevaPassword.Length < 6)
+            // La regla de la contraseña ahora vive en EditarUsuarioViewModel ([RegularExpression]).
+            var usuario = repoUsuario.ObtenerPorId(vm.IdUsuario);
+            if (usuario == null || usuario.Empleado == null)
             {
-                ModelState.AddModelError(nameof(vm.NuevaPassword), "La contraseña debe tener al menos 6 caracteres.");
+                return NotFound();
             }
+
+            vm.Nombre = vm.Nombre?.Trim();
+            vm.Apellido = vm.Apellido?.Trim();
+            vm.Telefono = string.IsNullOrWhiteSpace(vm.Telefono) ? null : vm.Telefono.Trim();
+
+            // Duplicados, excluyendo al propio empleado/usuario que se está editando.
+            // Se usan los Id leídos de la base, no los del formulario (campos hidden manipulables).
+            if (!string.IsNullOrEmpty(vm.Legajo) && repoEmpleado.ExisteLegajo(vm.Legajo, usuario.IdEmpleado))
+                ModelState.AddModelError(nameof(vm.Legajo), "Ya existe otro empleado con ese legajo.");
+
+            if (!string.IsNullOrEmpty(vm.Dni) && repoEmpleado.ExisteDni(vm.Dni, usuario.IdEmpleado))
+                ModelState.AddModelError(nameof(vm.Dni), "Ya existe otro empleado con ese DNI.");
+
+            if (!string.IsNullOrEmpty(vm.Username) && repoUsuario.ExisteUsername(vm.Username, usuario.IdUsuario))
+                ModelState.AddModelError(nameof(vm.Username), "Ese nombre de usuario ya está en uso.");
 
             if (!ModelState.IsValid)
             {
                 vm.RolesDisponibles = repoRol.ObtenerTodos().ToList();
                 return View(vm);
-            }
-
-            var usuario = repoUsuario.ObtenerPorId(vm.IdUsuario);
-            if (usuario == null || usuario.Empleado == null)
-            {
-                return NotFound();
             }
 
             using var transaccion = context.Database.BeginTransaction();
@@ -210,7 +238,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             }
         }
 
-        [Authorize(Roles = "1")]
+        [Authorize(Roles = RolesSistema.Administrador)]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Baja(int id)
@@ -315,5 +343,22 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 
             return repoUsuario.ObtenerPorId(idUsuario);
         }
+
+        [HttpPost]
+[ValidateAntiForgeryToken]
+public IActionResult Reactivar(int id)
+{
+    bool exito = repoUsuario.Reactivar(id);
+    if (!exito)
+    {
+        TempData["Error"] = "No se pudo reactivar el usuario.";
+    }
+    else
+    {
+        TempData["Exito"] = "Usuario reactivado correctamente.";
+    }
+
+    return RedirectToAction(nameof(Index));
+}
     }
 }

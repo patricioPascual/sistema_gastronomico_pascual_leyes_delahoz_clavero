@@ -1,23 +1,70 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using sistema_gastronomico_pascual_leyes_delahoz_clavero.Constantes;
 using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models;
 using System.Security.Claims;
 
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 {
+    [Authorize(Roles = RolesSistema.Administrador)]
     public class CompraController : Controller
     {
         private readonly RepositorioCompra _repositorioCompra;
         private readonly RepositorioProducto _repositorioProducto;
         private readonly RepositorioProveedor _repositorioProveedor;
+        private readonly ILogger<CompraController> _logger;
 
         public CompraController(
-            RepositorioCompra repositorioCompra, 
-            RepositorioProducto repositorioProducto, 
-            RepositorioProveedor repositorioProveedor)
+            RepositorioCompra repositorioCompra,
+            RepositorioProducto repositorioProducto,
+            RepositorioProveedor repositorioProveedor,
+            ILogger<CompraController> logger)
         {
             _repositorioCompra = repositorioCompra;
             _repositorioProducto = repositorioProducto;
             _repositorioProveedor = repositorioProveedor;
+            _logger = logger;
+        }
+
+        // Validaciones de servidor que no cubre el HTML: detalles vacíos, productos repetidos,
+        // proveedor/productos inexistentes o dados de baja, y comprobante repetido para el proveedor.
+        // (Formato del comprobante y rango de la fecha los valida el modelo Compra con atributos.)
+        private void ValidarCompra(Compra compra)
+        {
+            compra.NumeroComprobante = string.IsNullOrWhiteSpace(compra.NumeroComprobante)
+                ? null
+                : compra.NumeroComprobante.Trim().ToUpperInvariant();
+
+            // Replica el índice uk_proveedor_comprobante para dar un mensaje claro en vez del error de MySQL.
+            if (compra.NumeroComprobante != null && compra.IdProveedor > 0
+                && _repositorioCompra.ExisteComprobante(compra.IdProveedor, compra.NumeroComprobante, compra.IdCompra))
+            {
+                ModelState.AddModelError(nameof(Compra.NumeroComprobante),
+                    $"Ya hay una compra registrada con el comprobante {compra.NumeroComprobante} para este proveedor.");
+            }
+
+            if (compra.Detalles == null || compra.Detalles.Count == 0)
+            {
+                ModelState.AddModelError("", "Debe agregar al menos un insumo o producto a la compra.");
+                return;
+            }
+
+            var proveedor = _repositorioProveedor.ObtenerPorId(compra.IdProveedor);
+            if (proveedor == null || !proveedor.Estado)
+                ModelState.AddModelError("", "El proveedor seleccionado no existe o está dado de baja.");
+
+            if (compra.Detalles.GroupBy(d => d.IdProducto).Any(g => g.Count() > 1))
+                ModelState.AddModelError("", "No se puede repetir un mismo producto en la compra. Unifique las cantidades en una sola línea.");
+
+            foreach (var detalle in compra.Detalles)
+            {
+                var producto = _repositorioProducto.ObtenerPorId(detalle.IdProducto);
+                if (producto == null || !producto.Estado)
+                {
+                    ModelState.AddModelError("", "Uno de los productos seleccionados no existe o está dado de baja.");
+                    break;
+                }
+            }
         }
 
         [HttpGet]
@@ -37,7 +84,8 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             }
             catch (Exception ex)
             {
-                TempData["Error"] = "Ocurrió un error al cargar el listado de compras: " + ex.Message;
+                _logger.LogError(ex, "Error al cargar el listado de compras");
+                TempData["Error"] = "Ocurrió un error al cargar el listado de compras.";
                 return View(new List<Compra>());
             }
         }
@@ -56,13 +104,17 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
         {
             try
             {    
-                // Empleado de prueba
-                compra.IdEmpleado = int.Parse(User.FindFirst("IdEmpleado")?.Value);
-
-                if (compra.Detalles == null || compra.Detalles.Count == 0)
+                // El empleado que registra la compra es siempre el usuario logueado (claim de la cookie),
+                // nunca el valor que llegue en el formulario.
+                if (!int.TryParse(User.FindFirst("IdEmpleado")?.Value, out var idEmpleado) || idEmpleado <= 0)
                 {
-                    ModelState.AddModelError("", "Debe agregar al menos un insumo o producto a la compra.");
+                    TempData["Error"] = "No se pudo identificar al empleado logueado. Volvé a iniciar sesión.";
+                    return RedirectToAction("Index", "Login");
                 }
+                compra.IdEmpleado = idEmpleado;
+                ModelState.Remove(nameof(Compra.IdEmpleado));
+
+                ValidarCompra(compra);
 
                 if (ModelState.IsValid)
                 {   
@@ -82,7 +134,8 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             }
             catch (Exception ex)
             {
-                TempData["Error"] = "Ocurrió un error al procesar la compra: " + ex.Message;
+                _logger.LogError(ex, "Error al registrar la compra del proveedor {IdProveedor}", compra.IdProveedor);
+                TempData["Error"] = "Ocurrió un error inesperado al procesar la compra. Intentá nuevamente.";
             }
 
             ViewBag.Productos = _repositorioProducto.Buscar("");
@@ -112,12 +165,9 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
         public IActionResult Modificar(Compra compra)
         {
             try
-            {            
+            {
 
-                if (compra.Detalles == null || compra.Detalles.Count == 0)
-                {
-                    ModelState.AddModelError("", "Debe agregar al menos un insumo o producto a la compra.");
-                }
+                ValidarCompra(compra);
 
                 if (ModelState.IsValid)
                 {
@@ -136,7 +186,8 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             }
             catch (Exception ex)
             {
-                TempData["Error"] = "Ocurrió un error al modificar la compra: " + ex.Message;
+                _logger.LogError(ex, "Error al modificar la compra {IdCompra}", compra.IdCompra);
+                TempData["Error"] = "Ocurrió un error inesperado al modificar la compra. Intentá nuevamente.";
             }
 
             ViewBag.Productos = _repositorioProducto.Buscar("");
@@ -170,7 +221,8 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             }
             catch (Exception ex)
             {
-                TempData["Error"] = "Error al intentar anular la compra: " + ex.Message;
+                _logger.LogError(ex, "Error al anular la compra {IdCompra}", id);
+                TempData["Error"] = "Ocurrió un error inesperado al anular la compra.";
             }
 
             return RedirectToAction(nameof(Index));

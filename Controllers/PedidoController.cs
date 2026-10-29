@@ -1,10 +1,12 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models;
+using sistema_gastronomico_pascual_leyes_delahoz_clavero.Constantes;
 
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 {
-    [Authorize(Roles = "1,2,3")]
+    [Authorize(Roles = RolesSistema.Todos)]
     public class PedidoController : Controller
     {
         private readonly RepositorioPedido repoPedido;
@@ -12,15 +14,18 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
         private readonly RepositorioMesa repoMesa;
         private readonly RepositorioEmpleado repoEmpleado;
         private readonly RepositorioPlato repoPlato;
+        private readonly ILogger<PedidoController> logger;
 
         public PedidoController(RepositorioPedido repoPedido, RepositorioDetallePedido repoDetalle,
-            RepositorioMesa repoMesa, RepositorioEmpleado repoEmpleado, RepositorioPlato repoPlato)
+            RepositorioMesa repoMesa, RepositorioEmpleado repoEmpleado, RepositorioPlato repoPlato,
+            ILogger<PedidoController> logger)
         {
             this.repoPedido = repoPedido;
             this.repoDetalle = repoDetalle;
             this.repoMesa = repoMesa;
             this.repoEmpleado = repoEmpleado;
             this.repoPlato = repoPlato;
+            this.logger = logger;
         }
 
         public IActionResult Index(int pagina = 1)
@@ -39,7 +44,8 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             }
             catch (Exception ex)
             {
-                TempData["Error"] = "Ocurrió un error al cargar el listado de pedidos: " + ex.Message;
+                logger.LogError(ex, "Error al cargar el listado de pedidos");
+                TempData["Error"] = "Ocurrió un error al cargar el listado de pedidos.";
                 return View(new List<Pedido>());
             }
         }
@@ -71,7 +77,14 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
         public IActionResult Alta(int? idMesa)
         {
             CargarCombos();
-            var pedido = new Pedido();
+            var pedido = new Pedido
+            {
+                // El empleado del pedido es siempre el usuario logueado: no se elige
+                // de un <select>, se toma del claim "IdEmpleado" que quedó en la
+                // cookie al loguearse (ver ClaimsHelper.ConstruirClaims).
+                IdEmpleado = ObtenerIdEmpleadoLogueado()
+            };
+            ViewBag.NombreEmpleadoLogueado = ObtenerNombreEmpleadoLogueado();
 
             if (idMesa.HasValue)
             {
@@ -91,10 +104,23 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Alta(Pedido pedido)
         {
+            // El mozo del pedido es SIEMPRE el usuario logueado: se pisa lo que venga del formulario
+            // (el hidden se puede manipular) y por eso se saca IdEmpleado de la validación del modelo.
+            pedido.IdEmpleado = ObtenerIdEmpleadoLogueado();
+            ModelState.Remove(nameof(Pedido.IdEmpleado));
+
+            // Si el claim no existe o no es numérico, ObtenerIdEmpleadoLogueado devuelve 0:
+            // se corta acá en lugar de dejar que falle la FK en la base.
+            if (pedido.IdEmpleado <= 0)
+            {
+                TempData["Error"] = "No se pudo identificar al empleado logueado. Volvé a iniciar sesión.";
+                return RedirectToAction("Index", "Login");
+            }
+
             if (pedido.Detalles == null || pedido.Detalles.Count == 0)
                 ModelState.AddModelError("", "Debe agregar al menos un plato al pedido.");
-            else if (pedido.Detalles.Any(d => d.Cantidad < 1))
-                ModelState.AddModelError("", "La cantidad de cada plato debe ser mayor a cero.");
+            else if (pedido.Detalles.Any(d => d.Cantidad < 1 || d.Cantidad > 99))
+                ModelState.AddModelError("", "La cantidad de cada plato debe estar entre 1 y 99.");
 
             if (ModelState.IsValid)
             {
@@ -106,17 +132,21 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
                 }
                 catch (InvalidOperationException ex)
                 {
+                    // Errores de negocio lanzados a propósito por el repositorio (stock insuficiente,
+                    // plato inactivo): el mensaje está pensado para el usuario.
                     ModelState.AddModelError("", ex.Message);
                 }
                 catch (Exception ex)
                 {
-                    TempData["Error"] = "Ocurrió un error al registrar el pedido: " + ex.Message;
+                    logger.LogError(ex, "Error al registrar el pedido de la mesa {IdMesa}", pedido.IdMesa);
+                    TempData["Error"] = "Ocurrió un error inesperado al registrar el pedido. Intentá nuevamente.";
                 }
             }
 
             CargarCombos();
+            ViewBag.NombreEmpleadoLogueado = ObtenerNombreEmpleadoLogueado();
             if (pedido.IdMesa > 0)
-                ViewBag.MesaSeleccionada = repoMesa.ObtenerPorId(pedido.IdMesa); // para que, si falla la validación, no se pierda el texto fijo
+                ViewBag.MesaSeleccionada = repoMesa.ObtenerPorId(pedido.IdMesa); // para que, si falla la validación, no se pierda el texto 
             return View(pedido);
         }
 
@@ -140,6 +170,24 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Modificar(Pedido pedido)
         {
+            int? idEmpleadoOriginal = repoPedido.ObtenerIdEmpleado(pedido.IdPedido);
+            if (idEmpleadoOriginal == null)
+                return NotFound();
+
+            // Reasignar el pedido a otro empleado es una acción de administrador.
+            // Para cualquier otro rol se ignora lo que venga en el formulario y se conserva el mozo original.
+            if (!User.IsInRole(RolesSistema.Administrador))
+            {
+                pedido.IdEmpleado = idEmpleadoOriginal.Value;
+                ModelState.Remove(nameof(Pedido.IdEmpleado));
+            }
+            else if (pedido.IdEmpleado != idEmpleadoOriginal.Value)
+            {
+                var empleado = repoEmpleado.ObtenerPorId(pedido.IdEmpleado);
+                if (empleado == null || !empleado.Activo)
+                    ModelState.AddModelError(nameof(Pedido.IdEmpleado), "El empleado seleccionado no existe o está dado de baja.");
+            }
+
             if (!ModelState.IsValid)
             {
                 CargarCombos();
@@ -173,9 +221,9 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             if (!PedidoAbierto(detalle.IdPedido))
                 return RedirectToAction(nameof(Detalle), new { id = detalle.IdPedido });
 
-            if (detalle.Cantidad < 1)
+            if (detalle.Cantidad < 1 || detalle.Cantidad > 99)
             {
-                TempData["Error"] = "La cantidad debe ser mayor a cero.";
+                TempData["Error"] = "La cantidad debe estar entre 1 y 99.";
                 return RedirectToAction(nameof(Detalle), new { id = detalle.IdPedido });
             }
 
@@ -199,9 +247,9 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             if (!PedidoAbierto(idPedido))
                 return RedirectToAction(nameof(Detalle), new { id = idPedido });
 
-            if (cantidad < 1)
+            if (cantidad < 1 || cantidad > 99)
             {
-                TempData["Error"] = "La cantidad debe ser mayor a cero.";
+                TempData["Error"] = "La cantidad debe estar entre 1 y 99.";
                 return RedirectToAction(nameof(Detalle), new { id = idPedido });
             }
 
@@ -254,6 +302,19 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             ViewBag.Mesas = repoMesa.ObtenerLista(1, 100);
             ViewBag.Empleados = repoEmpleado.ObtenerLista(1, 100);
             ViewBag.Platos = repoPlato.ObtenerTodos();
+        }
+
+        // El empleado logueado se coloca solo en el pedido
+        private int ObtenerIdEmpleadoLogueado()
+        {
+            var idEmpleadoClaim = User.FindFirstValue("IdEmpleado");
+            int.TryParse(idEmpleadoClaim, out var idEmpleado);
+            return idEmpleado;
+        }
+
+        private string ObtenerNombreEmpleadoLogueado()
+        {
+            return User.FindFirstValue("NombreCompleto") ?? "";
         }
 
         [HttpPost]

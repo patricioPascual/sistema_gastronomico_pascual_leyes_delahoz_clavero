@@ -1,18 +1,22 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using MySqlConnector;
+using sistema_gastronomico_pascual_leyes_delahoz_clavero.Constantes;
 using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models;
 
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 {
-    [Authorize(Roles = "1")]
+    [Authorize(Roles = RolesSistema.Administrador)]
     public class ProductoController : Controller
     {
         private readonly RepositorioProducto _repositorioProducto;
+        private readonly ILogger<ProductoController> _logger;
 
-        public ProductoController(RepositorioProducto repositorioProducto)
+        public ProductoController(RepositorioProducto repositorioProducto, ILogger<ProductoController> logger)
         {
             _repositorioProducto = repositorioProducto;
+            _logger = logger;
         }
 
         public IActionResult Index(int pagina = 1)
@@ -55,15 +59,13 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Crear(Producto producto)
         {
-            if (!string.IsNullOrWhiteSpace(producto.Nombre))
-            {
-                producto.Nombre = producto.Nombre.Trim();
-            }
-
+            producto.Nombre = producto.Nombre?.Trim();
             producto.Estado = true;
 
+            ValidarNombreDuplicado(producto);
+
             if (!ModelState.IsValid)
-                return View(producto);
+                return View("Alta", producto);
 
             try
             {
@@ -71,10 +73,17 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
                 TempData["Mensaje"] = "Insumo registrado correctamente.";
                 return RedirectToAction(nameof(Index));
             }
-            catch (DbUpdateException)
+            // Red de seguridad: dos altas simultáneas con el mismo nombre que pasaron el chequeo previo.
+            catch (DbUpdateException ex) when (ex.InnerException is MySqlException mysqlEx && mysqlEx.Number == 1062)
             {
-                ModelState.AddModelError("Nombre", "El insumo '" + producto.Nombre + "' ya existe en la base de datos.");
-                return View(producto);
+                ModelState.AddModelError(nameof(Producto.Nombre), $"El insumo '{producto.Nombre}' ya existe.");
+                return View("Alta", producto);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al registrar el producto {Nombre}", producto.Nombre);
+                ModelState.AddModelError("", "Ocurrió un error inesperado al registrar el insumo. Intentá nuevamente.");
+                return View("Alta", producto);
             }
         }
 
@@ -117,30 +126,36 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Modificar(Producto producto)
         {
+            producto.Nombre = producto.Nombre?.Trim();
+
+            ValidarNombreDuplicado(producto);
+
+            if (!ModelState.IsValid)
+            {
+                TempData["Error"] = "Verifique los datos ingresados. Hay campos inválidos.";
+                return View(producto);
+            }
+
             try
             {
-                if (ModelState.IsValid)
-                {
-                    int filas = _repositorioProducto.Modificar(producto);
+                int filas = _repositorioProducto.Modificar(producto);
 
-                    if (filas > 0)
-                    {
-                        TempData["Exito"] = "El producto se modificó correctamente.";
-                        return RedirectToAction(nameof(Index));
-                    }
-                    else
-                    {
-                        TempData["Error"] = "No se pudo modificar el producto (es posible que no haya habido cambios).";
-                    }
-                }
-                else
+                if (filas > 0)
                 {
-                    TempData["Error"] = "Verifique los datos ingresados. Hay campos inválidos.";
+                    TempData["Exito"] = "El producto se modificó correctamente.";
+                    return RedirectToAction(nameof(Index));
                 }
+
+                TempData["Error"] = "No se pudo modificar el producto (es posible que no haya habido cambios).";
+            }
+            catch (DbUpdateException ex) when (ex.InnerException is MySqlException mysqlEx && mysqlEx.Number == 1062)
+            {
+                ModelState.AddModelError(nameof(Producto.Nombre), $"El insumo '{producto.Nombre}' ya existe.");
             }
             catch (Exception ex)
             {
-                TempData["Error"] = "Error en base de datos: " + ex.Message;
+                _logger.LogError(ex, "Error al modificar el producto {IdProducto}", producto.IdProducto);
+                TempData["Error"] = "Ocurrió un error inesperado al modificar el producto. Intentá nuevamente.";
             }
 
             return View(producto);
@@ -164,10 +179,29 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             }
             catch (Exception ex)
             {
-                TempData["Error"] = "Error al intentar eliminar el producto: " + ex.Message;
+                _logger.LogError(ex, "Error al dar de baja el producto {IdProducto}", id);
+                TempData["Error"] = "Ocurrió un error inesperado al dar de baja el producto.";
             }
 
             return RedirectToAction(nameof(Index));
+        }
+
+        // El índice uq_producto_nombre abarca activos e inactivos, así que se busca en todos
+        // y se avisa cuando el duplicado está dado de baja (se puede reactivar desde Modificar).
+        private void ValidarNombreDuplicado(Producto producto)
+        {
+            if (string.IsNullOrWhiteSpace(producto.Nombre))
+                return;
+
+            var existente = _repositorioProducto.ObtenerPorNombre(producto.Nombre, producto.IdProducto);
+            if (existente == null)
+                return;
+
+            string mensaje = existente.Estado
+                ? $"Ya existe un insumo llamado '{existente.Nombre}'."
+                : $"Ya existe un insumo llamado '{existente.Nombre}', pero está dado de baja. Reactivalo desde Modificar en lugar de crear uno nuevo.";
+
+            ModelState.AddModelError(nameof(Producto.Nombre), mensaje);
         }
     }
 }
