@@ -20,6 +20,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
         public Empleado? Empleado { get; set; }
 
         [Display(Name = "Avatar")]
+        [StringLength(255)]
         [Column("avatar")]
         public String? AvatarPath { get; set; }
 
@@ -31,10 +32,12 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
         public Rol? Rol { get; set; }
 
         [Required(ErrorMessage = "Se requiere un nombre")]
+        [RegularExpression(ReglasValidacion.RegexUsername, ErrorMessage = ReglasValidacion.MensajeUsername)]
         [Column("username")]
         public String? Username { get; set; }
 
         [Display(Name = "Contraseña")]
+        [StringLength(255)]
         [Column("password_hash")]
         public String? PasswordHash { get; set; }
 

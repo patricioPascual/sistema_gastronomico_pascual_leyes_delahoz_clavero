@@ -14,13 +14,13 @@
                     </h4>
                 </div>
                 <div class="card-body p-4">
-                    <form asp-action="Crear" method="post">
+                    <form asp-action="Crear" method="post" novalidate>
                         <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
 
                         
                         <div class="mb-3">
                             <label asp-for="Nombre" class="form-label fw-bold">Nombre del Insumo</label>
-                            <input asp-for="Nombre" class="form-control" placeholder="Ej: Harina 000, Carne Picada, Tomate" required />
+                            <input asp-for="Nombre" class="form-control" placeholder="Ej: Harina 000, Carne Picada, Tomate" maxlength="100" required />
                             <span asp-validation-for="Nombre" class="text-danger small"></span>
                         </div>
 
@@ -37,12 +37,11 @@
                                 <label asp-for="Unidad_medida" class="form-label fw-bold">Unidad de Medida</label>
                                 <select asp-for="Unidad_medida" class="form-select" required>
                                     <option value="" selected disabled>Seleccionar...</option>
-                                    <option value="kg">Kilogramos (kg)</option>
-                                    <option value="gr">Gramos (gr)</option>
-                                    <option value="lt">Litros (lt)</option>
-                                    <option value="ml">Mililitros (ml)</option>
-                                    <option value="unidad">Unidades (un)</option>
-                                    <option value="lata">Lata / Envase</option>
+                                    @* La lista sale de UnidadesMedida: es la misma que valida el servidor. *@
+                                    @foreach (var unidad in sistema_gastronomico_pascual_leyes_delahoz_clavero.Models.UnidadesMedida.Todas)
+                                    {
+                                        <option value="@unidad.Key">@unidad.Value</option>
+                                    }
                                 </select>
                                 <span asp-validation-for="Unidad_medida" class="text-danger small"></span>
                             </div>

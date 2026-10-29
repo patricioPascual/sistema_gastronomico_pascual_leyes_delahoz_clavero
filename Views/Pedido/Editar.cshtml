@@ -29,12 +29,24 @@
                     </div>
                     <div class="col-md-6">
                         <label asp-for="IdEmpleado" class="form-label fw-bold">Empleado</label>
-                        <select asp-for="IdEmpleado" class="form-select" required>
-                            @foreach (var e in empleados)
-                            {
-                                <option value="@e.IdEmpleado">@e.Apellido, @e.Nombre</option>
-                            }
-                        </select>
+                        @if (User.IsInRole(sistema_gastronomico_pascual_leyes_delahoz_clavero.Constantes.RolesSistema.Administrador))
+                        {
+                            @* Solo el administrador puede reasignar el pedido; se listan empleados activos
+                               más el actual (por si fue dado de baja después de tomar el pedido). *@
+                            <select asp-for="IdEmpleado" class="form-select" required>
+                                @foreach (var e in empleados.Where(e => e.Activo || e.IdEmpleado == Model.IdEmpleado))
+                                {
+                                    <option value="@e.IdEmpleado">@e.Apellido, @e.Nombre</option>
+                                }
+                            </select>
+                        }
+                        else
+                        {
+                            var actual = empleados.FirstOrDefault(e => e.IdEmpleado == Model.IdEmpleado);
+                            <input type="text" class="form-control" readonly
+                                   value="@(actual != null ? $"{actual.Apellido}, {actual.Nombre}" : "-")" />
+                            <div class="form-text">El mozo del pedido solo lo puede cambiar un administrador.</div>
+                        }
                     </div>
                 </div>
 

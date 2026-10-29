@@ -62,5 +62,15 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
         {
             return _context.Productos.Find(id);
         }
+
+        // Busca otro producto con el mismo nombre (activo o dado de baja), porque el índice
+        // uq_producto_nombre de la base abarca a todos. Devuelve el producto para que el
+        // controlador pueda avisar si el duplicado está dado de baja.
+        public Producto? ObtenerPorNombre(string nombre, int excluirId = 0)
+        {
+            return _context.Productos
+                .AsNoTracking()
+                .FirstOrDefault(p => p.Nombre == nombre && p.IdProducto != excluirId);
+        }
     }
 }

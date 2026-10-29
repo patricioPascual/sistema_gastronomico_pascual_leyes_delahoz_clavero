@@ -11,17 +11,24 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
         public int IdPlato { get; set; }
 
         [Required(ErrorMessage = "El Nombre es Obligatorio")]
+        [StringLength(120, MinimumLength = 2, ErrorMessage = "El nombre debe tener entre 2 y 120 caracteres")]
         [Column("nombre")]
         public string? Nombre { get; set; }
 
+        [Range(0.01, 1000000, ErrorMessage = "El precio de venta debe estar entre 0,01 y 1.000.000")]
         [Column("precio_venta")]
         public decimal PrecioVenta { get; set; }
 
         [Column("activo")]
         public bool Estado { get; set; }
 
+        [Range(1, int.MaxValue, ErrorMessage = "Seleccioná una categoría")]
         [Column("id_categoria")]
         public int IdCategoria { get; set; }
+
+        [StringLength(200)]
+        [Column("imagen")]
+        public string? Imagen { get; set; }
 
         // con esto hacemos el JOIN
         [ForeignKey("IdCategoria")]

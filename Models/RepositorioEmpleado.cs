@@ -66,5 +66,17 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
                 .Take(20)
                 .ToList();
         }
+
+        // Chequeos previos de unicidad (las columnas legajo y dni son UNIQUE en la base).
+        // excluirId permite reutilizarlos al modificar: el propio registro no cuenta como duplicado.
+        public bool ExisteLegajo(string legajo, int excluirId = 0)
+        {
+            return _context.Empleados.Any(e => e.Legajo == legajo && e.IdEmpleado != excluirId);
+        }
+
+        public bool ExisteDni(string dni, int excluirId = 0)
+        {
+            return _context.Empleados.Any(e => e.Dni == dni && e.IdEmpleado != excluirId);
+        }
     }
 }

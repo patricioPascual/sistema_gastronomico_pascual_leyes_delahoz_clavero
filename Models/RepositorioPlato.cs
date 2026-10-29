@@ -99,5 +99,13 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
                 .ToList();
         }
 
+
+        // La tabla plato no tiene UNIQUE en nombre, así que el control es solo de aplicación.
+        // Se compara contra platos activos: un plato dado de baja no bloquea el nombre.
+        // La collation utf8mb4_unicode_ci hace que la comparación ignore mayúsculas y tildes.
+        public bool ExisteNombreActivo(string nombre, int excluirId = 0)
+        {
+            return _context.Platos.Any(p => p.Estado && p.Nombre == nombre && p.IdPlato != excluirId);
+        }
     }
 }

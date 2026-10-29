@@ -120,6 +120,15 @@ public List<Compra> ObtenerLista(int pagNro = 1, int tamPagina = 10)
             }
         }
 
+        // Unicidad del comprobante por proveedor. Replica el índice uk_proveedor_comprobante,
+        // que abarca también las compras anuladas (estado = 0).
+        public bool ExisteComprobante(int idProveedor, string numeroComprobante, int excluirIdCompra = 0)
+        {
+            return _context.Compras.Any(c => c.IdProveedor == idProveedor
+                                          && c.NumeroComprobante == numeroComprobante
+                                          && c.IdCompra != excluirIdCompra);
+        }
+
         public bool Modificar(Compra compraModificada)
 {
     using var transaction = _context.Database.BeginTransaction();

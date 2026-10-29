@@ -159,6 +159,18 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
             return _context.Pedidos.Count();
         }
 
+        // Lectura liviana y sin tracking del mozo actual de un pedido (null si el pedido no existe).
+        // La usa PedidoController.Modificar para conservar el mozo cuando quien edita no es administrador,
+        // sin dejar trackeado el pedido con sus navegaciones antes de llamar a Modificar.
+        public int? ObtenerIdEmpleado(int idPedido)
+        {
+            return _context.Pedidos
+                .AsNoTracking()
+                .Where(p => p.IdPedido == idPedido)
+                .Select(p => (int?)p.IdEmpleado)
+                .FirstOrDefault();
+        }
+
         public Pedido? ObtenerPorId(int idPedido)
         {
             return _context.Pedidos
