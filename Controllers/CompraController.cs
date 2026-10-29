@@ -1,13 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using sistema_gastronomico_pascual_leyes_delahoz_clavero.Constantes;
 using sistema_gastronomico_pascual_leyes_delahoz_clavero.Constantes;
 using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models;
 
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 {
-    [Authorize(Roles = RolesSistema.Administrador)]
     [Authorize(Roles = RolesSistema.Administrador)]
     public class CompraController : Controller
     {
