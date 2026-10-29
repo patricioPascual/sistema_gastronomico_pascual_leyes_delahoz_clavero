@@ -28,10 +28,12 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
         public Producto? Producto { get; set; }
 
         [Required]
+        [Range(0.001, 100000, ErrorMessage = "La cantidad debe estar entre 0,001 y 100.000")]
         [Column("cantidad_ingresada")]
         public decimal CantidadIngresada { get; set; }
 
         [Required]
+        [Range(0.01, 10000000, ErrorMessage = "El precio unitario debe estar entre 0,01 y 10.000.000")]
         [Column("precio_costo_unitario")]
         public decimal PrecioCostoUnitario { get; set; }
 

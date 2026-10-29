@@ -26,6 +26,11 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
         {
             if (User.Identity != null && User.Identity.IsAuthenticated)
             {
+                if (User.IsInRole("2"))
+                {
+                    return RedirectToAction("Index", "SPA");
+                }
+
                 return RedirectToAction("Index", "Home");
             }
 
@@ -62,8 +67,6 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 
             if (resultadoVerificacion == PasswordVerificationResult.SuccessRehashNeeded)
             {
-                // El hash quedó con un algoritmo/costo viejo (ej. si lo migraron desde otra versión).
-                // Lo volvemos a generar con los parámetros actuales y lo guardamos.
                 usuario.PasswordHash = passwordHasher.HashPassword(usuario, vm.Password ?? string.Empty);
                 repoUsuario.Modificar(usuario);
             }
@@ -78,13 +81,17 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
                 principal,
                 new AuthenticationProperties
                 {
-                    IsPersistent = vm.Recordarme,
                     ExpiresUtc = DateTimeOffset.UtcNow.AddHours(8)
                 });
 
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             {
                 return Redirect(returnUrl);
+            }
+
+            if (usuario.IdRol == 2)
+            {
+                return RedirectToAction("Index", "SPA");
             }
 
             return RedirectToAction("Index", "Home");

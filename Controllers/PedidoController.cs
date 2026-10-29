@@ -85,6 +85,14 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
                 IdEmpleado = ObtenerIdEmpleadoLogueado()
             };
             ViewBag.NombreEmpleadoLogueado = ObtenerNombreEmpleadoLogueado();
+            var pedido = new Pedido
+            {
+                // El empleado del pedido es siempre el usuario logueado: no se elige
+                // de un <select>, se toma del claim "IdEmpleado" que quedó en la
+                // cookie al loguearse (ver ClaimsHelper.ConstruirClaims).
+                IdEmpleado = ObtenerIdEmpleadoLogueado()
+            };
+            ViewBag.NombreEmpleadoLogueado = ObtenerNombreEmpleadoLogueado();
 
             if (idMesa.HasValue)
             {
@@ -121,6 +129,8 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
                 ModelState.AddModelError("", "Debe agregar al menos un plato al pedido.");
             else if (pedido.Detalles.Any(d => d.Cantidad < 1 || d.Cantidad > 99))
                 ModelState.AddModelError("", "La cantidad de cada plato debe estar entre 1 y 99.");
+            else if (pedido.Detalles.Any(d => d.Cantidad < 1 || d.Cantidad > 99))
+                ModelState.AddModelError("", "La cantidad de cada plato debe estar entre 1 y 99.");
 
             if (ModelState.IsValid)
             {
@@ -145,7 +155,9 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 
             CargarCombos();
             ViewBag.NombreEmpleadoLogueado = ObtenerNombreEmpleadoLogueado();
+            ViewBag.NombreEmpleadoLogueado = ObtenerNombreEmpleadoLogueado();
             if (pedido.IdMesa > 0)
+                ViewBag.MesaSeleccionada = repoMesa.ObtenerPorId(pedido.IdMesa); // para que, si falla la validación, no se pierda el texto 
                 ViewBag.MesaSeleccionada = repoMesa.ObtenerPorId(pedido.IdMesa); // para que, si falla la validación, no se pierda el texto 
             return View(pedido);
         }
@@ -222,7 +234,9 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
                 return RedirectToAction(nameof(Detalle), new { id = detalle.IdPedido });
 
             if (detalle.Cantidad < 1 || detalle.Cantidad > 99)
+            if (detalle.Cantidad < 1 || detalle.Cantidad > 99)
             {
+                TempData["Error"] = "La cantidad debe estar entre 1 y 99.";
                 TempData["Error"] = "La cantidad debe estar entre 1 y 99.";
                 return RedirectToAction(nameof(Detalle), new { id = detalle.IdPedido });
             }
@@ -248,7 +262,9 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
                 return RedirectToAction(nameof(Detalle), new { id = idPedido });
 
             if (cantidad < 1 || cantidad > 99)
+            if (cantidad < 1 || cantidad > 99)
             {
+                TempData["Error"] = "La cantidad debe estar entre 1 y 99.";
                 TempData["Error"] = "La cantidad debe estar entre 1 y 99.";
                 return RedirectToAction(nameof(Detalle), new { id = idPedido });
             }
@@ -302,6 +318,19 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             ViewBag.Mesas = repoMesa.ObtenerLista(1, 100);
             ViewBag.Empleados = repoEmpleado.ObtenerLista(1, 100);
             ViewBag.Platos = repoPlato.ObtenerTodos();
+        }
+
+        // El empleado logueado se coloca solo en el pedido
+        private int ObtenerIdEmpleadoLogueado()
+        {
+            var idEmpleadoClaim = User.FindFirstValue("IdEmpleado");
+            int.TryParse(idEmpleadoClaim, out var idEmpleado);
+            return idEmpleado;
+        }
+
+        private string ObtenerNombreEmpleadoLogueado()
+        {
+            return User.FindFirstValue("NombreCompleto") ?? "";
         }
 
         // El empleado logueado se coloca solo en el pedido

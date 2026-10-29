@@ -3,10 +3,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models;
 using MySqlConnector;
+using sistema_gastronomico_pascual_leyes_delahoz_clavero.Constantes;
 
 namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 {
-    [Authorize(Roles = "1,2,3")]
+    [Authorize(Roles = RolesSistema.Todos)]
     public class MesaController : Controller
     {
         private readonly IConfiguration config;
@@ -77,6 +78,12 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Crear(Mesa mesa)
         {
+            int tamanoMax = 12;
+            if(mesa.Capacidad > tamanoMax)
+            {
+                TempData["Error"] = "La capacidad no debe ser mayor a 12";
+                return View("Alta", mesa);
+            }
             if (!ModelState.IsValid)
                 return View("Alta", mesa);
 
@@ -90,35 +97,6 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             {
                 ModelState.AddModelError("Numero", "Ya existe una mesa con el número " + mesa.Numero + ".");
                 return View("Alta", mesa);
-            }
-        }
-
-        public IActionResult Editar(int id)
-        {
-            var mesa = repoMesa.ObtenerPorId(id);
-            if (mesa == null)
-                return NotFound();
-
-            return View("Modificar", mesa); // el archivo es Modificar.cshtml, no Editar.cshtml
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult Modificar(Mesa mesa)
-        {
-            if (!ModelState.IsValid)
-                return View("Modificar", mesa);
-
-            try
-            {
-                repoMesa.Modificar(mesa);
-                TempData["Mensaje"] = "Mesa actualizada correctamente.";
-                return RedirectToAction(nameof(Index));
-            }
-            catch (DbUpdateException ex) when (ex.InnerException is MySqlException mysqlEx && mysqlEx.Number == 1062)
-            {
-                ModelState.AddModelError("Numero", "Ya existe una mesa con el número " + mesa.Numero + ".");
-                return View("Modificar", mesa);
             }
         }
 

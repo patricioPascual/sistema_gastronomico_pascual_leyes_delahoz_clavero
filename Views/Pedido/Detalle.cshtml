@@ -16,7 +16,7 @@
             @if (abierto)
             {
                 <form asp-action="CerrarMesa" method="post" class="d-inline"
-                      onsubmit="return confirm('¿Confirmar cobro y cerrar el pedido #@Model.IdPedido por $@Model.Total.ToString("N2")?');">
+                      onsubmit="return confirmarAccion(this, '¿Confirmar cobro y cerrar el pedido #@Model.IdPedido por $@Model.Total.ToString("N2")?');">
                     <input type="hidden" name="idPedido" value="@Model.IdPedido" />
                     <button type="submit" class="btn btn-success me-2">
                         <i class="bi bi-cash-coin"></i> Pagar y Cerrar Pedido
@@ -28,7 +28,7 @@
                 </a>
 
                 <form asp-action="Baja" asp-route-id="@Model.IdPedido" method="post" class="d-inline"
-                      onsubmit="return confirm('¿Cancelar el pedido #@Model.IdPedido?');">
+                      onsubmit="return confirmarAccion(this, '¿Cancelar el pedido #@Model.IdPedido?');">
                     <button type="submit" class="btn btn-outline-danger">
                         <i class="bi bi-x-circle"></i> Cancelar Pedido
                     </button>
@@ -37,7 +37,7 @@
             @if (pagado)
             {
                 <form asp-action="LiberarMesa" method="post" class="d-inline"
-                      onsubmit="return confirm('¿Liberar la mesa @Model.Mesa?.Numero? Quedará disponible para un pedido nuevo.');">
+                      onsubmit="return confirmarAccion(this, '¿Liberar la mesa @Model.Mesa?.Numero? Quedará disponible para un pedido nuevo.');">
                     <input type="hidden" name="idMesa" value="@Model.IdMesa" />
                     <button type="submit" class="btn btn-success me-2">
                         <i class="bi bi-unlock"></i> Liberar mesa
@@ -97,7 +97,7 @@
                                     <form asp-action="ModificarCantidad" method="post" class="d-flex gap-1">
                                         <input type="hidden" name="idDetallePedido" value="@d.IdDetallePedido" />
                                         <input type="hidden" name="idPedido" value="@Model.IdPedido" />
-                                        <input type="number" name="cantidad" value="@d.Cantidad" min="1"
+                                        <input type="number" name="cantidad" value="@d.Cantidad" min="1" max="99"
                                                class="form-control form-control-sm" required />
                                         <button type="submit" class="btn btn-sm btn-outline-primary" title="Guardar cantidad">
                                             <i class="bi bi-check-lg"></i>
@@ -121,7 +121,7 @@
                             {
                                 <td class="text-center">
                                     <form asp-action="BajaDetalle" method="post" class="d-inline"
-                                          onsubmit="return confirm('¿Quitar este plato del pedido?');">
+                                          onsubmit="return confirmarAccion(this, '¿Quitar este plato del pedido?');">
                                         <input type="hidden" name="idDetallePedido" value="@d.IdDetallePedido" />
                                         <input type="hidden" name="idPedido" value="@Model.IdPedido" />
                                         <button type="submit" class="btn btn-sm btn-outline-danger" title="Quitar">
@@ -169,7 +169,7 @@
                     </div>
                     <div class="col-md-3">
                         <label class="form-label fw-bold">Cantidad</label>
-                        <input type="number" name="Cantidad" value="1" min="1" class="form-control" required />
+                        <input type="number" name="Cantidad" value="1" min="1" max="99" class="form-control" required />
                     </div>
                     <div class="col-md-3">
                         <button type="submit" class="btn btn-success w-100">
@@ -186,6 +186,18 @@
     </div>
 </div>
 
+<div class="modal fade" id="modalConfirmar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body py-4" id="modalConfirmarMensaje"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" id="modalConfirmarBoton" class="btn btn-primary">Confirmar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     @if (abierto)
     {
@@ -195,4 +207,24 @@
         <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
         <script src="~/js/buscarPlato.js" asp-append-version="true"></script>
     }
+
+    <script>
+        // Reemplaza confirm() nativo
+        var formAConfirmar = null;
+        var modalConfirmar = new bootstrap.Modal(document.getElementById('modalConfirmar'));
+
+        function confirmarAccion(form, mensaje) {
+            formAConfirmar = form;
+            document.getElementById('modalConfirmarMensaje').textContent = mensaje;
+            modalConfirmar.show();
+            return false;
+        }
+
+        document.getElementById('modalConfirmarBoton').addEventListener('click', function () {
+            modalConfirmar.hide();
+            if (formAConfirmar) {
+                formAConfirmar.submit();
+            }
+        });
+    </script>
 }

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using sistema_gastronomico_pascual_leyes_delahoz_clavero.Constantes;
 using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models;
@@ -29,6 +30,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             ViewBag.TotalPaginas = (int)Math.Ceiling((double)totalRegistros / tamPagina);
             return View(proveedores);
         }
+
 
         public IActionResult Alta()
         {

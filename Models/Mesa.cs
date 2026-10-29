@@ -12,11 +12,15 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
         public int IdMesa { get; set; }
 
         [Required(ErrorMessage = "El número de mesa es obligatorio")]
+        [Range(1, 999, ErrorMessage = "El número de mesa debe estar entre 1 y 999")]
         [Column("numero")]
         public int Numero { get; set; }
 
+        [Required(ErrorMessage = "La capacidad es obligatoria y debe ser al menos 1")]
+        [Range(1, 12, ErrorMessage = "La capacidad debe ser como maximo 12")]
+        [RegularExpression(@"^[1-9]\d*$", ErrorMessage = "La capacidad debe ser un número entero positivo.")]
         [Column("capacidad")]
-        public int Capacidad { get; set; }
+        public int? Capacidad { get; set; }
 
         // Ya NO es "legado sin uso": ahora significa "tiene un pedido pagado
         // pendiente de liberar" (true) o "sin pendientes" (false). Una mesa
@@ -26,6 +30,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
         public bool Estado { get; set; }
 
         [Required(ErrorMessage = "El tipo es obligatorio")]
+        [RegularExpression("^(Mesa|Barra)$", ErrorMessage = "El tipo debe ser Mesa o Barra")]
         [Column("tipo")]
         public string Tipo { get; set; } = "Mesa";
 

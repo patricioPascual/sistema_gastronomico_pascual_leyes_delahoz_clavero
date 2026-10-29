@@ -63,9 +63,9 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
         public IEnumerable<Usuario> ObtenerLista(int pagNro = 1, int tamPagina = 10)
         {
             return _context.Usuarios
-                .AsNoTracking() 
-                .Include(u => u.Empleado) 
-                .Include(u => u.Rol)      
+                .AsNoTracking()
+                .Include(u => u.Empleado)
+                .Include(u => u.Rol)
                 .OrderBy(u => u.IdUsuario)
                 .Skip((pagNro - 1) * tamPagina)
                 .Take(tamPagina)
@@ -77,14 +77,14 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
         }
 
         public bool Reactivar(int idUsuario)
-{
-    var usuario = _context.Usuarios.FirstOrDefault(u => u.IdUsuario == idUsuario);
-    if (usuario == null) return false;
+        {
+            var usuario = _context.Usuarios.FirstOrDefault(u => u.IdUsuario == idUsuario);
+            if (usuario == null) return false;
 
-    usuario.Estado = true; 
-    _context.SaveChanges();
-    return true;
-}
+            usuario.Estado = true;
+            _context.SaveChanges();
+            return true;
+        }
 
         // Chequeo previo de unicidad (username es UNIQUE en la base, incluye usuarios dados de baja).
         public bool ExisteUsername(string username, int excluirIdUsuario = 0)

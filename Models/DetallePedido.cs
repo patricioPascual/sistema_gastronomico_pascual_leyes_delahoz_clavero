@@ -11,6 +11,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
         [Column("id_detalle_pedido")]
         public int IdDetallePedido { get; set; }
 
+        [Range(1, 99, ErrorMessage = "La cantidad debe estar entre 1 y 99")]
         [Column("cantidad")]
         public int Cantidad { get; set; }
 
