@@ -1,6 +1,7 @@
 @model IEnumerable<sistema_gastronomico_pascual_leyes_delahoz_clavero.Models.Proveedor>
 
 @{
+    bool inactivos = ViewBag.Inactivos ?? false;
     ViewData["Title"] = "Gestión de Proveedores";
 }
 
@@ -8,10 +9,24 @@
     
     
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-truck me-2"></i>Listado de Proveedores</h2>
-        <a asp-action="Alta" class="btn btn-primary shadow-sm">
-            <i class="bi bi-plus-lg me-1"></i> Agregar Proveedor
-        </a>
+        <h2><i class="bi bi-truck me-2"></i>@(inactivos ? "Proveedores Inactivos" : "Listado de Proveedores")</h2>
+        <div>
+            @if (inactivos)
+            {
+                <a asp-action="Index" class="btn btn-outline-secondary shadow-sm me-2">
+                    <i class="bi bi-arrow-left me-1"></i> Ver activos
+                </a>
+            }
+            else
+            {
+                <a asp-action="Index" asp-route-inactivos="true" class="btn btn-outline-secondary shadow-sm me-2">
+                    <i class="bi bi-archive me-1"></i> Ver inactivos
+                </a>
+            }
+            <a asp-action="Alta" class="btn btn-primary shadow-sm">
+                <i class="bi bi-plus-lg me-1"></i> Agregar Proveedor
+            </a>
+        </div>
     </div>
 
     <div class="card shadow-sm border-0 rounded-3">
@@ -40,14 +55,25 @@
                                     <td>@(string.IsNullOrEmpty(item.Telefono) ? "-" : item.Telefono)</td>
                                     <td>@(string.IsNullOrEmpty(item.Direccion) ? "-" : item.Direccion)</td>
                                     <td class="text-center">
-                                        <a asp-action="Editar" asp-route-id="@item.IdProveedor"
-                                           class="btn btn-sm btn-outline-primary me-1" title="Editar">
-                                            <i class="bi bi-pencil"></i>
-                                        </a>
-                                        <button type="button" class="btn btn-sm btn-outline-danger" title="Eliminar"
-                                                onclick="abrirModalEliminar(@item.IdProveedor, '@item.Nombre', '@Url.Action("Baja", "Proveedor")')">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
+                                        @if (inactivos)
+                                        {
+                                            <form asp-action="Reactivar" asp-route-id="@item.IdProveedor" method="post" class="d-inline">
+                                                <button type="submit" class="btn btn-sm btn-outline-success" title="Reactivar proveedor">
+                                                    <i class="bi bi-arrow-counterclockwise"></i> Reactivar
+                                                </button>
+                                            </form>
+                                        }
+                                        else
+                                        {
+                                            <a asp-action="Editar" asp-route-id="@item.IdProveedor"
+                                               class="btn btn-sm btn-outline-primary me-1" title="Editar">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" title="Eliminar"
+                                                    onclick="abrirModalEliminar(@item.IdProveedor, '@item.Nombre', '@Url.Action("Baja", "Proveedor")')">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        }
                                     </td>
                                 </tr>
                             }
@@ -56,7 +82,7 @@
                         {
                             <tr>
                                 <td colspan="7" class="text-center text-muted py-4">
-                                    <em>No hay proveedores registrados en el sistema.</em>
+                                    <em>@(inactivos ? "No hay proveedores inactivos." : "No hay proveedores registrados en el sistema.")</em>
                                 </td>
                             </tr>
                         }
@@ -76,7 +102,7 @@
                 
             <!-- Botón Anterior -->
             <li class="page-item @(paginaActual <= 1 ? "disabled" : "")">
-                <a class="page-link" asp-action="Index" asp-route-pagina="@(paginaActual - 1)">
+                <a class="page-link" asp-action="Index" asp-route-inactivos="@inactivos" asp-route-pagina="@(paginaActual - 1)">
                     <i class="bi bi-chevron-left"></i> Anterior
                 </a>
             </li>
@@ -85,13 +111,13 @@
             @for (int i = 1; i <= totalPaginas; i++)
             {
                 <li class="page-item @(i == paginaActual ? "active" : "")">
-                    <a class="page-link" asp-action="Index" asp-route-pagina="@i">@i</a>
+                    <a class="page-link" asp-action="Index" asp-route-inactivos="@inactivos" asp-route-pagina="@i">@i</a>
                 </li>
             }
 
             <!-- Botón Siguiente -->
             <li class="page-item @(paginaActual >= totalPaginas ? "disabled" : "")">
-                <a class="page-link" asp-action="Index" asp-route-pagina="@(paginaActual + 1)">
+                <a class="page-link" asp-action="Index" asp-route-inactivos="@inactivos" asp-route-pagina="@(paginaActual + 1)">
                     Siguiente <i class="bi bi-chevron-right"></i>
                 </a>
             </li>

@@ -43,20 +43,37 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
         }
 
 
-        public List<Proveedor> ObtenerLista(int pagNro, int tamPagina)
+        // activos = true lista los activos (por defecto); false lista los dados de baja
+        public List<Proveedor> ObtenerLista(int pagNro, int tamPagina, bool activos = true)
         {
             int offset = (pagNro - 1) * tamPagina;
             return _context.Proveedores
-                .Where(p => p.Estado)
+                .Where(p => p.Estado == activos)
                 .OrderBy(p => p.Nombre)
                 .Skip(offset)
                 .Take(tamPagina)
                 .ToList();
         }
 
-        public int ObtenerCantidad()
+        public int ObtenerCantidad(bool activos = true)
         {
-            return _context.Proveedores.Count(p => p.Estado);
+            return _context.Proveedores.Count(p => p.Estado == activos);
+        }
+
+        public Proveedor? ObtenerInactivoPorId(int idProveedor)
+        {
+            return _context.Proveedores
+                .FirstOrDefault(p => p.IdProveedor == idProveedor && !p.Estado);
+        }
+
+        public bool Reactivar(int idProveedor)
+        {
+            var proveedor = ObtenerInactivoPorId(idProveedor);
+            if (proveedor == null)
+                return false;
+
+            proveedor.Estado = true;
+            return _context.SaveChanges() > 0;
         }
 
 
@@ -73,6 +90,8 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
                 .OrderBy(p => p.Nombre)
                 .ToList();
         }
+
+        // Busqueda para el Select2 AJAX: solo activos maximo 20 resultados.
         public List<Proveedor> Buscar(string q)
         {
             return _context.Proveedores

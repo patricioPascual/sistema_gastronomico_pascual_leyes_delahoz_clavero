@@ -1,13 +1,26 @@
 @model IEnumerable<sistema_gastronomico_pascual_leyes_delahoz_clavero.Models.Producto>
 
 @{
+    bool inactivos = ViewBag.Inactivos ?? false;
     ViewData["Title"] = "Gestión de Productos";
 }
 
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-box-seam"></i> Listado de Insumos / Productos</h2>
+        <h2><i class="bi bi-box-seam"></i> @(inactivos ? "Productos Inactivos" : "Listado de Insumos / Productos")</h2>
         <div>
+            @if (inactivos)
+            {
+                <a asp-action="Index" class="btn btn-outline-secondary shadow-sm me-2">
+                    <i class="bi bi-arrow-left me-1"></i> Ver activos
+                </a>
+            }
+            else
+            {
+                <a asp-action="Index" asp-route-inactivos="true" class="btn btn-outline-secondary shadow-sm me-2">
+                    <i class="bi bi-archive me-1"></i> Ver inactivos
+                </a>
+            }
             <a asp-action="Alta" class="btn btn-success me-2">
                 <i class="bi bi-plus-lg"></i> Agregar Nuevo Producto
             </a>
@@ -57,10 +70,13 @@
                                     <i class="bi bi-pencil"></i>
                                 </a>
                                 
-                                <button type="button" class="btn btn-sm btn-outline-danger" title="Eliminar"
-                                        onclick="abrirModalEliminar(@item.IdProducto, '@item.Nombre', '@Url.Action("Eliminar", "Producto")')">
-                                    <i class="bi bi-trash"></i>
-                                </button>
+                                @if (!inactivos)
+                                {
+                                    <button type="button" class="btn btn-sm btn-outline-danger" title="Eliminar"
+                                            onclick="abrirModalEliminar(@item.IdProducto, '@item.Nombre', '@Url.Action("Eliminar", "Producto")')">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                }
                             </td>
                         </tr>
                     }
@@ -78,36 +94,36 @@
     </div>
 </div>
 @if (ViewBag.TotalPaginas > 1)
-    {
-        int paginaActual = ViewBag.PaginaActual ?? 1;
-        int totalPaginas = ViewBag.TotalPaginas ?? 1;
+{
+    int paginaActual = ViewBag.PaginaActual ?? 1;
+    int totalPaginas = ViewBag.TotalPaginas ?? 1;
 
-        <nav aria-label="Navegación de páginas" class="mt-4">
-            <ul class="pagination justify-content-center">
+    <nav aria-label="Navegación de páginas" class="mt-4">
+        <ul class="pagination justify-content-center">
                 
                
-                <li class="page-item @(paginaActual <= 1 ? "disabled" : "")">
-                    <a class="page-link" asp-action="Index" asp-route-pagina="@(paginaActual - 1)">
-                        <i class="bi bi-chevron-left"></i> Anterior
-                    </a>
-                </li>
+            <li class="page-item @(paginaActual <= 1 ? "disabled" : "")">
+                <a class="page-link" asp-action="Index" asp-route-inactivos="@inactivos" asp-route-pagina="@(paginaActual - 1)">
+                    <i class="bi bi-chevron-left"></i> Anterior
+                </a>
+            </li>
 
-                @for (int i = 1; i <= totalPaginas; i++)
-                {
-                    <li class="page-item @(i == paginaActual ? "active" : "")">
-                        <a class="page-link" asp-action="Index" asp-route-pagina="@i">@i</a>
-                    </li>
-                }
+            @for (int i = 1; i <= totalPaginas; i++)
+            {
+                <li class="page-item @(i == paginaActual ? "active" : "")">
+                    <a class="page-link" asp-action="Index" asp-route-inactivos="@inactivos" asp-route-pagina="@i">@i</a>
+                </li>
+            }
 
                 
-                <li class="page-item @(paginaActual >= totalPaginas ? "disabled" : "")">
-                    <a class="page-link" asp-action="Index" asp-route-pagina="@(paginaActual + 1)">
-                        Siguiente <i class="bi bi-chevron-right"></i>
-                    </a>
-                </li>
+            <li class="page-item @(paginaActual >= totalPaginas ? "disabled" : "")">
+                <a class="page-link" asp-action="Index" asp-route-inactivos="@inactivos" asp-route-pagina="@(paginaActual + 1)">
+                    Siguiente <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
 
-            </ul>
-        </nav>
-    }
+        </ul>
+    </nav>
+}
 
 <partial name="_ModalEliminar" />

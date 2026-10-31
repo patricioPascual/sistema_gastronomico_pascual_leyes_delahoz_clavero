@@ -55,10 +55,18 @@
                                 <i class="bi bi-pencil"></i>
                             </a>
 
-                            <button class="btn btn-outline-danger btn-sm" :disabled="!plato.estado"
-                                @@click="confirmarBaja(plato)">
+                            <button v-if="plato.estado" class="btn btn-outline-danger btn-sm"
+                                @@click="confirmarBaja(plato)" title="Dar de baja">
                                 <i class="bi bi-trash"></i>
                             </button>
+
+                            <form v-else action="/Plato/Reactivar" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" :value="plato.idPlato" />
+                                <button type="submit" class="btn btn-outline-success btn-sm" title="Reactivar plato">
+                                    <i class="bi bi-arrow-counterclockwise"></i>
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </div>

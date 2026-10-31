@@ -29,6 +29,17 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
             return 0;
         }
 
+        public int Reactivar(int id)
+        {
+            var plato = _context.Platos.Find(id);
+            if (plato != null)
+            {
+                plato.Estado = true;
+                return _context.SaveChanges();
+            }
+            return 0;
+        }
+
         public int Modificar(Plato p)
         {
             var platoExistente = _context.Platos.Find(p.IdPlato);

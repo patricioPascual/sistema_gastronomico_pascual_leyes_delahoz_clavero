@@ -233,6 +233,42 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
         }
 
         [Authorize(Roles = RolesSistema.Administrador)]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Reactivar(int id)
+        {
+            try
+            {
+                var plato = _repositorioPlato.ObtenerPorId(id);
+
+                if (plato == null)
+                {
+                    TempData["Error"] = "No se pudo encontrar el plato.";
+                }
+                else if (plato.Estado)
+                {
+                    TempData["Error"] = "El plato ya se encuentra activo.";
+                }
+                else if (!string.IsNullOrEmpty(plato.Nombre) && _repositorioPlato.ExisteNombreActivo(plato.Nombre, id))
+                {
+                    TempData["Error"] = $"No se puede reactivar: ya existe un plato activo llamado '{plato.Nombre}'. Cambiale el nombre desde Editar y volve a intentar.";
+                }
+                else
+                {
+                    _repositorioPlato.Reactivar(id);
+                    TempData["Exito"] = "El plato se reactivo correctamente.";
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al reactivar el plato {IdPlato}", id);
+                TempData["Error"] = "Ocurrio un error inesperado al reactivar el plato.";
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        [Authorize(Roles = RolesSistema.Administrador)]
         [HttpGet]
         public IActionResult Editar(int id)
         {

@@ -17,14 +17,16 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             this.logger = logger;
         }
 
-        public IActionResult Index(int pagina = 1)
+        // inactivos = true muestra los proveedores dados de baja (para poder reactivarlos)
+        public IActionResult Index(bool inactivos = false, int pagina = 1)
         {
             int tamPagina = 10;
             if (pagina < 1) pagina = 1;
 
-            int totalRegistros = repoProveedor.ObtenerCantidad();
-            var proveedores = repoProveedor.ObtenerLista(pagina, tamPagina);
+            int totalRegistros = repoProveedor.ObtenerCantidad(!inactivos);
+            var proveedores = repoProveedor.ObtenerLista(pagina, tamPagina, !inactivos);
 
+            ViewBag.Inactivos = inactivos;
             ViewBag.PaginaActual = pagina;
             ViewBag.TotalPaginas = (int)Math.Ceiling((double)totalRegistros / tamPagina);
             return View(proveedores);
@@ -159,6 +161,40 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             {
                 logger.LogError(ex, "Error al dar de baja el proveedor {IdProveedor}", id);
                 TempData["Error"] = "Ocurrió un error inesperado al dar de baja el proveedor.";
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Reactivar(int id)
+        {
+            try
+            {
+                var proveedor = repoProveedor.ObtenerInactivoPorId(id);
+
+                if (proveedor == null)
+                {
+                    TempData["Error"] = "El proveedor no existe o ya se encuentra activo.";
+                }
+                else if (!string.IsNullOrEmpty(proveedor.Cuit) && repoProveedor.ExisteCuitActivo(proveedor.Cuit, id))
+                {
+                    TempData["Error"] = $"No se puede reactivar: ya existe un proveedor activo con el CUIT {proveedor.Cuit}.";
+                }
+                else if (repoProveedor.Reactivar(id))
+                {
+                    TempData["Mensaje"] = "El proveedor se reactivó correctamente.";
+                }
+                else
+                {
+                    TempData["Error"] = "No se pudo reactivar el proveedor.";
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error al reactivar el proveedor {IdProveedor}", id);
+                TempData["Error"] = "Ocurrió un error inesperado al reactivar el proveedor.";
             }
 
             return RedirectToAction(nameof(Index));
