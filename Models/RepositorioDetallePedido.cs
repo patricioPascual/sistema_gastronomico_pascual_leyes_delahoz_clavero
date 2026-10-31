@@ -20,6 +20,8 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
     using var transaction = _context.Database.BeginTransaction();
     try
     {
+        ExigirPedidoAbierto(detalle.IdPedido);
+
         var plato = _context.Platos.FirstOrDefault(p => p.IdPlato == detalle.IdPlato && p.Estado);
         if (plato == null)
         {
@@ -65,12 +67,18 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
             var detalle = _context.DetallePedidos.Find(idDetallePedido);
             if (detalle == null) return false;
 
+            // Un plato despachado ya se consumio, no se puede quitar ni devolver su stock
+            if (detalle.estado == DetallePedido.Estado.Despachado)
+                throw new InvalidOperationException("No se puede quitar un plato que ya fue despachado o consumido.");
+
+            ExigirPedidoAbierto(detalle.IdPedido);
+
             using var transaction = _context.Database.BeginTransaction();
             try
             {
                 int idPedido = detalle.IdPedido;
 
-                // 1. Devolver la cantidad consumida al stock
+                // 1. Devolver la cantidad (todavia sin consumir) al stock
                 RestituirStock(detalle.IdPlato, detalle.Cantidad);
 
                 // 2. Remover el detalle
@@ -95,8 +103,13 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
         {
             if (nuevaCantidad <= 0) return Baja(idDetallePedido);
 
-            var detalle = _context.DetallePedidos.Find(idDetallePedido);
+            var detalle = _context.DetallePedidos.Include(d => d.Plato).FirstOrDefault(d => d.IdDetallePedido == idDetallePedido);
             if (detalle == null) return false;
+
+            if (detalle.estado == DetallePedido.Estado.Despachado)
+                throw new InvalidOperationException("No se puede modificar la cantidad de un plato que ya fue despachado.");
+
+            ExigirPedidoAbierto(detalle.IdPedido);
 
             using var transaction = _context.Database.BeginTransaction();
             try
@@ -107,6 +120,16 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
                 // Si la diferencia es negativa, se quitaron unidades (restituye stock).
                 if (diferencia > 0)
                 {
+                    var infoStock = ObtenerStockDisponiblePlato(detalle.IdPlato);
+                    if (diferencia > infoStock.CantidadDisponible)
+                    {
+                        string mensajeInsumo = !string.IsNullOrEmpty(infoStock.InsumoFaltante)
+                            ? $" (Falta: {infoStock.InsumoFaltante})"
+                            : "";
+                        throw new InvalidOperationException(
+                            $"No hay stock suficiente de '{detalle.Plato?.Nombre}'{mensajeInsumo}. Se pueden agregar {infoStock.CantidadDisponible} porciones más.");
+                    }
+
                     DescontarStock(detalle.IdPlato, diferencia);
                 }
                 else if (diferencia < 0)
@@ -133,8 +156,12 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
       
         public bool CambiarEstadoDetalle(int idDetallePedido, DetallePedido.Estado nuevoEstado)
         {
-            var detalle = _context.DetallePedidos.Find(idDetallePedido);
+            var detalle = _context.DetallePedidos
+                .Include(d => d.Pedido)
+                .FirstOrDefault(d => d.IdDetallePedido == idDetallePedido);
             if (detalle == null) return false;
+
+            if (detalle.Pedido != null && detalle.Pedido.estado == Pedido.Estado.Cancelado) return false;
 
             detalle.estado = nuevoEstado;
             _context.DetallePedidos.Update(detalle);
@@ -149,31 +176,29 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
                 .FirstOrDefault(d => d.IdDetallePedido == idDetallePedido);
         }
 
-
         public void DescontarStock(int idPlato, int cantidadPlatos)
-{
-
-    var receta = _context.DetalleRecetas
-        .Include(dr => dr.Producto)
-        .Where(dr => dr.IdPlato == idPlato)
-        .ToList();
-
-    foreach (var ingrediente in receta)
-    {
-        if (ingrediente.Producto != null)
         {
-            decimal insumoTotalUsado = ingrediente.CantidadRequerida * cantidadPlatos;
-            ingrediente.Producto.Cantidad_stock -= insumoTotalUsado;
+            var receta = _context.DetalleRecetas
+                .Include(dr => dr.Producto)
+                .Where(dr => dr.IdPlato == idPlato)
+                .ToList();
 
-            if (ingrediente.Producto.Cantidad_stock < 0) 
+            foreach (var ingrediente in receta)
             {
-                ingrediente.Producto.Cantidad_stock = 0;
-            }
+                if (ingrediente.Producto == null) continue;
 
-            _context.Productos.Update(ingrediente.Producto);
+                decimal insumoTotalUsado = ingrediente.CantidadRequerida * cantidadPlatos;
+
+                if (ingrediente.Producto.Cantidad_stock < insumoTotalUsado)
+                {
+                    throw new InvalidOperationException(
+                        $"Stock insuficiente del insumo '{ingrediente.Producto.Nombre}'.");
+                }
+
+                ingrediente.Producto.Cantidad_stock -= insumoTotalUsado;
+                _context.Productos.Update(ingrediente.Producto);
+            }
         }
-    }
-}
 
        public void RestituirStock(int idPlato, int cantidadPlatos)
 {
@@ -193,6 +218,18 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
         }
     }
 }
+
+        // Solo se puede tocar el detalle de un pedido que sigue abierto.
+        private void ExigirPedidoAbierto(int idPedido)
+        {
+            var estado = _context.Pedidos
+                .Where(p => p.IdPedido == idPedido)
+                .Select(p => (Pedido.Estado?)p.estado)
+                .FirstOrDefault();
+
+            if (estado != Pedido.Estado.Abierto)
+                throw new InvalidOperationException("El pedido no existe o ya no está abierto.");
+        }
 
         private void RecalcularTotalPedido(int idPedido)
         {

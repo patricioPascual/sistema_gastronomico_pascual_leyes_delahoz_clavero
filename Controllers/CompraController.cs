@@ -94,7 +94,6 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
         public IActionResult Alta()
         {
             ViewBag.Productos = _repositorioProducto.Buscar(""); 
-            ViewBag.Proveedores = _repositorioProveedor.ObtenerTodos();
             return View();
         }
 
@@ -139,7 +138,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             }
 
             ViewBag.Productos = _repositorioProducto.Buscar("");
-            ViewBag.Proveedores = _repositorioProveedor.ObtenerTodos();
+            ViewBag.ProveedorSeleccionado = _repositorioProveedor.ObtenerPorId(compra.IdProveedor);
             return View(compra);
         }
 
@@ -155,7 +154,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             }
 
             ViewBag.Productos = _repositorioProducto.Buscar("");
-            ViewBag.Proveedores = _repositorioProveedor.ObtenerTodos();
+            ViewBag.ProveedorSeleccionado = _repositorioProveedor.ObtenerPorId(compra.IdProveedor);
 
             return View(compra);
         }
@@ -191,7 +190,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             }
 
             ViewBag.Productos = _repositorioProducto.Buscar("");
-            ViewBag.Proveedores = _repositorioProveedor.ObtenerTodos();
+            ViewBag.ProveedorSeleccionado = _repositorioProveedor.ObtenerPorId(compra.IdProveedor);
             return View(compra);
         }
 

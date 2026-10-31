@@ -383,14 +383,38 @@
                         },
 
                         // CANCELAR pedido completo (Baja del ABM de Pedido).
+                        // Si ya hay platos despachados (consumidos) se le pregunta al mozo si quiere
+                        // cobrarlos: "No" vuelve atrás y "Sí" cobra lo consumido y cancela el resto.
                         cancelarPedido(idPedido) {
+                            const consumidos = this.pedidoActual
+                                ? this.pedidoActual.detalles.filter(d => d.despachado)
+                                : [];
+
+                            if (consumidos.length > 0) {
+                                const total = consumidos.reduce((s, d) => s + Number(d.subtotal), 0);
+                                this.pedirConfirmacion(
+                                    `Ya se consumieron ${consumidos.length} plato(s) por $ ${total.toFixed(2)}. ` +
+                                    '¿Cobrar lo consumido y cancelar el resto del pedido?',
+                                    () => this.ejecutarCancelarPedido(idPedido, true));
+                                return;
+                            }
+
                             this.pedirConfirmacion('¿Cancelar este pedido? Esta acción no se puede deshacer.',
                                 () => this.ejecutarCancelarPedido(idPedido));
                         },
-                        async ejecutarCancelarPedido(idPedido) {
+                        async ejecutarCancelarPedido(idPedido, cobrarConsumido = false) {
                             this.mensajeError = '';
                             try {
-                                const r = await this.api(`/api/pedidos/${idPedido}`, { method: 'DELETE' });
+                                const url = `/api/pedidos/${idPedido}` + (cobrarConsumido ? '?cobrarConsumido=true' : '');
+                                const r = await this.api(url, { method: 'DELETE' });
+
+                                // Respaldo: si la pantalla estaba desactualizada y el servidor detecta
+                                // platos consumidos, pide la misma confirmación.
+                                if (r.status === 409 && r.data && r.data.requiereConfirmacion) {
+                                    this.pedirConfirmacion(r.data.mensaje,
+                                        () => this.ejecutarCancelarPedido(idPedido, true));
+                                    return;
+                                }
 
                                 if (r.ok) {
                                     if (this.modalInstance) this.modalInstance.hide();

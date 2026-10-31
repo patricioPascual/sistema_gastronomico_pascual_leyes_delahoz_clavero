@@ -9,7 +9,8 @@ function inicializarSelect2Ajax($elemento) {
 
     $elemento.select2({
         theme:'bootstrap-5',
-        placeholder: 'Buscar producto...',
+        placeholder: $elemento.data('placeholder') || 'Buscar producto...',
+        minimumInputLength: 1,
         allowClear: true,
         width: '100%',
         ajax: {

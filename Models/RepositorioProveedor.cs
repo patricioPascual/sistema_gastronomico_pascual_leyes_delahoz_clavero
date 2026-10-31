@@ -73,6 +73,14 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
                 .OrderBy(p => p.Nombre)
                 .ToList();
         }
+        public List<Proveedor> Buscar(string q)
+        {
+            return _context.Proveedores
+                .Where(p => p.Estado && p.Nombre != null && p.Nombre.Contains(q))
+                .OrderBy(p => p.Nombre)
+                .Take(20)
+                .ToList();
+        }
 
         // CUIT repetido entre proveedores activos (la columna no tiene UNIQUE en la base).
         public bool ExisteCuitActivo(string cuit, int excluirId = 0)

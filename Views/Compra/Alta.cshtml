@@ -3,7 +3,7 @@
 @{
     ViewData["Title"] = "Registrar Compra";
   var productos = ViewBag.Productos as List<sistema_gastronomico_pascual_leyes_delahoz_clavero.Models.Producto> ?? new List<sistema_gastronomico_pascual_leyes_delahoz_clavero.Models.Producto>();
-    var proveedores = ViewBag.Proveedores as List<sistema_gastronomico_pascual_leyes_delahoz_clavero.Models.Proveedor> ?? new List<sistema_gastronomico_pascual_leyes_delahoz_clavero.Models.Proveedor>(); 
+    var proveedorSeleccionado = ViewBag.ProveedorSeleccionado as sistema_gastronomico_pascual_leyes_delahoz_clavero.Models.Proveedor;
 }
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" />
@@ -29,11 +29,13 @@
                 <div class="row g-3 mb-4">
                     <div class="col-md-4">
                         <label asp-for="Proveedor" class="form-label fw-bold">Proveedor</label>
-                       <select asp-for="IdProveedor" class="form-select " required>
-                            <option value="" disabled selected>-- Seleccione un Proveedor --</option>
-                            @foreach (var p in proveedores)
+                       <select asp-for="IdProveedor" class="form-select select2-proveedor"
+                                data-url="@Url.Action("Buscar", "Proveedor")"
+                                data-placeholder="Buscar proveedor..." required>
+                            <option value=""></option>
+                            @if (proveedorSeleccionado != null)
                             {
-                                <option value="@p.IdProveedor">@p.Nombre</option>
+                                <option value="@proveedorSeleccionado.IdProveedor" selected>@proveedorSeleccionado.Nombre</option>
                             }
                         </select>
                     </div>
@@ -183,5 +185,8 @@
         });
 
         app.mount('#appCompra');
+
+        // Proveedor: búsqueda asíncrona, sin cargar todos los proveedores en el select
+        inicializarSelect2Ajax($('.select2-proveedor'));
     </script>
 }

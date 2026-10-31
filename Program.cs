@@ -1,5 +1,4 @@
 using System.Text;
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -14,7 +13,7 @@ builder.Services.AddControllersWithViews();
 
 var connectionString = builder.Configuration.GetConnectionString("MySql");
 
-// Registramos el GastronomiaContext usando Pomelo para MySQL
+// GastronomiaContext con Pomelo para MySQL
 builder.Services.AddDbContext<GastronomiaContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
@@ -35,13 +34,13 @@ builder.Services.AddScoped<RepositorioInforme>();
 // Hasheo de contraseñas con el PasswordHasher
 builder.Services.AddScoped<IPasswordHasher<Usuario>, PasswordHasher<Usuario>>();
 
-// Preparado para cuando el mozo consuma la API/SPA
+// Generación de tokens JWT para la API del mozo
 builder.Services.AddScoped<ServicioJwt>();
 
-// Configuramos la Autenticación Hibrida (Cookies para el sistema web, JWT para la API del Mozo)
+// Autenticación híbrida: cookies para el sistema web, JWT para la API del mozo
 builder.Services.AddAuthentication(options =>
 {
-    // Mantenemos por defecto las cookies para que el sistema web MVC siga funcionando normal[cite: 20]
+    // Por defecto se usan cookies (sistema web MVC)
     options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
     options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
@@ -55,7 +54,6 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
 {
-    // Esquema preparado para la API del mozo
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
@@ -69,19 +67,11 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// Crear Políticas de Autorización basadas en los Roles/Claims
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy("Administrador", policy =>
-        policy.RequireClaim(ClaimTypes.Role, "Administrador"));
-
-    options.AddPolicy("PropietarioONomb", policy =>
-        policy.RequireRole("Propietario", "Administrador"));
-});
+// La autorización se resuelve con [Authorize(Roles = ...)] en cada controlador
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");

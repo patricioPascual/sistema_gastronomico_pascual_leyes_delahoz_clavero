@@ -5,6 +5,9 @@
     ViewData["Title"] = "Pedido #" + Model.IdPedido;
     bool abierto = Model.estado == Pedido.Estado.Abierto;
     bool pagado = ViewBag.MostrarAccionesLiberar ?? false;
+    var consumidos = Model.Detalles.Where(d => d.estado == DetallePedido.Estado.Despachado).ToList();
+    decimal totalConsumido = consumidos.Sum(d => d.Subtotal);
+    int platosConsumidos = consumidos.Sum(d => d.Cantidad);
 }
 
 <div class="container mt-4 mb-5">
@@ -27,12 +30,26 @@
                     <i class="bi bi-pencil"></i> Modificar
                 </a>
 
-                <form asp-action="Baja" asp-route-id="@Model.IdPedido" method="post" class="d-inline"
-                      onsubmit="return confirmarAccion(this, '¿Cancelar el pedido #@Model.IdPedido?');">
-                    <button type="submit" class="btn btn-outline-danger">
-                        <i class="bi bi-x-circle"></i> Cancelar Pedido
-                    </button>
-                </form>
+                @if (consumidos.Any())
+                {
+                    @* Ya hay platos consumidos: se pregunta si se cobran antes de cancelar el resto *@
+                    <form asp-action="Baja" asp-route-id="@Model.IdPedido" method="post" class="d-inline"
+                          onsubmit="return confirmarAccion(this, 'Ya se consumieron @platosConsumidos plato(s) por $@totalConsumido.ToString("N2"). ¿Cobrar lo consumido y cancelar el resto del pedido?');">
+                        <input type="hidden" name="cobrarConsumido" value="true" />
+                        <button type="submit" class="btn btn-outline-danger">
+                            <i class="bi bi-x-circle"></i> Cancelar y cobrar consumido
+                        </button>
+                    </form>
+                }
+                else
+                {
+                    <form asp-action="Baja" asp-route-id="@Model.IdPedido" method="post" class="d-inline"
+                          onsubmit="return confirmarAccion(this, '¿Cancelar el pedido #@Model.IdPedido?');">
+                        <button type="submit" class="btn btn-outline-danger">
+                            <i class="bi bi-x-circle"></i> Cancelar Pedido
+                        </button>
+                    </form>
+                }
             }
             @if (pagado)
             {
@@ -92,7 +109,7 @@
                         <tr>
                             <td>@d.Plato?.Nombre</td>
                             <td>
-                                @if (abierto)
+                                @if (abierto && d.estado != DetallePedido.Estado.Despachado)
                                 {
                                     <form asp-action="ModificarCantidad" method="post" class="d-flex gap-1">
                                         <input type="hidden" name="idDetallePedido" value="@d.IdDetallePedido" />
@@ -120,14 +137,21 @@
                             @if (abierto)
                             {
                                 <td class="text-center">
-                                    <form asp-action="BajaDetalle" method="post" class="d-inline"
-                                          onsubmit="return confirmarAccion(this, '¿Quitar este plato del pedido?');">
-                                        <input type="hidden" name="idDetallePedido" value="@d.IdDetallePedido" />
-                                        <input type="hidden" name="idPedido" value="@Model.IdPedido" />
-                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Quitar">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </form>
+                                    @if (d.estado != DetallePedido.Estado.Despachado)
+                                    {
+                                        <form asp-action="BajaDetalle" method="post" class="d-inline"
+                                              onsubmit="return confirmarAccion(this, '¿Quitar este plato del pedido?');">
+                                            <input type="hidden" name="idDetallePedido" value="@d.IdDetallePedido" />
+                                            <input type="hidden" name="idPedido" value="@Model.IdPedido" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Quitar">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small" title="Ya consumido"><i class="bi bi-lock"></i></span>
+                                    }
                                 </td>
                             }
                         </tr>

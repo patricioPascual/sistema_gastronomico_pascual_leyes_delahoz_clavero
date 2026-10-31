@@ -30,6 +30,23 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
             return View(proveedores);
         }
 
+        [HttpGet]
+        public IActionResult Buscar(string q)
+        {
+            if (string.IsNullOrWhiteSpace(q))
+            {
+                return Json(new List<object>());
+            }
+
+            var resultado = repoProveedor.Buscar(q.Trim()).Select(p => new
+            {
+                id = p.IdProveedor,
+                texto = p.Nombre
+            });
+
+            return Json(resultado);
+        }
+
         public IActionResult Alta()
         {
             return View();

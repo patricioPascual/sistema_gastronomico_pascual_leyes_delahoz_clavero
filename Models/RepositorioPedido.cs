@@ -18,6 +18,19 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
 
         public int Alta(Pedido pedido)
         {
+            if (pedido.Detalles != null && pedido.Detalles.Count > 1)
+            {
+                pedido.Detalles = pedido.Detalles
+                    .GroupBy(d => d.IdPlato)
+                    .Select(g => new DetallePedido { IdPlato = g.Key, Cantidad = g.Sum(x => x.Cantidad) })
+                    .ToList();
+            }
+
+            if (pedido.Detalles != null && pedido.Detalles.Any(d => d.Cantidad > 99))
+            {
+                throw new InvalidOperationException("La cantidad total de un mismo plato no puede superar 99.");
+            }
+
             // 1. Validar el stock de TODOS los platos antes de abrir la transacción o guardar algo
             if (pedido.Detalles != null && pedido.Detalles.Count > 0)
             {
@@ -86,27 +99,73 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
             }
         }
 
+        // Cancela un pedido ABIERTO. Solo se devuelve el stock de los platos que todavía no se despacharon (EnMarcha)
         public bool Baja(int idPedido)
         {
             var pedido = _context.Pedidos
                 .Include(p => p.Detalles)
                 .FirstOrDefault(p => p.IdPedido == idPedido);
 
-            if (pedido == null || pedido.estado == Pedido.Estado.Cancelado) return false;
+            if (pedido == null || pedido.estado != Pedido.Estado.Abierto) return false;
 
             using var transaction = _context.Database.BeginTransaction();
             try
             {
-                if (pedido.Detalles != null)
+                foreach (var detalle in pedido.Detalles.Where(d => d.estado == DetallePedido.Estado.EnMarcha))
                 {
-                    foreach (var detalle in pedido.Detalles)
-                    {
-                        _repositorioDetalle.RestituirStock(detalle.IdPlato, detalle.Cantidad);
-                    }
+                    _repositorioDetalle.RestituirStock(detalle.IdPlato, detalle.Cantidad);
                 }
 
                 pedido.estado = Pedido.Estado.Cancelado;
                 _context.Pedidos.Update(pedido);
+
+                _context.SaveChanges();
+                transaction.Commit();
+                return true;
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+
+        // Cancela lo que todavía no salió de cocina y COBRA lo ya despachado:
+        // - los platos EnMarcha se quitan del pedido y se les devuelve el stock,
+        // - el pedido queda Pagado con el total de lo consumido,
+        // - la mesa queda pendiente de liberar (igual que CerrarYPagarPedido).
+        // Devuelve false si el pedido no existe, no está abierto o no tiene nada despachado
+        // (en ese caso corresponde Baja).
+        public bool CancelarCobrandoConsumido(int idPedido)
+        {
+            var pedido = _context.Pedidos
+                .Include(p => p.Detalles)
+                .FirstOrDefault(p => p.IdPedido == idPedido);
+
+            if (pedido == null || pedido.estado != Pedido.Estado.Abierto) return false;
+
+            var consumidos = pedido.Detalles.Where(d => d.estado == DetallePedido.Estado.Despachado).ToList();
+            if (consumidos.Count == 0) return false;
+
+            var pendientes = pedido.Detalles.Where(d => d.estado == DetallePedido.Estado.EnMarcha).ToList();
+
+            using var transaction = _context.Database.BeginTransaction();
+            try
+            {
+                foreach (var detalle in pendientes)
+                {
+                    _repositorioDetalle.RestituirStock(detalle.IdPlato, detalle.Cantidad);
+                }
+                _context.DetallePedidos.RemoveRange(pendientes);
+
+                pedido.Total = consumidos.Sum(d => d.Cantidad * d.PrecioUnitario);
+                pedido.estado = Pedido.Estado.Pagado;
+
+                var mesa = _context.Mesas.FirstOrDefault(m => m.IdMesa == pedido.IdMesa);
+                if (mesa != null)
+                {
+                    mesa.Estado = true;
+                }
 
                 _context.SaveChanges();
                 transaction.Commit();

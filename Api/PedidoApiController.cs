@@ -220,16 +220,61 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers.Api
             }
         }
 
-        // DELETE api/pedidos/{idPedido}
+        // DELETE api/pedidos/{idPedido}[?cobrarConsumido=true]
+        // - Sin platos despachados: cancela el pedido y devuelve el stock.
+        // - Con platos despachados (ya consumidos): sin cobrarConsumido responde 409 con
+        //   requiereConfirmacion = true y el total consumido, para que la SPA le pregunte al mozo.
+        //   Con cobrarConsumido=true quita lo que no salio despachado, devuelve su stock y deja
+        //   el pedido Pagado solo por lo despachado.
         [HttpDelete("{idPedido:int}")]
-        public IActionResult Baja(int idPedido)
+        public IActionResult Baja(int idPedido, [FromQuery] bool cobrarConsumido = false)
         {
-            bool exito = _repoPedido.Baja(idPedido);
+            var pedido = _repoPedido.ObtenerPorId(idPedido);
+            if (pedido == null)
+                return NotFound(new { mensaje = "El pedido no existe." });
 
-            if (!exito)
-                return Conflict(new { mensaje = "No se pudo cancelar el pedido: no existe o ya no está abierto." });
+            if (pedido.estado != Pedido.Estado.Abierto)
+                return Conflict(new { mensaje = "No se pudo cancelar el pedido: ya no está abierto." });
 
-            return Ok(new { mensaje = "Pedido cancelado correctamente." });
+            var consumidos = pedido.Detalles.Where(d => d.estado == DetallePedido.Estado.Despachado).ToList();
+            decimal totalConsumido = consumidos.Sum(d => d.Cantidad * d.PrecioUnitario);
+
+            if (consumidos.Count > 0 && !cobrarConsumido)
+            {
+                return Conflict(new
+                {
+                    requiereConfirmacion = true,
+                    cantidadPlatos = consumidos.Sum(d => d.Cantidad),
+                    totalConsumido,
+                    mensaje = $"Este pedido tiene {consumidos.Sum(d => d.Cantidad)} plato(s) ya consumidos por $ {totalConsumido:N2}. " +
+                              "¿Cobrar lo consumido y cancelar el resto?"
+                });
+            }
+
+            try
+            {
+                bool exito = consumidos.Count > 0
+                    ? _repoPedido.CancelarCobrandoConsumido(idPedido)
+                    : _repoPedido.Baja(idPedido);
+
+                if (!exito)
+                    return Conflict(new { mensaje = "No se pudo cancelar el pedido: no existe o ya no está abierto." });
+
+                return Ok(new
+                {
+                    mensaje = consumidos.Count > 0
+                        ? $"Se cobró lo consumido ($ {totalConsumido:N2}) y se canceló el resto del pedido."
+                        : "Pedido cancelado correctamente.",
+                    cobrado = consumidos.Count > 0,
+                    totalCobrado = totalConsumido
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al cancelar el pedido {IdPedido}", idPedido);
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { mensaje = "Ocurrió un error al cancelar el pedido." });
+            }
         }
 
         // POST api/pedidos/detalle/{idDetallePedido}/despachar

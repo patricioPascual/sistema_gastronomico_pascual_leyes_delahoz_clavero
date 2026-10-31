@@ -204,12 +204,43 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Baja(int id)
+        public IActionResult Baja(int id, bool cobrarConsumido = false)
         {
-            if (repoPedido.Baja(id))
-                TempData["Mensaje"] = "Pedido cancelado correctamente.";
-            else
+            var pedido = repoPedido.ObtenerPorId(id);
+            if (pedido == null || pedido.estado != Pedido.Estado.Abierto)
+            {
                 TempData["Error"] = "No se pudo cancelar el pedido: no existe o ya no está abierto.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var consumidos = pedido.Detalles.Where(d => d.estado == DetallePedido.Estado.Despachado).ToList();
+
+            // Con platos ya consumidos no se cancela "a ciegas": hay que confirmar que se cobran
+            // (la pantalla de detalle pregunta y manda cobrarConsumido=true).
+            if (consumidos.Count > 0 && !cobrarConsumido)
+            {
+                TempData["Error"] = "El pedido tiene platos ya consumidos. Cancelalo desde el detalle para cobrar lo consumido.";
+                return RedirectToAction(nameof(Detalle), new { id });
+            }
+
+            try
+            {
+                bool exito = consumidos.Count > 0
+                    ? repoPedido.CancelarCobrandoConsumido(id)
+                    : repoPedido.Baja(id);
+
+                if (exito)
+                    TempData["Mensaje"] = consumidos.Count > 0
+                        ? $"Se cobro lo consumido (${consumidos.Sum(d => d.Cantidad * d.PrecioUnitario):N2}) y se cancelo el resto del pedido."
+                        : "Pedido cancelado correctamente.";
+                else
+                    TempData["Error"] = "No se pudo cancelar el pedido: no existe o ya no está abierto.";
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error al cancelar el pedido {IdPedido}", id);
+                TempData["Error"] = "Ocurrio un error inesperado al cancelar el pedido.";
+            }
 
             return RedirectToAction(nameof(Index));
         }
@@ -255,8 +286,10 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 
             try
             {
-                repoDetalle.ModificarCantidad(idDetallePedido, cantidad);
-                TempData["Mensaje"] = "Cantidad actualizada.";
+                if (repoDetalle.ModificarCantidad(idDetallePedido, cantidad))
+                    TempData["Mensaje"] = "Cantidad actualizada.";
+                else
+                    TempData["Error"] = "El plato del pedido no existe.";
             }
             catch (InvalidOperationException ex)
             {
@@ -275,8 +308,10 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 
             try
             {
-                repoDetalle.Baja(idDetallePedido);
-                TempData["Mensaje"] = "Plato quitado del pedido.";
+                if (repoDetalle.Baja(idDetallePedido))
+                    TempData["Mensaje"] = "Plato eliminado del pedido.";
+                else
+                    TempData["Error"] = "El plato del pedido no existe.";
             }
             catch (InvalidOperationException ex)
             {
@@ -318,9 +353,14 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult DespacharPedido(int idDetallePedido, int idPedido)
         {
-            bool exito = repoDetalle.CambiarEstadoDetalle(idDetallePedido, DetallePedido.Estado.Despachado);
+            // El detalle tiene que pertenecer al pedido indicado.
+            var detalle = repoDetalle.ObtenerPorId(idDetallePedido);
+            bool exito = detalle != null
+                && detalle.IdPedido == idPedido
+                && repoDetalle.CambiarEstadoDetalle(idDetallePedido, DetallePedido.Estado.Despachado);
 
             if (!exito)
             {
@@ -337,6 +377,7 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
 
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult CerrarMesa(int idPedido)
         {
             bool exito = repoPedido.CerrarYPagarPedido(idPedido);
