@@ -27,12 +27,12 @@ Markdown
 
 | Requerimiento Mínimo | Estado | Enlace al Código / Controladores | Evidencia (Captura / GIF / Video) |
 |---|---|---|---|
-| **1. 6+ Tablas y Relación 1:N / N:M** | ✅ Cumplido | [GastronomiaContext.cs](Models/GastronomiaContext.cs) | Diagrama DER y script en /DataBase/sistema_gastronomico.sql |
-| **2. Login, Roles y Avatar** | ✅ Cumplido | [LoginController.cs](Controllers/LoginController.cs) | Captura de pantalla de perfil con avatar subido |
-| **3. Manejo de Archivos (Extra)** | ✅ Cumplido | [PlatoController.cs](Controllers/PlatoController.cs) | Captura mostrando subida e imagen de plato en /wwwroot/img/ |
-| **4. ABM en Vue.js + AJAX** | ✅ Cumplido | [SPAController.cs](Controllers/SPAController.cs) | Video corto / GIF de comanda interactiva en /SPA/Index |
-| **5. Paginado por Servidor** | ✅ Cumplido | [ProductoController.cs](Controllers/ProductoController.cs) | Captura del inspector de red con paginado en /Producto/Index |
-| **6. Selección Asíncrona (AJAX)** | ✅ Cumplido | [buscarPlato.js](wwwroot/js/buscarPlato.js) | GIF buscando insumos en desplegable para recetas |
+| **1. 6+ Tablas y Relación 1:N / N:M** | ✅ Cumplido | [GastronomiaContext.cs](Models/GastronomiaContext.cs) | Diagrama DER y script en /DataBase/sistema_gastronomico.sql<br>![Diagrama ER](docs/evidencias/diagramaER.jpg) |
+| **2. Login, Roles y Avatar** | ✅ Cumplido | [LoginController.cs](Controllers/LoginController.cs) | ![Perfil con avatar](docs/evidencias/perfil_avatar.png) |
+| **3. Manejo de Archivos (Extra)** | ✅ Cumplido | [PlatoController.cs](Controllers/PlatoController.cs) | ![Plato con imagen subida](docs/evidencias/platoSubido.png) |
+| **4. ABM en Vue.js + AJAX** | ✅ Cumplido | [SPAController.cs](Controllers/SPAController.cs) | ![Comanda interactiva en la SPA](docs/evidencias/comandaSPA.gif) |
+| **5. Paginado por Servidor** | ✅ Cumplido | [ProductoController.cs](Controllers/ProductoController.cs) | ![Paginado en el inspector de red](docs/evidencias/inspectordeREDpaginado.png) |
+| **6. Selección Asíncrona (AJAX)** | ✅ Cumplido | [buscarPlato.js](wwwroot/js/buscarPlato.js) | ![Desplegable de insumos en recetas](docs/evidencias/despegablerecetas.gif) |
 | **7. Web API + JWT** | ✅ Cumplido | [ServicioJwt.cs](Services/ServicioJwt.cs) | Captura de Postman con Bearer Token consumiendo /Api/ |
 
 ## 🛠️ Estructura del Proyecto
