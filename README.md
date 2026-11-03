@@ -33,7 +33,7 @@ Markdown
 | **4. ABM en Vue.js + AJAX** | ✅ Cumplido | [SPAController.cs](Controllers/SPAController.cs) | ![Comanda interactiva en la SPA](docs/evidencias/comandaSPA.gif) |
 | **5. Paginado por Servidor** | ✅ Cumplido | [ProductoController.cs](Controllers/ProductoController.cs) | ![Paginado en el inspector de red](docs/evidencias/inspectordeREDpaginado.png) |
 | **6. Selección Asíncrona (AJAX)** | ✅ Cumplido | [buscarPlato.js](wwwroot/js/buscarPlato.js) | ![Desplegable de insumos en recetas](docs/evidencias/despegablerecetas.gif) |
-| **7. Web API + JWT** | ✅ Cumplido | [ServicioJwt.cs](Services/ServicioJwt.cs) | Captura de Postman con Bearer Token consumiendo /Api/ |
+| **7. Web API + JWT** | ✅ Cumplido | [ServicioJwt.cs](Services/ServicioJwt.cs) | Con token (200 OK): ![Postman con Bearer Token](docs/evidencias/postman-conAuth.png)<br>Sin token (401): ![Postman sin token](docs/evidencias/postman-sinAuth.png) |
 
 ## 🛠️ Estructura del Proyecto
 
