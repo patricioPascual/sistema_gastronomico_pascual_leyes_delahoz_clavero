@@ -18,8 +18,8 @@ El proyecto resuelve la problemática de la gestión gastronómica centralizando
 
 | Rol                | Usuario | Contraseña | Acceso Principal |
 |---|---|---|---|
-| **Administrador** | `Administrador` | `admin2026` | `/Home/Index` (Dashboard MVC) |
-| **Mozo** | `Homero` | `homerosimpson` | `/SPA/Index` (Terminal Vue.js) |
+| **Administrador** | `Administrador` | `Foodly2026` | `/Home/Index` (Dashboard MVC) |
+| **Mozo** | `Homero` | `Foodly2026` | `/SPA/Index` (Terminal Vue.js) |
 
 ---
 Markdown
