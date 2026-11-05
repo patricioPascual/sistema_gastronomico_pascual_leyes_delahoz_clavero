@@ -86,10 +86,19 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
                 .ToList();
         }
 
-        public IList<Plato> ObtenerLista(int pagNro, int tamPagina)
+        // idCategoria (opcional): el filtro se aplica en la base de datos ANTES de paginar
+        // así que filtra sobre todos los platos y no solo sobre los de la pagina actual
+        public IList<Plato> ObtenerLista(int pagNro, int tamPagina, int? idCategoria = null)
         {
             int offset = (pagNro - 1) * tamPagina;
-            return _context.Platos
+
+            var consulta = _context.Platos.AsQueryable();
+            if (idCategoria.HasValue)
+            {
+                consulta = consulta.Where(p => p.IdCategoria == idCategoria.Value);
+            }
+
+            return consulta
                 .Include(p => p.Categoria)
                 .OrderByDescending(p => p.IdPlato)
                 .Skip(offset)
@@ -97,9 +106,16 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
                 .ToList();
         }
 
-        public int ObtenerTotalRegistros()
+        // Mismo filtro que ObtenerLista, para que el total de paginas sea el correcto
+        public int ObtenerTotalRegistros(int? idCategoria = null)
         {
-            return _context.Platos.Count();
+            var consulta = _context.Platos.AsQueryable();
+            if (idCategoria.HasValue)
+            {
+                consulta = consulta.Where(p => p.IdCategoria == idCategoria.Value);
+            }
+
+            return consulta.Count();
         }
 
         public IList<Plato> BuscarPlato(String q)

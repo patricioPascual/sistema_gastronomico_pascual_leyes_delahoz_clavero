@@ -36,15 +36,19 @@ namespace sistema_gastronomico_pascual_leyes_delahoz_clavero.Controllers
         }
 
         [Authorize(Roles = RolesSistema.Todos)]
-        public IActionResult Index(int pagina = 1)
+        public IActionResult Index(int? idCategoria, int pagina = 1)
         {
-            int tamPagina = 10;
-            int totalRegistros = _repositorioPlato.ObtenerTotalRegistros();
+            int tamPagina = 12;
+            int totalRegistros = _repositorioPlato.ObtenerTotalRegistros(idCategoria);
+            int totalPaginas = Math.Max(1, (int)Math.Ceiling((double)totalRegistros / tamPagina));
+            pagina = Math.Clamp(pagina, 1, totalPaginas);
 
-            var platos = _repositorioPlato.ObtenerLista(pagina, tamPagina);
+            var platos = _repositorioPlato.ObtenerLista(pagina, tamPagina, idCategoria);
 
+            ViewBag.Categorias = _repositorioCategoria.ObtenerTodos();
+            ViewBag.IdCategoria = idCategoria;
             ViewBag.PaginaActual = pagina;
-            ViewBag.TotalPaginas = (int)Math.Ceiling((double)totalRegistros / tamPagina);
+            ViewBag.TotalPaginas = totalPaginas;
 
             return View(platos);
         }

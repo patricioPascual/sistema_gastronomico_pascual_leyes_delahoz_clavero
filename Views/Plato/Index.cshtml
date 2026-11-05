@@ -1,7 +1,25 @@
 @model IEnumerable<sistema_gastronomico_pascual_leyes_delahoz_clavero.Models.Plato>
 
+@using sistema_gastronomico_pascual_leyes_delahoz_clavero.Models
+
 @{
     ViewData["Title"] = "Menú Digital";
+
+    var categorias = ViewBag.Categorias as IEnumerable<Categoria> ?? Enumerable.Empty<Categoria>();
+    int? idCategoriaActiva = ViewBag.IdCategoria as int?;
+    int paginaActual = ViewBag.PaginaActual ?? 1;
+    int totalPaginas = ViewBag.TotalPaginas ?? 1;
+
+    string Icono(string? categoria) => categoria switch
+    {
+        "Entrada" => "bi-egg-fried",
+        "Plato Principal" => "bi-fork-knife",
+        "Pizzas" => "bi-pie-chart",
+        "Bebidas" => "bi-cup-straw",
+        "Postres" => "bi-cake",
+        "Cafetería" => "bi-cup-hot",
+        _ => "bi-tag"
+    };
 }
 
 <div class="container mt-4" id="appMenu">
@@ -12,18 +30,26 @@
         </a>
     </div>
 
-    <ul class="nav nav-tabs nav-fill mb-4" role="tablist">
-        <li class="nav-item" v-for="cat in categorias" :key="cat">
-            <button class="nav-link fw-bold" :class="{ 'active': categoriaActiva === cat }"
-                @@click="cambiarCategoria(cat)">
-                <i class="bi me-2" :class="obtenerIcono(cat)"></i> {{ cat }}
-            </button>
+    <ul class="nav nav-tabs nav-fill mb-4">
+        <li class="nav-item">
+            <a class="nav-link fw-bold @(idCategoriaActiva == null ? "active" : "")" asp-action="Index">
+                <i class="bi bi-grid-fill me-2"></i> Todas
+            </a>
         </li>
+        @foreach (var cat in categorias)
+        {
+            <li class="nav-item">
+                <a class="nav-link fw-bold @(idCategoriaActiva == cat.IdCategoria ? "active" : "")"
+                   asp-action="Index" asp-route-idCategoria="@cat.IdCategoria">
+                    <i class="bi @Icono(cat.Nombre) me-2"></i> @cat.Nombre
+                </a>
+            </li>
+        }
     </ul>
 
     <div v-cloak class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4">
 
-        <div class="col" v-for="plato in platosFiltrados" :key="plato.idPlato">
+        <div class="col" v-for="plato in platos" :key="plato.idPlato">
             <div class="card h-100 shadow-sm border-0" :class="{ 'opacity-50': !plato.estado }">
 
                 <a :href="'/Plato/Detalle/' + plato.idPlato">
@@ -72,15 +98,44 @@
                 </div>
             </div>
 
-            <div v-if="platosFiltrados.length === 0" class="col-12 text-center py-5 text-muted">
+            <div v-if="platos.length === 0" class="col-12 text-center py-5 text-muted">
                 <i class="bi bi-search fs-1"></i>
                 <p class="mt-2">No hay platos registrados en esta categoría.</p>
             </div>
 
         </div>
-    </div>
 
-    <partial name="_ModalEliminar" />
+    @if (totalPaginas > 1)
+    {
+        <nav aria-label="Navegación de páginas" class="mt-4">
+            <ul class="pagination justify-content-center flex-wrap">
+                <li class="page-item @(paginaActual <= 1 ? "disabled" : "")">
+                    <a class="page-link" asp-action="Index" asp-route-idCategoria="@idCategoriaActiva"
+                       asp-route-pagina="@(paginaActual - 1)">
+                        <i class="bi bi-chevron-left"></i> Anterior
+                    </a>
+                </li>
+
+                @for (int i = 1; i <= totalPaginas; i++)
+                {
+                    <li class="page-item @(i == paginaActual ? "active" : "")">
+                        <a class="page-link" asp-action="Index" asp-route-idCategoria="@idCategoriaActiva"
+                           asp-route-pagina="@i">@i</a>
+                    </li>
+                }
+
+                <li class="page-item @(paginaActual >= totalPaginas ? "disabled" : "")">
+                    <a class="page-link" asp-action="Index" asp-route-idCategoria="@idCategoriaActiva"
+                       asp-route-pagina="@(paginaActual + 1)">
+                        Siguiente <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    }
+</div>
+
+<partial name="_ModalEliminar" />
 
     @section Scripts {
         <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -88,52 +143,23 @@
         <script>
             const datosPlatos = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Select(p => new
                 {
-                                                                                                                                                                            idPlato = p.IdPlato,
-                                                                                                                                                                            nombre = p.Nombre,
-                                                                                                                                                                            precioVenta = p.PrecioVenta,
-                                                                                                                                                                            estado = p.Estado,
-                                                                                                                                                                            categoriaNombre = p.Categoria != null ? p.Categoria.Nombre : "Sin Categoría"
-                                                                                            })));
+                    idPlato = p.IdPlato,
+                    nombre = p.Nombre,
+                    precioVenta = p.PrecioVenta,
+                    estado = p.Estado
+                })));
 
             const { createApp } = Vue;
 
             createApp({
                 data() {
-                    const categoriasUnicas = ['Todas', ...new Set(datosPlatos.map(p => p.categoriaNombre))];
-
                     return {
-                        platos: datosPlatos,
-                        categorias: categoriasUnicas,
-                        categoriaActiva: 'Todas'
+                        platos: datosPlatos
                     };
                 },
-                computed: {
-                    platosFiltrados() {
-                        if (this.categoriaActiva === 'Todas') {
-                            return this.platos;
-                        }
-                        return this.platos.filter(p => p.categoriaNombre === this.categoriaActiva);
-                    }
-                },
                 methods: {
-                    cambiarCategoria(cat) {
-                        this.categoriaActiva = cat;
-                    },
                     confirmarBaja(plato) {
                         abrirModalEliminar(plato.idPlato, plato.nombre, '/Plato/Eliminar');
-                    },
-                    obtenerIcono(categoria) {
-                        const iconos = {
-                            'Todas': 'bi-grid-fill',
-                            'Entrada': 'bi-egg-fried',
-                            'Plato Principal': 'bi-fork-knife',
-                            'Pizzas': 'bi-pie-chart',
-                            'Bebidas': 'bi-cup-straw',
-                            'Postres': 'bi-cake',
-                            'Cafetería': 'bi-cup-hot'
-                        };
-
-                        return iconos[categoria] || 'bi-tag';
                     }
                 }
             }).mount('#appMenu');
